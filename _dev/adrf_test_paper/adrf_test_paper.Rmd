@@ -1,0 +1,152 @@
+---
+title: A template for the *arxiv* style
+authors:
+  - name: Noah Greifer
+    department: Institute for Quantitative Social Science
+    affiliation: Harvard University
+    location: Cambridge, MA 02138
+    email: ngreifer@iq.harvard.edu
+abstract: |
+  Enter the text of your abstract here.
+keywords:
+  - blah
+  - blee
+  - bloo
+  - these are optional and can be removed
+bibliography: references.bib
+biblio-style: unsrt
+output: rticles::arxiv_article
+---
+
+## Introduction
+
+The average dose response function (ADRF) is a useful estimand in the context of estimating the causal effect of a continuous treatment or exposure. It describes the relationship between a level, or dose, of the treatment and the expected outcome under that treatment, averaging across the distribution of adjusted-for variables in the population.
+
+Specifically, for a treatment $A$ taking on values $a\in\mathcal{A}$, the ADRF with respect to a potential outcome $Y(a)$ is
+
+$$
+\mu(a)=E[Y(a)]
+$$
+
+The potential outcomes are fundemtnally unobservable, so this quantity cannot be estimated directly. However, under certain causal assumptions, the ADRF can be represented as the expected value of the observed outcome $Y$ conditional on a set of adjustment variables $X$, with the expectation taken over $X$, i.e.,
+
+$$
+\mu(a)=E[Y(a)]=E\left[E[Y|A=a,X]\right]
+$$
+
+This has motivated several statistical methods for estimating the ADRF from observed data, including inverse probability weighting, g-computation, and doubly robust methods.
+
+Estimating the ADRF and the pointwise uncertainty for each value of $a$ is developed elsewhere, but what remains missing is a general omnbius test for the ADRF against specific alternatives. For example, one may be interested in testing whether the ADRF is flat, i.e., whether the treatment affects the outcome at all for some population. Note this is distinct from testing whether the conditional ADRFs are jointly flat, which is a much stronger hypothesis. Because the ADRF depends not only on the conditional dose response functions $E[Y|A,X]$ but also on the distribution of $X$, tests of the ADRF need to account for this distribution and cannot rely on the conditional dose-response functions alone.
+
+Some recent work has explored this testing within the framework of doubly robust estimation of the ADRF [@takatsuDebiasedInferenceCovariateadjusted2025; @hudsonApproachNonparametricInference2024]. These approaches are highly technical and applicable specifically to ADRFs estimated using the nonparametric estimators like that described in @kennedyNonparametricMethodsDoubly2017. In this paper, we propose a fairly simple test that relies on standard assumptions, can accommodate estimation of the ADRF using any method that yields asymptotically normally distributed parameters, and can be extended to general problems in inference for functional quantities.
+
+## Hypotheses of Interest
+
+Several omnibus hypotheses may be of interest in the context of continuous treatments. For example, one may be interested in whether the ADRF is flat, whether it is constant at some specified value, whether it is linear, whether it is monotonically increasing, etc. Some of these hypotheses can be re-construed as constraints on the derivative of the ADRF, which we call the average marginal effect function (AMEF), defined as
+
+$$
+\mu'(a)=\frac{dE[Y(t)]}{dt}\Bigr|_{t = a}
+$$
+
+Under the identifying assumptions for the ADRF, the AMEF can be written as
+
+$$
+\mu'(a)=\frac{dE[Y(t)]}{dt}\Bigr|_{t = a} = \frac{dE[E[Y|A=t,X]]}{dt}\Bigr|_{t = a}
+$$
+
+We can state some common hypotheses about the ADRF in terms of $\mu(a)$ or $\mu'(a)$:
+
+| Hypothesis | Parameterization | $f(a)$ |
+|----|----|----|
+| The ADRF is constant at a specified value $c$ | $\mu(a)=c$ for all $a\in\mathcal{A}$ | $f(a)=\mu(a)-c$ |
+| The ADRF is flat (the AMEF is constant at 0) | $\mu'(a)=0$ for all $a\in\mathcal{A}$ | $f(a)=\mu'(a)$ |
+| The AMEF is constant at a specified value $c$ | $\mu'(a)=c$ for all $a\in\mathcal{A}$ | $f(a)=\mu'(a)-c$ |
+
+When the ADRF can be written as a parametric function such that constrains on the parameters correspond to tests of the above hypotheses, traditional Wald tests can be used instead of the test we describe here. For example, if
+
+$$
+\mu(a)=\beta_0+\beta_1a+\beta_2a^2
+$$
+
+the test that the ADRF is constant at $c$ can be written as $\left[\array{\beta_0 \ \beta_1 \ \beta_2}\right] = \left[\array{c \ 0 \ 0}\right]$. The test that the ADRF is flat can be written as $\left[\array{\beta_1 \ \beta_2}\right] = \left[\array{0 \ 0}\right]$. The test that the ADRF is linear can be written as $\beta_2 = 0$. When the coefficients are estimated in such a way as to have a joint normal distribution, a standard Wald test can be used to test these hypotheses. In many cases, the ADRF cannot be parameterized as such, e.g., because the covariates are included in the model, the model is nonlinear, no coefficients in the model correspond to straighforward tests, or the model is estimated nonparametrcially (i.e., in such a way that no parameters have a normal distribution even if the ADRF at any treatment value does).
+
+## The Test
+
+The test we consider makes use of the distribution of a weighted sum of $n$ squared standard normal variables $Z$ with weights $\lambda$:,
+
+$$
+T \sim \sum_{i=1}^n{\lambda_iZ_i^2}
+$$
+
+This statistic has a generalized $\chi^2$ distribution. Analytic formulas for the cumulative density function (CDF) of the generalized $\chi^2$ distribution are not available, but approximations have been developed and are implemented in the `CompQuadForm` package in R. This statistic is a "quadratic form", i.e., because it can be written as $Z'LZ$ for diagonal matrix $L$ with $\left\{L_{ii}\right\}=\lambda_i$.
+
+Under regularity conditions, an estimate $\hat\mu(a)$ of $\mu(a)$ is distributed as a Gaussian process with
+
+$$
+\hat\mu(a)-\mu(a)\sim \mathcal{GP}(0, \Sigma(a))
+$$
+
+so that for any $\{a, a'\}\in\mathcal{A}$,
+
+$$
+\left[\array{\hat\mu(a) \\ \hat\mu(a')}\right] \sim \mathcal{MVN}\left(\left[\array{\mu(a) \\ \mu(a')}\right],\left[\array{\sigma_{a,a} \ \sigma_{a,a'} \\ \sigma_{a',a} \ \sigma_{a',a'}}\right]\right)
+$$
+
+The estimated AMEF can be approximated as
+
+$$
+\hat\mu'(a)\approx\frac{\hat\mu(a+\epsilon)-\hat\mu(a-\epsilon)}{2\epsilon}
+$$
+
+for some small constant $\epsilon$. As a linear function of the ADRF, the AMEF is also distributed as a Gaussian process, and the distribution of any two points on the AMEF also has a bivariate normal distribution with variance computable using the delta method.
+
+We'll consider a general function $f(a)$ that is some linear function of $\hat\mu(a)$, including $\hat\mu'(a)$. Different functions will correspond to different hypotheses to be tested. Below, we describe the general form of the test for an arbitrary $f(a)$ before listing the specific formulations that correspond to each test.
+
+The test statistic for the test of each hypothesis will be of the following form:
+
+$$
+T_c=\int_{a_l}^{a_u}{f(t)^2dt}
+$$
+
+Here, $[a_{l},a_{u}] \in \mathcal{A}$ are the boundaries of the interval for which the test is run. Typically this corresponds to the range of the observed treatment values, but this interval can be narrowed or widened to suit the specific problem at hand.
+
+We can approximate the integral using a trapezoidal Riemann sum evaluated at $n-1$ intervals between $a_l$ and $a_u$ for some larger integer $n$ (here we give these intervals a common length of $d=(n-1)^{-1}(a_u-a_l)$):
+
+$$
+\begin{align}
+T_c &\approx \sum_{i=1}^{n-1} {\frac{d}{2}\left(f(a_{i})^2+f(a_{i+1})^2\right)} \\
+&= \sum_{i=1}^{n}\omega_i f(a_i)^2
+\end{align}
+$$
+
+where $a_i=a_l+(i-1)d$ and $\omega$ is a vector of weights that facilitate writing the trapezoidal approximation as a weighted sum of $n$ squared normally distributed variables $f(a_i)$, such that
+
+$$
+\omega_i=
+\begin{cases}
+\frac{d}{2}, & i=1 \\
+d, & 1<i<n \\
+\frac{d}{2}, & i=n
+\end{cases}
+$$
+
+We can write the test statistic as a quadratic form in $F=[\array{f(a_1) \ \dots f(a_n)}]'$ and $D_{\omega}=\text{diag}(\omega)$ and perform an Eigen decomposition to arrive at
+
+$$
+\begin{align}
+T_c &\approx \sum_{i=1}^{n}\omega_i f(a_i)^2 \\
+&=\sum_{i=1}^{n}{\lambda_i Z_i^2}
+\end{align}
+$$
+
+where $\lambda_i$ are the Eigenvalues of $\Sigma^{1/2}D_\omega\Sigma^{1/2}$ and $Z_i$ is a standard normal variable (so $Z_i^2$ is a $\chi^2_1$ random variable) [@mathaiQuadraticFormsRandom1992].
+
+The algorithm by @imhof1961 can be used to approximate the value of the CDF at the computed value of $T_c$. Alternatively, the approximation by @patnaikNonCentralH2FDistribution1949 can be used for the weighted sum of independent $\chi^2_1$ random variables. This approximation uses that $T_c/s \sim \chi^2_q$, where $s=\sum_i \lambda_i^2/\sum_i\lambda_i$ and $q = s^{-1}\sum_i\lambda_i$. Using the generalized $\chi^2$ distribution is more precise, but the Patnaik approximation can work well when it is not available.
+
+With this test, we can test any of the hypotheses in table 1 with the corresponding $f(a)$.
+
+## Simulations
+
+Here, we perform several simulation studies to examine the finite-sample performance of this test. In Simulation 1, we examine the performance of the test for detecting whether an ADRF is flat in a scenario in which the ADRF is fully characterized by the coefficients in a parametric model, so that constraints on the coefficients correspond to a flat ADRF. This allows us to compare the performance of the test with a Wald test on the coefficients. We consider both a scenario in which the true ADRF is flat and one in which the true ADRF is not flat. In Simulation 2, we examine the performance of the test under a more realistic scenario in which the ADRF is not fully characterized by coefficients in a parametric model, and confounding is present. Here we examine the performance of the test when the ADRF is flat even though the conditional dose-response functions are not.
+
+In both simulations, we consider both scenarios in which the null hypothesis of a flat ADRF is true and scenarios in which it is false. For the former, we evaluate whether the test has nominal type I error rate. Under the null hypothesis, a test with a nominal rate should yield p-values with a uniform distribution in [0,1]. We test this using a one-sample Kolmogorov-Smirnov test of the p-values against a uniform distribution. For the latter, we evaluate whether the test has the power to detect departures from a flat line.
