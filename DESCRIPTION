@@ -1,12 +1,11 @@
 Package: adrftools
 Type: Package
 Title: Tools for Estimating Average Dose-Response Functions
-Version: 0.1.0
+Version: 0.0.9000
 Authors@R: person("Noah", "Greifer", role = c("aut", "cre"),
          email = "noah.greifer@gmail.com",
 	       comment = c(ORCID="0000-0003-3067-7154"))
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
+Description: Provides tools for estimating, visualizing, and testing average dose-response functions for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure.
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -18,24 +17,25 @@ Imports:
     chk (>= 0.10.0),
     rlang (>= 1.1.0),
     cli (>= 3.6.5),
-    sandwich,
+    sandwich (>= 3.1-1),
     utils,
     stats
 Suggests:
+    CompQuadForm (>= 1.4.4),
     fwb (>= 0.5.0),
-    splines,
     survey,
+    splines,
     WeightIt,
     MatchThem,
     mice,
     generics,
-    CompQuadForm,
+    dbarts,
     knitr,
     rmarkdown
 License: GPL (>=2)
 Encoding: UTF-8
 URL: https://github.com/ngreifer/adrftools
-BugReports:https://github.com/ngreifer/adrftools/issues
+BugReports: https://github.com/ngreifer/adrftools/issues
 VignetteBuilder: knitr
 LazyData: true
 RoxygenNote: 7.3.3

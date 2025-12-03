@@ -6,13 +6,13 @@
 \alias{adrftools-package}
 \title{adrftools: Tools for Estimating Average Dose-Response Functions}
 \description{
-More about what it does (maybe more than one line). Continuation lines should be indented.
+Provides tools for estimating, visualizing, and testing average dose-response functions for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure.
 }
 \seealso{
 Useful links:
 \itemize{
-  \item \url{}
-  \item Report bugs at \url{}
+  \item \url{https://github.com/ngreifer/adrftools}
+  \item Report bugs at \url{https://github.com/ngreifer/adrftools/issues}
 }
 
 }

@@ -36,7 +36,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.width = 5.5,
-  fig.weight = 3.5,
+  fig.height = 3.5,
   fig.align = "center",
   eval = splines_ok,
   message = FALSE
@@ -105,13 +105,9 @@ We will use g-computation to estimate the ADRF of `logBLL` on `Math` adjusting f
 We will use *adrftools* to answer the following research questions:
 
 -   What does the ADRF look like?
-
 -   Is the ADRF flat?
-
 -   Is the ADRF linear?
-
 -   What is the linear projection of the ADRF? Is its slope zero?
-
 -   What is the expected difference in Math scores under a low and high level of blood lead exposure?
 
 ### Fitting the outcome model
@@ -854,7 +850,7 @@ adrf_bll_bayes
 
 All credible intervals and bands use the confidence interval interface (e.g., using `conf_level` in `summary()` and `plot()` to request the credibility level). The posterior can be treated as a multivariate normal distribution to compute Wald-based credible intervals by setting `ci.type = "wald"`, though the default is to use equi-tailed percentile intervals with `ci.type = "perc"`. Simultaneous inference for equi-tailed percentile intervals, if requested, uses the Bayesian algorithm described by @montielolea2019, which guarantees uniform credibility across the whole effect curve. P-values for estimates along the effect curve are computed as the complement of the smallest credibility level that excludes the null value.
 
-```{r}
+```{r, eval = bart_ok}
 plot(adrf_bll_bayes)
 
 adrf_bll_bayes(logBLL = c(0, 1, 2)) |>

@@ -1,5 +1,13 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^README\.Rmd$
+^CRAN-SUBMISSION$
+^_dev$
+^\.DS_Store$
+^LICENSE\.md$
+^\.lintr
 ^data-raw$
-^\_dev$
-^\adrf_test_paper$
