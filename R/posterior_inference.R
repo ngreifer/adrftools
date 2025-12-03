@@ -42,8 +42,8 @@ posterior_p_value <- function(draws, parm, null = 0, simultaneous = FALSE) {
     interval <- dapply(draws, fquantile, probs = c(q, 1 - q),
                        return = "matrix", drop = FALSE)
 
-    all_est_above <- rowSums(TRA(draws, interval[1L,]) >= 0) == k
-    all_est_below <- rowSums(TRA(draws, interval[2L,]) <= 0) == k
+    all_est_above <- rowSums(TRA(draws, interval[1L, ]) >= 0) == k
+    all_est_below <- rowSums(TRA(draws, interval[2L, ]) <= 0) == k
 
     coverage <- mean(all_est_above & all_est_below)
 

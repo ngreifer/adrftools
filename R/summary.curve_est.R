@@ -86,10 +86,6 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
     return(object)
   }
 
-  .treat <- attr(object, ".treat")
-  .contrast <- attr(object, ".contrast")
-  .by_grid <- attr(object, ".by_grid")
-  .reference <- attr(object, ".reference")
   .boot <- .attr(object, ".boot")
   .draws <- .attr(object, ".draws")
 
@@ -357,11 +353,11 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
     return(.est_names)
   }
 
-  labels <- .contrast %or% get_by_grid_labels(.by_grid)
+  .labels <- .contrast %or% get_by_grid_labels(.by_grid)
 
   sprintf("%s | %s",
-          rep(labels, each = length(.est_names)),
-          rep.int(.est_names, length(labels)))
+          rep(.labels, each = length(.est_names)),
+          rep.int(.est_names, length(.labels)))
 }
 
 .print_inference <- function(x, .print = TRUE) {

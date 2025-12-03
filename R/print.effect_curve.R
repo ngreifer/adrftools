@@ -1,7 +1,5 @@
 #' @exportS3Method print effect_curve
 print.effect_curve <- function(x, ...) {
-  nm <- deparse1(substitute(x))
-
   cat(sprintf("An %s object\n\n",
               .it("effect_curve")))
 

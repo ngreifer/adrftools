@@ -62,8 +62,8 @@ point_contrast <- function(object) {
 
   contr_mat <- matrix(0, nrow = nc, ncol = n)
 
-  contr_mat[cbind(seq_len(nc), combos[1L,])] <- -1
-  contr_mat[cbind(seq_len(nc), combos[2L,])] <- 1
+  contr_mat[cbind(seq_len(nc), combos[1L, ])] <- -1
+  contr_mat[cbind(seq_len(nc), combos[2L, ])] <- 1
 
   n_by <- get_n_by(.contrast, .by_grid)
 
@@ -96,8 +96,8 @@ point_contrast <- function(object) {
 
 
   .contrast_names <- sprintf("[%s = %s] - [%s = %s]",
-                             .treat, values[combos[2L,]],
-                             .treat, values[combos[1L,]])
+                             .treat, values[combos[2L, ]],
+                             .treat, values[combos[1L, ]])
 
   .est0 <- drop(contr_mat %*% .est)
 
@@ -145,10 +145,6 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
     return(object)
   }
 
-  .treat <- attr(object, ".treat")
-  .contrast <- attr(object, ".contrast")
-  .by_grid <- attr(object, ".by_grid")
-  .reference <- attr(object, ".reference")
   .boot <- .attr(object, ".boot")
   .draws <- .attr(object, ".draws")
 

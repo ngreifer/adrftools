@@ -253,24 +253,24 @@ get_data_mids <- function(x, imp = NULL) {
   data_list <- make_list(m)
 
   for (.i in imp) {
-    vars <- insight::find_predictors(x[["analyses"]][[.i]],
-                                     effects = "fixed", component = "all",
+    xi <- x[["analyses"]][[.i]]
+
+    vars <- insight::find_predictors(xi, effects = "fixed", component = "all",
                                      flatten = TRUE, verbose = FALSE)
 
-    if (is.data.frame(x[["analyses"]][[.i]][["data"]])) {
-      dat <- x[["analyses"]][[.i]][["data"]]
+    if (is.data.frame(xi[["data"]])) {
+      dat <- xi[["data"]]
 
       data_list[[.i]] <- ss(dat, j = intersect(vars, names(dat)))
     }
     else {
       dat <- try({
-        env <- {
-          if (is.environment(x[["analyses"]][[.i]][["data"]])) x[["analyses"]][[.i]][["data"]]
-          else insight::find_formula(x[["analyses"]][[.i]])$conditional |>
+        l <- {
+          if (is.environment(xi[["data"]])) xi[["data"]]
+          else insight::find_formula(xi)$conditional |>
             environment()
-        }
-
-        l <- env |> as.list()
+        } |>
+          as.list()
 
         l[intersect(vars, names(l))] |> list2DF()
       }, silent = TRUE)
@@ -1255,11 +1255,11 @@ make_inverse <- function(fun, original) {
     }
 
     # Get starter closest to transformed x
-    start <- original[vapply(x, function(y) which.min(abs(fun(original) - y)),
-                             integer(1L))]
+    .start <- original[vapply(x, function(y) which.min(abs(fun(original) - y)),
+                              integer(1L))]
 
     out <- optim(function(y) mean((fun(y) - x)^2),
-                 par = start,
+                 par = .start,
                  control = list(maxit = 1e3,
                                 reltol = 1e-12))$par
     if (d) {
@@ -1373,7 +1373,7 @@ get_kernel_w <- function(x, v = x, kernel = "gaussian", constant = .5, bw = NULL
                 ax <- abs(a - b)
                 o <- alloc(0, length(ax))
                 in_window <- ax < bw_a
-                o[in_window] <- 3/4 * (1 - (ax[in_window] / bw_a)^2) / bw_a
+                o[in_window] <- .75 * (1 - (ax[in_window] / bw_a)^2) / bw_a
                 o
               },
               triangular = function(a, b) {
@@ -1392,11 +1392,11 @@ get_kernel_w <- function(x, v = x, kernel = "gaussian", constant = .5, bw = NULL
   zeros <- check_if_zero(rs)
 
   if (any(zeros)) {
-    w[zeros,] <- 0
+    w[zeros, ] <- 0
   }
 
   if (!all(zeros)) {
-    w[!zeros,] <- w[!zeros,] / rs[!zeros]
+    w[!zeros, ] <- w[!zeros, ] / rs[!zeros]
   }
 
   w
@@ -1435,7 +1435,7 @@ get_locpoly_w <- function(x, v = x, w = NULL, p = 3, ...) {
   lw <- matrix(0, nrow = length(x), ncol = n)
 
   for (i in seq_along(x)) {
-    wi <- w[i,]
+    wi <- w[i, ]
     pos <- which(wi > 1e-10)
 
     if (is_null(pos)) {

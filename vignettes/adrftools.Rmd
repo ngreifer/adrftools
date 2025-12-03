@@ -157,7 +157,7 @@ Perhaps the most useful summary of an effect curve is its plot, which we can pro
 plot(adrf_bll)
 ```
 
-The x-axis is the treatment and the y-axis is the value of the ADRF at the treatment level (labelled $\text{E[Math]}$). The solid red line is the ADRF and the pink ribbon is the 95% uniform confidence band.
+The x-axis is the treatment and the y-axis is the value of the ADRF at the treatment level (labeled $\text{E[Math]}$). The solid red line is the ADRF and the pink ribbon is the 95% uniform confidence band.
 
 By default, confidence bands are computed providing uniform coverage, meaning the nominal rate refers to simultaneous coverage of all points on the line rather for a single given point [@montielolea2019]. Pointwise confidence bands can instead be requested by setting `simultaneous = FALSE` in the call to `plot()`. This is generally not recommended as it overstates the precision of the estimated ADRF. The confidence level can be set with `conf_level`, and if bootstrapping is used in `adrf()`, the method of computing the confidence interval can be controlled by the `ci.type` argument, which is passed to `fwb::summary.fwb()`. Simultaneous coverage is only possible when `ci.type` is `"perc"` (percentile confidence intervals, the default for bootstrapping) or `"wald"`.
 

@@ -195,8 +195,6 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                                    estimator = NULL, grad_fun = NULL,
                                    pred_fun = NULL, mcall,
                                    .adrf_env = parent.frame(2L), ...) {
-  # curve
-  curve <- "ADRF"
 
   # get data
   model_data <- process_model_data(x, data)
@@ -451,7 +449,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
             .vcov_type = vcov_type,
             .boot = .boot,
             .draws = .draws,
-            .curve_type = curve,
+            .curve_type = "ADRF",
             .family = .family,
             .df = .df,
             .response = .response,
@@ -463,10 +461,6 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                                       estimator = NULL, grad_fun = NULL,
                                       pred_fun = NULL, mcall,
                                       .adrf_env = parent.frame(2L), ...) {
-
-  # curve
-  curve <- "ADRF"
-
   # get data
   model_data.complete <- process_model_data_mi(x, data)
 
@@ -725,7 +719,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
             .treat = treat,
             .vcov_type = vcov_type,
             .draws = .draws,
-            .curve_type = curve,
+            .curve_type = "ADRF",
             .family = .family,
             .df = .df,
             .response = .response,

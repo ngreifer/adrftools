@@ -151,7 +151,7 @@ summary(adrf_bll, hypothesis = "linear")
 
 The results indicate that the ADRF is not flat, but there isn’t enough
 evidence to claim it is nonlinear in the range specified. We might
-project a linear model onto the ADRF to prodce a more interpretable
+project a linear model onto the ADRF to produce a more interpretable
 summary:
 
 ``` r

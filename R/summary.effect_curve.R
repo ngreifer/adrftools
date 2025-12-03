@@ -49,7 +49,7 @@
 #' * [adrf()] for computing the ADRF
 #' * [summary.curve_est()] for performing inference on individual points on an effect curve
 #' * [plot.effect_curve()] for plotting the effect curve
-#' * [curve_projection()] for projecting a simpler model onto an effetc curve
+#' * [curve_projection()] for projecting a simpler model onto an effect curve
 #'
 #' @examples
 #' data("nhanes3lead")
@@ -397,7 +397,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   }, numeric(1L))
 
-  res_names <- c("p.value")
+  res_names <- "p.value"
 
   out <- make_df(res_names, length(p)) |>
     ftransform(p.value = pmax(p, 1e-12)) |>
@@ -428,7 +428,6 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
   .treat <- .attr(x, ".treat")
   .values <- .attr(x, ".values")
   .contrast <- .attr(x, ".contrast")
-  .by_grid <- .attr(x, ".by_grid")
   .reference <- .attr(x, ".reference")
   nsim <- .attr(x, "nsim")
   transformed <- .attr(x, "transformed")

@@ -120,8 +120,6 @@ curve_projection <- function(x, model, transform = TRUE) {
   .contrast <- .attr(x, ".contrast")
   .vcov_type <- .attr(x, ".vcov_type")
 
-  n <- length(.values)
-
   proj_data <- data.frame(.values) |>
     setNames(.treat) |>
     model.frame(formula = model)
@@ -248,11 +246,9 @@ curve_projection <- function(x, model, transform = TRUE) {
 #' @rdname curve_projection
 summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
                                      df = NULL, ci.type = "perc", subset = NULL, ...) {
-  .treat <- .attr(object, ".treat")
   .vcov_type <- .attr(object, ".vcov_type")
   .contrast <- .attr(object, ".contrast")
   .by_grid <- .attr(object, ".by_grid")
-  .reference <- .attr(object, ".reference")
 
   .proj_coefficients <- stats::coef(object)
   .proj_vcov <- stats::vcov(object)
@@ -476,12 +472,9 @@ vcov.summary.curve_projection <- vcov.curve_projection
 #' @exportS3Method stats::model.matrix curve_projection
 model.matrix.curve_projection <- function(object, ...) {
   .treat <- .attr(object, ".treat")
-  .est <- .attr(object, ".est")
   .values <- .attr(object, ".values")
   .by_grid <- .attr(object, ".by_grid")
   .contrast <- .attr(object, ".contrast")
-
-  n <- length(.values)
 
   proj_data <- data.frame(.values) |>
     setNames(.treat) |>
@@ -490,8 +483,6 @@ model.matrix.curve_projection <- function(object, ...) {
   mt <- .attr(proj_data, "terms")
 
   mm <- model.matrix(mt, data = proj_data)
-
-  nm <- colnames(mm)
 
   if (!all(is.finite(mm))) {
     .err("evaluation of the projection model produced non-finite values of `{(.treat)}`, which is not allowed")
@@ -664,29 +655,28 @@ print.anova.curve_projection <- function(x, digits = max(4L, getOption("digits")
     start <- .lm.fit(x = wsqt * x, y = wsqt * (fy - offset))$coefficients
   }
 
-  theta <- start
+  .theta <- start
 
   for (iter in seq_len(maxit)) {
-    eta <- drop(x %*% theta)
+    eta <- drop(x %*% .theta)
     mu  <- finv(eta)
 
     J <- finv_prime(eta) * x
 
-    step <- .lm.fit(x = wsqt * J, y = wsqt * (y - mu))$coefficients
+    .step <- .lm.fit(x = wsqt * J, y = wsqt * (y - mu))$coefficients
 
-    theta <- theta + step
+    .theta <- .theta + .step
 
-    if (sqrt(sum(step^2)) < tol) {
+    if (max(abs(.step)) < tol) {
       break
     }
   }
 
-  eta <- drop(x %*% theta)
+  .eta <- drop(x %*% .theta)
 
   list(
-    coefficients = theta,
-    fitted.values = finv(eta),
-    jacobian = if (jac) finv_prime(eta) * x
+    coefficients = .theta,
+    fitted.values = finv(.eta),
+    jacobian = if (jac) finv_prime(.eta) * x
   )
 }
-

@@ -145,8 +145,8 @@ NULL
     to_interp <- !check_if_zero(values - .values[matches])
 
     if (any(to_interp)) {
-      val_mat[to_interp,] <- get_locpoly_w(x = values[to_interp],
-                                           v = .values)
+      val_mat[to_interp, ] <- get_locpoly_w(x = values[to_interp],
+                                            v = .values)
     }
 
     if (!all(to_interp)) {

@@ -64,12 +64,9 @@ reference_curve <- function(x, reference) {
 
   n <- length(.values)
   ref_ind <- match(reference, .values)
-  combos <- lapply(seq_len(n), c, ref_ind)
-
-  nc <- length(combos)
 
   # contrast_mat0 encodes contrasts between estimates at values
-  contrast_mat0 <- diag(n)
+  contrast_mat0 <- diag(1, n)
   contrast_mat0[, ref_ind] <- contrast_mat0[, ref_ind] - 1
 
   n_by <- get_n_by(.contrast, .by_grid)
@@ -106,8 +103,8 @@ reference_curve <- function(x, reference) {
   to_interp <- !check_if_zero(values - .values[matches])
 
   if (any(to_interp)) {
-    val_mat[to_interp,] <- get_locpoly_w(x = values[to_interp],
-                                         v = .values)
+    val_mat[to_interp, ] <- get_locpoly_w(x = values[to_interp],
+                                          v = .values)
   }
 
   if (!all(to_interp)) {

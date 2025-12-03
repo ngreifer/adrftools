@@ -62,7 +62,6 @@ curve_contrast <- function(x) {
   }
 
   .est <- .attr(x, ".est")
-  .treat <- .attr(x, ".treat")
   .values <- .attr(x, ".values")
 
   # All combinations of 'by' levels

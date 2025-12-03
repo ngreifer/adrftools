@@ -46,7 +46,7 @@ A \code{ggplot} object that can modified using functions in \pkg{ggplot2}. Below
 \preformatted{
 theme(legend.position = "{POSITION}")}
 }
-\item{CRemove the legend:
+\item{Remove the legend:
 \preformatted{
 theme(legend.position = "none")}
 }
@@ -131,7 +131,7 @@ plot(adrf_contrast)
 }
 \seealso{
 \itemize{
-\item \code{\link[=adrf]{adrf()}} for computibng the ADRF
+\item \code{\link[=adrf]{adrf()}} for computing the ADRF
 \item \code{\link[=summary.effect_curve]{summary.effect_curve()}} for testing hypotheses about an effect curve
 }
 }

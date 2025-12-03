@@ -18,7 +18,7 @@ reference:
   - summary.curve_est
   - point_contrast
 - title: Compute other effect curves
-- content:
+- contents:
   - amef
   - reference_curve
   - curve_contrast

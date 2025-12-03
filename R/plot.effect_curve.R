@@ -22,7 +22,7 @@
 #' \preformatted{
 #' theme(legend.position = "{POSITION}")}
 #' }
-#' \item{CRemove the legend:
+#' \item{Remove the legend:
 #' \preformatted{
 #' theme(legend.position = "none")}
 #' }
@@ -63,7 +63,7 @@
 #' Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `plot()` uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate.
 #'
 #' @seealso
-#' * [adrf()] for computibng the ADRF
+#' * [adrf()] for computing the ADRF
 #' * [summary.effect_curve()] for testing hypotheses about an effect curve
 #'
 #' @examples
@@ -121,7 +121,6 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .draws <- .attr(x, ".draws")
   .by_grid <- .attr(x, ".by_grid")
   .contrast <- .attr(x, ".contrast")
-  .reference <- .attr(x, ".reference")
 
   if (.vcov_type == "none") {
     conf_level <- 0
@@ -146,9 +145,6 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   }
   else {
     .s <- which(rep(.subset, each = length(.est0) / nrow(.by_grid)))
-
-    # .by_grid <- ss(.by_grid, .subset)
-
     .est0 <- .est0[.s]
   }
 
@@ -327,10 +323,10 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
     res[[.treat]] <- .values[res$.vi]
 
-    labels <- get_by_grid_labels(.by_grid, sep = ", ")
+    .labels <- get_by_grid_labels(.by_grid, sep = ", ")
 
     res$.by_id <- factor(res$.by_id, levels = seq_row(.by_grid),
-                         labels = labels)
+                         labels = .labels)
 
     p <- ggplot(res, aes(x = .data[[.treat]])) +
       geom_line(aes(y = .data$estimate,
@@ -355,8 +351,8 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
     }
 
     p <- p + scale_color_brewer(palette = "Set1", aesthetics = c("color", "fill"),
-                                breaks = labels[.subset],
-                                limits = labels)
+                                breaks = .labels[.subset],
+                                limits = .labels)
   }
   else {
     res[[.treat]] <- .values
@@ -401,11 +397,9 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .reference <- .attr(x, ".reference")
   .contrast <- .attr(x, ".contrast")
 
-  curve <- get_curve_type(x)
-
   curve_atom <- switch(get_curve_type(x),
-                       ADRF = bquote(E * group('[', .(.response), ']')),
-                       AMEF = bquote(over(d ~ E * group('[', .(.response), ']'),
+                       ADRF = bquote(E * group("[", .(.response), "]")),
+                       AMEF = bquote(over(d ~ E * group("[", .(.response), "]"),
                                           d ~ .(.treat))))
 
   label <- curve_atom

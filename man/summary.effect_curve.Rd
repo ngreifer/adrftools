@@ -123,6 +123,6 @@ curve_contrast(adrf1) |>
 \item \code{\link[=adrf]{adrf()}} for computing the ADRF
 \item \code{\link[=summary.curve_est]{summary.curve_est()}} for performing inference on individual points on an effect curve
 \item \code{\link[=plot.effect_curve]{plot.effect_curve()}} for plotting the effect curve
-\item \code{\link[=curve_projection]{curve_projection()}} for projecting a simpler model onto an effetc curve
+\item \code{\link[=curve_projection]{curve_projection()}} for projecting a simpler model onto an effect curve
 }
 }

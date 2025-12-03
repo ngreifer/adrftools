@@ -30,38 +30,38 @@
   for (jj in seq_along(.parm)) {
     j <- .parm[jj]
 
-    if (.direction == "center") {
-      .x[j] <- .x0[j] + .eps[j] / 2
+    switch(.direction,
+           center = {
+             .x[j] <- .x0[j] + .eps[j] / 2
+             f_new_r <- .f(.x, ...)
+           },
+           left = {
+             f_new_r <- .f0
+           },
+           right = {
+             .x[j] <- .x0[j] + .eps[j]
+             f_new_r <- .f(.x, ...)
+           })
 
-      f_new_r <- .f(.x, ...)
-    }
-    else if (.direction == "left") {
-      f_new_r <- .f0
-    }
-    else if (.direction == "right") {
-      .x[j] <- .x0[j] + .eps[j]
-
-      f_new_r <- .f(.x, ...)
-    }
 
     if (j == 1L) {
       jacob <- matrix(0, nrow = length(f_new_r), ncol = length(.parm),
                       dimnames = list(names(f_new_r), names(.x)[.parm]))
     }
 
-    if (.direction == "center") {
-      .x[j] <- .x0[j] - .eps[j] / 2
+    switch(.direction,
+           center = {
+             .x[j] <- .x0[j] - .eps[j] / 2
+             f_new_l <- .f(.x, ...)
+           },
+           left = {
+             .x[j] <- .x0[j] - .eps[j]
+             f_new_l <- .f(.x, ...)
+           },
+           right = {
+             f_new_l <- .f0
+           })
 
-      f_new_l <- .f(.x, ...)
-    }
-    else if (.direction == "left") {
-      .x[j] <- .x0[j] - .eps[j]
-
-      f_new_l <- .f(.x, ...)
-    }
-    else if (.direction == "right") {
-      f_new_l <- .f0
-    }
 
     jacob[, jj] <- (f_new_r - f_new_l) / .eps[j]
 
