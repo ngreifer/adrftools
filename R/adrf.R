@@ -1,7 +1,7 @@
-#' ADRF Estimation
+#' Estimate an average dose-response function (ADRF)
 #'
 #' @description
-#' Estimates the average dose response function (ADRF) for a fitted model object.
+#' Estimates the average dose-response function (ADRF) for a fitted model object.
 #'
 #' @param x a fitted model object (e.g., from [lm()] or [glm()]).
 #' @param treat a string specifying the name of the treatment variable.

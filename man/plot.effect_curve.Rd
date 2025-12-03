@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.effect_curve.R
 \name{plot.effect_curve}
 \alias{plot.effect_curve}
-\title{Plot an Effect Curve}
+\title{Plot an effect curve}
 \usage{
 \method{plot}{effect_curve}(
   x,

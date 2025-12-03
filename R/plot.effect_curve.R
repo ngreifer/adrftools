@@ -1,4 +1,4 @@
-#' Plot an Effect Curve
+#' Plot an effect curve
 #'
 #' @description
 #' `plot()` plots an effect curve and its confidence band.

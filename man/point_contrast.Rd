@@ -3,7 +3,7 @@
 \name{point_contrast}
 \alias{point_contrast}
 \alias{summary.curve_est_contrast}
-\title{Contrast Point Estimates Along an Effect Curve}
+\title{Contrast point estimates along an effect curve}
 \usage{
 point_contrast(object)
 

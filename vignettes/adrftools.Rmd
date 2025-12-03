@@ -475,7 +475,7 @@ adrf_bll_male_contrast
 
 We can plot the difference between the two ADRFs using `plot()`:
 
-```{r}
+```{r, fig.width = 7.2}
 plot(adrf_bll_male_contrast)
 ```
 
@@ -487,7 +487,7 @@ summary(adrf_bll_male_contrast)
 
 Given the small p-value, we can reject the null hypothesis that the ADRF contrast is 0, implying the subgroup ADRFs differ from each other.
 
-We can use `summary()` on the output of the `contrast_curve` object to test for difference between the subgroup ADRFs at specific points:
+We can use `summary()` on the output of the `contrast_curve` object to test for differences between the subgroup ADRFs at specific points:
 
 ```{r}
 adrf_bll_male_contrast(logBLL = c(0, 1, 2)) |>
@@ -515,7 +515,7 @@ fit_bin <- glm(Block_bin ~ ns(logBLL, df = 5) *
                  (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
                     Smoke_Pregnant + NICU),
                data = nhanes3lead,
-               family = "quasibinomial")
+               family = binomial)
 ```
 
 To compute the ADRF, we simply call `adrf()`. We can supply the `type` argument, which specifies the type of prediction to use. The default, `type = "response"`, computes the ADRF on the probability scale, which is the most natural for a binary outcome.
@@ -536,9 +536,23 @@ An important thing to notice is that the confidence bands are asymmetrical. This
 
 To instead compute symmetric confidence bands around the original ADRF estimates, one can specify `transform = FALSE` to `plot()`. This produces the same ADRF line, but the confidence bands will be symmetrical around it, which means it is possible for the confidence bands to fall outside 0 and 1, as they do below:
 
+####  {.tabset .unlisted .unnumbered}
+
+##### Transformed
+
 ```{r}
-plot(adrf_bll_bin, transform = FALSE)
+plot(adrf_bll_bin) +
+  ggplot2::coord_cartesian(ylim = c(-.25, .37), expand = FALSE)
 ```
+
+##### Untransformed {.active}
+
+```{r}
+plot(adrf_bll_bin, transform = FALSE) +
+  ggplot2::coord_cartesian(ylim = c(-.25, .37), expand = FALSE)
+```
+
+####  {.unlisted .unnumbered}
 
 Bootstrapping and using a percentile confidence bands avoids this issue because such bands are invariant to transformation and respect the bounds of the outcome.
 
@@ -618,7 +632,7 @@ summary(proj_u)
 
 ##### Transformed
 
-```{r}
+```{r, fig.show="hold", out.width="50%"}
 # Plot transformed projection
 plot(proj_t)
 
@@ -627,7 +641,7 @@ plot(adrf_bll_bin, proj = proj_t)
 
 ##### Untransformed
 
-```{r}
+```{r, fig.show="hold", out.width="50%"}
 # Plot untransformed projection
 plot(proj_u)
 

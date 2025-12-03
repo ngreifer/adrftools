@@ -3,7 +3,7 @@
 \name{adrf}
 \alias{adrf}
 \alias{adrf.default}
-\title{ADRF Estimation}
+\title{Estimate an average dose-response function (ADRF)}
 \usage{
 adrf(x, ...)
 
@@ -54,7 +54,7 @@ adrf(x, ...)
 An object of class \code{effect_curve}. This object is a function with attributes. See \code{\linkS4class{effect_curve}} for details on this function and its outputs.
 }
 \description{
-Estimates the average dose response function (ADRF) for a fitted model object.
+Estimates the average dose-response function (ADRF) for a fitted model object.
 }
 \details{
 \code{adrf()} estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When \code{vcov = "unconditional"}, the variance is computed using the formula in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires \code{\link[sandwich:estfun]{sandwich::estfun()}} and \code{\link[sandwich:bread]{sandwich::bread()}} methods for the supplied object to be available.

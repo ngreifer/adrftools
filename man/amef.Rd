@@ -2,7 +2,7 @@
 % Please edit documentation in R/amef.R
 \name{amef}
 \alias{amef}
-\title{AMEF Estimation}
+\title{Estimate the average marginal effect function (AMEF)}
 \usage{
 amef(x, eps = 1e-05)
 }

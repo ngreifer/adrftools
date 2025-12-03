@@ -4,7 +4,7 @@
 \alias{summary.curve_est}
 \alias{coef.curve_est}
 \alias{vcov.curve_est}
-\title{Compute Points on an Effect Curve}
+\title{Compute points on an effect curve}
 \usage{
 \method{summary}{curve_est}(
   object,

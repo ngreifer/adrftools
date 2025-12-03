@@ -1,4 +1,4 @@
-#' AMEF Estimation
+#' Estimate the average marginal effect function (AMEF)
 #'
 #' @description
 #' `amef()` computes the average marginal effect function (AMEF), the derivative of the average dose-response function (ADRF). This computed from an `adrf_curve` object or from a fitting outcome model directly.

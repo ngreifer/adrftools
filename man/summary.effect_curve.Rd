@@ -3,7 +3,7 @@
 \name{summary.effect_curve}
 \alias{summary.effect_curve}
 \alias{print.summary.effect_curve}
-\title{Test Omnibus Hypotheses about Effect Curves}
+\title{Test omnibus hypotheses about an effect curves}
 \usage{
 \method{summary}{effect_curve}(
   object,

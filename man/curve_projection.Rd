@@ -6,7 +6,7 @@
 \alias{coef.curve_projection}
 \alias{vcov.curve_projection}
 \alias{anova.curve_projection}
-\title{Effect Curve Projection}
+\title{Project an effect curve onto a simpler model}
 \usage{
 curve_projection(x, model, transform = TRUE)
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/curve_contrast.R
 \name{curve_contrast}
 \alias{curve_contrast}
-\title{Contrast Multiple Effect Curves}
+\title{Contrast multiple subgroup effect curves}
 \usage{
 curve_contrast(x)
 }
@@ -13,7 +13,7 @@ curve_contrast(x)
 An object of class \code{contrast_curve}, which inherits from \code{\link{effect_curve}}, with additional information about the groups being contrasted.
 }
 \description{
-\code{curve_contrast()} computes the difference between effect curves across levels of a stratifying variable supplied to \code{by} in the original call to \code{\link[=adrf]{adrf()}}.
+\code{curve_contrast()} computes the difference between effect curves across levels of a subgrouping variable supplied to \code{by} in the original call to \code{\link[=adrf]{adrf()}}.
 }
 \details{
 \code{curve_contrast()} creates a new effect curve corresponding to the difference between effect curves in two groups. When multiple subgroups are specified by \code{by} in the original call to \code{\link[=adrf]{adrf()}}, all pairwise comparisons are included. Use the \code{subset} argument in the original function call to restrict comparisons to fewer groups.

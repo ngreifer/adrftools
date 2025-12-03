@@ -1,4 +1,4 @@
-#' Compute Points on an Effect Curve
+#' Compute points on an effect curve
 #'
 #' @description
 #' `summary()` computes estimates and confidence intervals for specified points on the supplied effect curve.

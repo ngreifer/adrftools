@@ -1,4 +1,4 @@
-#' Compute Points on an Effect Curve
+#' Effect curve objects
 #' @name effect_curve
 #' @aliases effect_curve-class curve_est curve_est-class
 #'

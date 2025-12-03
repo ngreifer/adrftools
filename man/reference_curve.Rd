@@ -2,7 +2,7 @@
 % Please edit documentation in R/reference_curve.R
 \name{reference_curve}
 \alias{reference_curve}
-\title{Compare an Effect Curve to a Single Point}
+\title{Contrast an effect curve with a reference point}
 \usage{
 reference_curve(x, reference)
 }

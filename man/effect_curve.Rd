@@ -5,7 +5,7 @@
 \alias{effect_curve-class}
 \alias{curve_est}
 \alias{curve_est-class}
-\title{Compute Points on an Effect Curve}
+\title{Effect curve objects}
 \arguments{
 \item{\{treat\}}{the values of the treatment at which to evaluate the effect curve.}
 
