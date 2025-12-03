@@ -1,4 +1,4 @@
-# Compute Points on an Effect Curve
+# Effect curve objects
 
 An `effect_curve` object is a function that takes in values of the
 treatment and produces estimates of the effect curve at those values.

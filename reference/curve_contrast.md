@@ -1,7 +1,7 @@
-# Contrast Multiple Effect Curves
+# Contrast multiple subgroup effect curves
 
 `curve_contrast()` computes the difference between effect curves across
-levels of a stratifying variable supplied to `by` in the original call
+levels of a subgrouping variable supplied to `by` in the original call
 to [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md).
 
 ## Usage

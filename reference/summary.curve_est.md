@@ -1,4 +1,4 @@
-# Compute Points on an Effect Curve
+# Compute points on an effect curve
 
 [`summary()`](https://rdrr.io/r/base/summary.html) computes estimates
 and confidence intervals for specified points on the supplied effect

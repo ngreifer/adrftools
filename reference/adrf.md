@@ -1,6 +1,6 @@
-# ADRF Estimation
+# Estimate an average dose-response function (ADRF)
 
-Estimates the average dose response function (ADRF) for a fitted model
+Estimates the average dose-response function (ADRF) for a fitted model
 object.
 
 ## Usage

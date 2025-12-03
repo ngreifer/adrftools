@@ -1,4 +1,4 @@
-# Test Omnibus Hypotheses about Effect Curves
+# Test omnibus hypotheses about an effect curves
 
 [`summary()`](https://rdrr.io/r/base/summary.html) tests an omnibus
 hypothesis about an effect curve. For example, it can be used to test

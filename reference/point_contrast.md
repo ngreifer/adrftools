@@ -1,4 +1,4 @@
-# Contrast Point Estimates Along an Effect Curve
+# Contrast point estimates along an effect curve
 
 `point_contrast()` computes pairwise contrasts of estimates from an
 effect curve.

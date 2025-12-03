@@ -1034,8 +1034,8 @@ Given the small p-value, we can reject the null hypothesis that the ADRF
 contrast is 0, implying the subgroup ADRFs differ from each other.
 
 We can use [`summary()`](https://rdrr.io/r/base/summary.html) on the
-output of the `contrast_curve` object to test for difference between the
-subgroup ADRFs at specific points:
+output of the `contrast_curve` object to test for differences between
+the subgroup ADRFs at specific points:
 
 ``` r
 adrf_bll_male_contrast(logBLL = c(0, 1, 2)) |>
@@ -1090,7 +1090,7 @@ fit_bin <- glm(Block_bin ~ ns(logBLL, df = 5) *
                  (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
                     Smoke_Pregnant + NICU),
                data = nhanes3lead,
-               family = "quasibinomial")
+               family = binomial)
 ```
 
 To compute the ADRF, we simply call
@@ -1134,11 +1134,26 @@ the same ADRF line, but the confidence bands will be symmetrical around
 it, which means it is possible for the confidence bands to fall outside
 0 and 1, as they do below:
 
+#### 
+
+- Transformed
+- Untransformed
+
 ``` r
-plot(adrf_bll_bin, transform = FALSE)
+plot(adrf_bll_bin) +
+  ggplot2::coord_cartesian(ylim = c(-.25, .37), expand = FALSE)
 ```
 
 ![](adrftools_files/figure-html/unnamed-chunk-44-1.png)
+
+``` r
+plot(adrf_bll_bin, transform = FALSE) +
+  ggplot2::coord_cartesian(ylim = c(-.25, .37), expand = FALSE)
+```
+
+![](adrftools_files/figure-html/unnamed-chunk-45-1.png)
+
+#### 
 
 Bootstrapping and using a percentile confidence bands avoids this issue
 because such bands are invariant to transformation and respect the
@@ -1161,10 +1176,10 @@ adrf_bll_bin(logBLL = c(0, 1, 2)) |>
 #>  logBLL Estimate CI Low CI High
 #>       0   0.2420 0.1930  0.2988
 #>       1   0.1925 0.1602  0.2296
-#>       2   0.0752 0.0395  0.1384
+#>       2   0.0752 0.0396  0.1383
 #> ───────────────────────────────
 #> Inference: unconditional, simultaneous
-#> Confidence level: 95% (t* = 2.388, df = 2455)
+#> Confidence level: 95% (z* = 2.386)
 ```
 
 ``` r
@@ -1173,12 +1188,12 @@ adrf_bll_bin(logBLL = c(0, 1, 2)) |>
 #>               ADRF Estimates
 #> ──────────────────────────────────────────
 #>  logBLL Estimate Std. Error CI Low CI High
-#>       0   0.2420     0.0222 0.1890  0.2950
+#>       0   0.2420     0.0222 0.1890  0.2949
 #>       1   0.1925     0.0145 0.1579  0.2272
 #>       2   0.0752     0.0198 0.0279  0.1225
 #> ──────────────────────────────────────────
 #> Inference: unconditional, simultaneous
-#> Confidence level: 95% (t* = 2.388, df = 2455)
+#> Confidence level: 95% (z* = 2.386)
 ```
 
 #### 
@@ -1281,7 +1296,7 @@ summary(adrf_bll_bin, "linear")
 #>     between -0.3567 and 2.4248
 #> 
 #>  P-value
-#>   0.1443
+#>    0.144
 #> ───────────────────────────────────────────────────────
 #> Computed using the Imhof approximation
 
@@ -1291,12 +1306,12 @@ proj_t <- curve_projection(adrf_bll_bin, "linear")
 summary(proj_t)
 #>                   ADRF Projection Coefficients
 #> ─────────────────────────────────────────────────────────────────
-#>         Term Estimate Std. Error       t  P-value  CI Low CI High
-#>  (Intercept)  -1.0964     0.0941 -11.653 < 0.0001 -1.2809 -0.9119
-#>       logBLL  -0.5373     0.0996  -5.392 < 0.0001 -0.7326 -0.3419
+#>         Term Estimate Std. Error       z  P-value  CI Low CI High
+#>  (Intercept)  -1.0964     0.0941 -11.653 < 0.0001 -1.2808  -0.912
+#>       logBLL  -0.5373     0.0996  -5.392 < 0.0001 -0.7325  -0.342
 #> ─────────────────────────────────────────────────────────────────
 #> Inference: unconditional
-#> Confidence level: 95% (t* = 1.961, df = 2455)
+#> Confidence level: 95% (z* = 1.96)
 #> Null value: 0
 ```
 
@@ -1321,7 +1336,7 @@ summary(adrf_bll_bin, "linear", transform = FALSE)
 #>     -0.3567 and 2.4248
 #> 
 #>  P-value
-#>   0.5194
+#>   0.5193
 #> ───────────────────────────────────────────────────────
 #> Computed using the Imhof approximation
 
@@ -1331,12 +1346,12 @@ proj_u <- curve_projection(adrf_bll_bin, "linear", transform = FALSE)
 summary(proj_u)
 #>                   ADRF Projection Coefficients
 #> ────────────────────────────────────────────────────────────────
-#>         Term Estimate Std. Error      t  P-value  CI Low CI High
+#>         Term Estimate Std. Error      z  P-value  CI Low CI High
 #>  (Intercept)   0.2497     0.0162 15.396 < 0.0001  0.2179  0.2815
 #>       logBLL  -0.0788     0.0133 -5.936 < 0.0001 -0.1048 -0.0528
 #> ────────────────────────────────────────────────────────────────
 #> Inference: unconditional
-#> Confidence level: 95% (t* = 1.961, df = 2455)
+#> Confidence level: 95% (z* = 1.96)
 #> Null value: 0
 ```
 
@@ -1350,30 +1365,20 @@ summary(proj_u)
 ``` r
 # Plot transformed projection
 plot(proj_t)
-```
-
-![](adrftools_files/figure-html/unnamed-chunk-49-1.png)
-
-``` r
 
 plot(adrf_bll_bin, proj = proj_t)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-49-2.png)
+![](adrftools_files/figure-html/unnamed-chunk-50-1.png)![](adrftools_files/figure-html/unnamed-chunk-50-2.png)
 
 ``` r
 # Plot untransformed projection
 plot(proj_u)
-```
-
-![](adrftools_files/figure-html/unnamed-chunk-50-1.png)
-
-``` r
 
 plot(adrf_bll_bin, proj = proj_u)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-50-2.png)
+![](adrftools_files/figure-html/unnamed-chunk-51-1.png)![](adrftools_files/figure-html/unnamed-chunk-51-2.png)
 
 #### 
 
@@ -1459,7 +1464,7 @@ adrf_bll_w <- adrf(fit, treat = "logBLL")
 plot(adrf_bll_w)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-53-1.png)
+![](adrftools_files/figure-html/unnamed-chunk-54-1.png)
 
 ### Sampling weights
 
@@ -1516,7 +1521,7 @@ adrf_sv <- adrf(fit_sv, treat = "logBLL")
 plot(adrf_sv)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-55-1.png)
+![](adrftools_files/figure-html/unnamed-chunk-56-1.png)
 
 #### Using `glm()`
 
@@ -1554,7 +1559,7 @@ adrf_gs <- adrf(fit_gs, treat = "logBLL",
 plot(adrf_gs)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-57-1.png)
+![](adrftools_files/figure-html/unnamed-chunk-58-1.png)
 
 Using `wts = "MEC_wts"` would yield the same results and can be used if
 the weights used to fit the outcome model are different from those used
@@ -1602,7 +1607,7 @@ adrf_sw <- adrf(fit_sw, treat = "logBLL")
 plot(adrf_sw)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-59-1.png)
+![](adrftools_files/figure-html/unnamed-chunk-60-1.png)
 
 #### Other scenarios
 
@@ -1719,7 +1724,7 @@ adrf_mi <- adrf(fit_mi, treat = "logBLL")
 plot(adrf_mi)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-63-1.png)
+![](adrftools_files/figure-html/unnamed-chunk-64-1.png)
 
 The only option not supported with multiply imputed data is
 bootstrapping. Setting `vcov = "boot"` or `vcov = "fwb"` in
@@ -1750,7 +1755,7 @@ adrf_w_mi <- adrf(fit_w_mi, treat = "logBLL")
 plot(adrf_w_mi)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-64-1.png)
+![](adrftools_files/figure-html/unnamed-chunk-65-1.png)
 
 ### Bayesian models
 
@@ -1818,7 +1823,7 @@ that excludes the null value.
 plot(adrf_bll_bayes)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-66-1.png)
+![](adrftools_files/figure-html/unnamed-chunk-67-1.png)
 
 ``` r
 
@@ -1827,9 +1832,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 #>         ADRF Estimates
 #> ───────────────────────────────
 #>  logBLL Estimate CI Low CI High
-#>       0    8.442  7.991   9.279
-#>       1    7.969  7.590   8.383
-#>       2    7.157  6.573   7.781
+#>       0    8.453  8.033   9.277
+#>       1    7.949  7.568   8.398
+#>       2    7.188  6.518   7.907
 #> ───────────────────────────────
 #> Inference: posterior, simultaneous
 #> Confidence level: 95%

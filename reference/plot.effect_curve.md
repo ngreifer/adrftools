@@ -1,4 +1,4 @@
-# Plot an Effect Curve
+# Plot an effect curve
 
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) plots an effect
 curve and its confidence band.

@@ -1,4 +1,4 @@
-# Effect Curve Projection
+# Project an effect curve onto a simpler model
 
 `curve_projection()` produces a projection of an estimated effect curve
 onto a specified linear model that is a function only of the treatment

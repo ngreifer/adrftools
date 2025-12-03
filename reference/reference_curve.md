@@ -1,4 +1,4 @@
-# Compare an Effect Curve to a Single Point
+# Contrast an effect curve with a reference point
 
 `reference_curve()` creates a new effect curve as the contrast between
 each point on a given effect curve and a specified point along that

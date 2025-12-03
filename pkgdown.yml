@@ -3,7 +3,7 @@ pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   adrftools: adrftools.html
-last_built: 2025-12-03T18:30Z
+last_built: 2025-12-03T19:33Z
 urls:
   reference: https://ngreifer.github.io/adrftools/reference
   article: https://ngreifer.github.io/adrftools/articles
