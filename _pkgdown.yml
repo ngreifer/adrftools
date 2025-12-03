@@ -1,0 +1,28 @@
+url: https://ngreifer.github.io/adrftools/
+template:
+  bootstrap: 5
+  math-rendering: mathjax
+
+reference:
+- title: Compute the ADRF
+- contents:
+  - adrf
+- title: Characterize and test an effect curve
+- contents:
+  - plot.effect_curve
+  - summary.effect_curve
+  - curve_projection
+- title: Compute and contrast points on an effect curve
+- contents:
+  - effect_curve
+  - summary.curve_est
+  - point_contrast
+- title: Compute other effect curves
+- content:
+  - amef
+  - reference_curve
+  - curve_contrast
+- title: Example data
+- contents:
+  - nhanes3lead
+

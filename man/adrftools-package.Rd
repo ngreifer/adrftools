@@ -12,6 +12,7 @@ Provides tools for estimating, visualizing, and testing average dose-response fu
 Useful links:
 \itemize{
   \item \url{https://github.com/ngreifer/adrftools}
+  \item \url{https://ngreifer.github.io/adrftools/}
   \item Report bugs at \url{https://github.com/ngreifer/adrftools/issues}
 }
 
