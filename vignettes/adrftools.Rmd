@@ -542,14 +542,14 @@ To instead compute symmetric confidence bands around the original ADRF estimates
 
 ```{r}
 plot(adrf_bll_bin) +
-  ggplot2::coord_cartesian(ylim = c(-.25, .37), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(-.03, .37), expand = FALSE)
 ```
 
 ##### Untransformed {.active}
 
 ```{r}
 plot(adrf_bll_bin, transform = FALSE) +
-  ggplot2::coord_cartesian(ylim = c(-.25, .37), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(-.03, .37), expand = FALSE)
 ```
 
 ####  {.unlisted .unnumbered}
@@ -632,7 +632,7 @@ summary(proj_u)
 
 ##### Transformed
 
-```{r, fig.show="hold", out.width="50%"}
+```{r}
 # Plot transformed projection
 plot(proj_t)
 
@@ -641,7 +641,7 @@ plot(adrf_bll_bin, proj = proj_t)
 
 ##### Untransformed
 
-```{r, fig.show="hold", out.width="50%"}
+```{r}
 # Plot untransformed projection
 plot(proj_u)
 
