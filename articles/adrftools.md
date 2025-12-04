@@ -1141,14 +1141,14 @@ it, which means it is possible for the confidence bands to fall outside
 
 ``` r
 plot(adrf_bll_bin) +
-  ggplot2::coord_cartesian(ylim = c(-.25, .37), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(-.03, .37), expand = FALSE)
 ```
 
 ![](adrftools_files/figure-html/unnamed-chunk-44-1.png)
 
 ``` r
 plot(adrf_bll_bin, transform = FALSE) +
-  ggplot2::coord_cartesian(ylim = c(-.25, .37), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(-.03, .37), expand = FALSE)
 ```
 
 ![](adrftools_files/figure-html/unnamed-chunk-45-1.png)
@@ -1365,20 +1365,30 @@ summary(proj_u)
 ``` r
 # Plot transformed projection
 plot(proj_t)
+```
+
+![](adrftools_files/figure-html/unnamed-chunk-50-1.png)
+
+``` r
 
 plot(adrf_bll_bin, proj = proj_t)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-50-1.png)![](adrftools_files/figure-html/unnamed-chunk-50-2.png)
+![](adrftools_files/figure-html/unnamed-chunk-50-2.png)
 
 ``` r
 # Plot untransformed projection
 plot(proj_u)
+```
+
+![](adrftools_files/figure-html/unnamed-chunk-51-1.png)
+
+``` r
 
 plot(adrf_bll_bin, proj = proj_u)
 ```
 
-![](adrftools_files/figure-html/unnamed-chunk-51-1.png)![](adrftools_files/figure-html/unnamed-chunk-51-2.png)
+![](adrftools_files/figure-html/unnamed-chunk-51-2.png)
 
 #### 
 
@@ -1832,9 +1842,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 #>         ADRF Estimates
 #> ───────────────────────────────
 #>  logBLL Estimate CI Low CI High
-#>       0    8.453  8.033   9.277
-#>       1    7.949  7.568   8.398
-#>       2    7.188  6.518   7.907
+#>       0    8.466  8.006   9.261
+#>       1    7.971  7.591   8.360
+#>       2    7.125  6.572   7.785
 #> ───────────────────────────────
 #> Inference: posterior, simultaneous
 #> Confidence level: 95%
