@@ -84,11 +84,12 @@ print(x, digits = max(4L, getOption("digits") - 3L), ...)
 
   when `method` is `"imhof"`, `"davies"`, or `"liu"`, further arguments
   passed to
-  [`CompQuadForm::imhof()`](https://rdrr.io/pkg/CompQuadForm/man/imhof.html),
-  [`CompQuadForm::davies()`](https://rdrr.io/pkg/CompQuadForm/man/davies.html),
-  or
-  [`CompQuadForm::liu()`](https://rdrr.io/pkg/CompQuadForm/man/liu.html),
-  respectively.
+  [`CompQuadForm::imhof()`](https://rdrr.io/pkg/CompQuadForm/man/imhof.html)
+  ,
+  [`CompQuadForm::davies()`](https://rdrr.io/pkg/CompQuadForm/man/davies.html)
+  , or
+  [`CompQuadForm::liu()`](https://rdrr.io/pkg/CompQuadForm/man/liu.html)
+  , respectively.
 
 - x:
 
@@ -179,7 +180,7 @@ hypothesis:
 - `"saddlepoint"` also assumes the test statistic follows a generalized
   \\\chi^2\\-distribution, and this distribution is approximated using a
   saddlepoint method as implemented in
-  [`survey::pFsum()`](https://rdrr.io/pkg/survey/man/pchisqsum.html).
+  [`survey::pFsum()`](https://rdrr.io/pkg/survey/man/pchisqsum.html) .
   This method requires the
   [survey](https://CRAN.R-project.org/package=survey) package to be
   installed.

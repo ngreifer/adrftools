@@ -72,8 +72,8 @@ vcov(object, ...)
   computed. For bootstrapping, allowable options include `"perc"` for
   percentile intervals, `"wald"` for Wald intervals, and other options
   allowed by
-  [`fwb::summary.fwb()`](https://ngreifer.github.io/fwb/reference/summary.fwb.html).
-  When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed.
+  [`fwb::summary.fwb()`](https://ngreifer.github.io/fwb/reference/summary.fwb.html)
+  . When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed.
   For Bayesian models, allowable options include `"perc"` for
   equi-tailed intervals and `"wald"` for Wald intervals. Default is
   `"perc"`. Ignored when bootstrapping is not used and the model is not

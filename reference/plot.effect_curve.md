@@ -73,8 +73,8 @@ plot(
   type of confidence interval is to be computed. Allowable options
   include `"perc"` for percentile intervals, `"wald"` for Wald
   intervals, and other options allowed by
-  [`fwb::summary.fwb()`](https://ngreifer.github.io/fwb/reference/summary.fwb.html).
-  When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed.
+  [`fwb::summary.fwb()`](https://ngreifer.github.io/fwb/reference/summary.fwb.html)
+  . When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed.
   Default is `"perc"`. Ignored when bootstrapping is not used.
 
 - df:

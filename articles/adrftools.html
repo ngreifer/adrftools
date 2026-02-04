@@ -60,7 +60,7 @@
                         <h4 data-toc-skip class="author">Noah
 Greifer</h4>
             
-            <h4 data-toc-skip class="date">2025-12-04</h4>
+            <h4 data-toc-skip class="date">2026-02-04</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/ngreifer/adrftools/blob/main/vignettes/adrftools.Rmd" class="external-link"><code>vignettes/adrftools.Rmd</code></a></small>
       <div class="d-none name"><code>adrftools.Rmd</code></div>
@@ -322,7 +322,7 @@ we can produce simply by running <code><a href="https://rdrr.io/r/graphics/plot.
 <code>effect_curve</code> object:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>The x-axis is the treatment and the y-axis is the value of the ADRF
 at the treatment level (labeled <span class="math inline">\(\text{E[Math]}\)</span>). The solid red line is
 the ADRF and the pink ribbon is the 95% uniform confidence band.</p>
@@ -547,7 +547,7 @@ To plot it alone, we can simply use <code><a href="https://rdrr.io/r/graphics/pl
 <code><a href="../reference/curve_projection.html">curve_projection()</a></code> output:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>This plot is similar in interpretation to the ADRF plot.</p>
 <p>To add the projection to the original estimated ADRF plot, we can
 supply the <code><a href="../reference/curve_projection.html">curve_projection()</a></code> output to the
@@ -555,7 +555,7 @@ supply the <code><a href="../reference/curve_projection.html">curve_projection()
 original <code>effect_curve</code> object:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll</span>, proj <span class="op">=</span> <span class="va">proj</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>The dotted line is the projection, and the solid line and shaded
 region correspond to the original ADRF estimate and the original ADRF
 estimate’s confidence bands.</p>
@@ -605,7 +605,7 @@ original ADRF shifted so that the curve height at the reference level is
 equal to 0.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_ref</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Notice that the confidence bands narrow close for treatment levels
 close to the reference level; we have greater certainty about ADRF
 deviations from the its value at the reference level in that region.</p>
@@ -676,7 +676,7 @@ by supplying to it an <code>adrf_curve</code> object.</p>
 with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">amef_bll</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-22-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-22-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Unlike when plotting the ADRF, plotting the AMEF automatically
 includes a horizontal line with a y-intercept of 0. This can be
 controlled with the <code>null</code> argument to
@@ -741,7 +741,7 @@ vector using the data fit to the original model.</p>
 ADRF.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_male_0</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-26-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-26-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>It’s also possible to compute the ADRF in multiple subgroups
 simultaneously. To do so, one can use the <code>by</code> argument to
 <code><a href="../reference/adrf.html">adrf()</a></code>, which accepts a one-sided formula with the
@@ -754,7 +754,7 @@ variables were supplied to <code>by</code>:</p>
 <p>When we plot the ADRF, we can see curves for both groups:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-28-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-28-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Indeed, all functions that operate on the ADRF or its estimates
 produce results for all subgroups. Below, we test the null hypotheses
 that the ADRF for each subgroup is flat:</p>
@@ -812,12 +812,12 @@ projection coefficients for each subgroup:</p>
 <span></span>
 <span><span class="co"># Projection plot</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_by_male</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-31-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-31-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># ADRF plot with projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, proj <span class="op">=</span> <span class="va">proj_by_male</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-31-2.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-31-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Note that any corrections for multiple comparisons when
 <code>simultaneous = TRUE</code> in <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> and
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> will be made accounting for all subgroups, which
@@ -844,14 +844,14 @@ separately, we can use the following:</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="tab-pane" id="male-1" role="tabpanel" aria-labelledby="male-1-tab">
 
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-33-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-33-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -964,7 +964,7 @@ two subgroups, all pairs of subgroups are compared.</p>
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_male_contrast</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" width="691.2" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" alt="" width="691.2" style="display: block; margin: auto;"></p>
 <p>Here, the y-axis corresponds to the difference between the subgroup
 ADRF estimates, and a horizontal line at 0 is displayed. We can use
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> to test whether the ADRF contrast curve is equal
@@ -1051,7 +1051,7 @@ binary outcome.</p>
 <p>We can plot the ADRF with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-43-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-43-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>An important thing to notice is that the confidence bands are
 asymmetrical. This is because symmetrical Wald confidence bands are
 first computed on transformed versions of the ADRF estimates before
@@ -1088,14 +1088,14 @@ below:</p>
 <div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">.03</span>, <span class="fl">.37</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-44-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-44-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="active tab-pane" id="untransformed" role="tabpanel" aria-labelledby="untransformed-tab">
 
 <div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">.03</span>, <span class="fl">.37</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-45-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-45-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -1325,22 +1325,22 @@ the test statistic.</p>
 <div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Plot transformed projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_t</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-50-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-50-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, proj <span class="op">=</span> <span class="va">proj_t</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-50-2.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-50-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="tab-pane" id="untransformed-3" role="tabpanel" aria-labelledby="untransformed-3-tab">
 
 <div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Plot untransformed projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_u</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-51-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-51-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, proj <span class="op">=</span> <span class="va">proj_u</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-51-2.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-51-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -1417,7 +1417,7 @@ we did with the output of <code><a href="https://rdrr.io/r/stats/lm.html" class=
 <code class="sourceCode R"><span><span class="va">adrf_bll_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_w</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-54-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-54-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="sampling-weights">Sampling weights<a class="anchor" aria-label="anchor" href="#sampling-weights"></a>
@@ -1464,7 +1464,7 @@ sampling weights.</p>
 <code class="sourceCode R"><span><span class="va">adrf_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_sv</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_sv</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level4">
 <h4 id="using-glm">Using <code>glm()</code><a class="anchor" aria-label="anchor" href="#using-glm"></a>
@@ -1494,7 +1494,7 @@ incorporated into the ADRF as well.</p>
 <span>                wts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_gs</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-58-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-58-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Using <code>wts = "MEC_wts"</code> would yield the same results and
 can be used if the weights used to fit the outcome model are different
 from those used to generalized the ADRF (as we will see below when
@@ -1538,7 +1538,7 @@ ADRF, set &lt;code&gt;wts = TRUE&lt;/code&gt; instead of leaving it unspecified.
 <code class="sourceCode R"><span><span class="va">adrf_sw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_sw</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_sw</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-60-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-60-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level4">
 <h4 id="other-scenarios">Other scenarios<a class="anchor" aria-label="anchor" href="#other-scenarios"></a>
@@ -1636,7 +1636,7 @@ the results.</p>
 <code class="sourceCode R"><span><span class="va">adrf_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_mi</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_mi</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-64-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-64-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>The only option not supported with multiply imputed data is
 bootstrapping. Setting <code>vcov = "boot"</code> or
 <code>vcov = "fwb"</code> in <code><a href="../reference/adrf.html">adrf()</a></code> will yield an
@@ -1663,7 +1663,7 @@ when using <em>mice</em> alone.</p>
 <span><span class="va">adrf_w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_w_mi</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_w_mi</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-65-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-65-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level3">
@@ -1721,7 +1721,7 @@ the effect curve are computed as the complement of the smallest
 credibility level that excludes the null value.</p>
 <div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bayes</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-67-1.png" class="r-plt" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-67-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu">adrf_bll_bayes</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -1729,9 +1729,9 @@ credibility level that excludes the null value.</p>
 <span><span class="co">#&gt;         ADRF Estimates</span></span>
 <span><span class="co">#&gt; ───────────────────────────────</span></span>
 <span><span class="co">#&gt;  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">#&gt;       0    8.466  8.006   9.261</span></span>
-<span><span class="co">#&gt;       1    7.971  7.591   8.360</span></span>
-<span><span class="co">#&gt;       2    7.125  6.572   7.785</span></span>
+<span><span class="co">#&gt;       0    8.454  8.022   9.150</span></span>
+<span><span class="co">#&gt;       1    8.003  7.569   8.424</span></span>
+<span><span class="co">#&gt;       2    7.169  6.575   7.798</span></span>
 <span><span class="co">#&gt; ───────────────────────────────</span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>
