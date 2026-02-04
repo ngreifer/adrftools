@@ -91,14 +91,15 @@
 
 #' @export
 curve_projection <- function(x, model, transform = TRUE) {
-  chk::chk_not_missing(x, "`x`")
+  arg_not_missing(x)
+
   check_effect_curve(x, projection_ok = FALSE)
 
-  chk::chk_not_missing(model, "`model`")
+  arg_not_missing(model)
 
   .treat <- .attr(x, ".treat")
 
-  if (chk::vld_string(model)) {
+  if (rlang::is_string(model)) {
     model <- model |>
       match_arg(c("flat", "linear", "quadratic", "cubic")) |>
       switch(flat = ~1,
@@ -111,7 +112,7 @@ curve_projection <- function(x, model, transform = TRUE) {
   }
   else if (!all(get_varnames(model) %in% .treat)) {
     #Check that only treat is in model
-    .err("only the treatment variable `{(.treat)}` is allowed to appear in {.arg model}")
+    .err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg model}")
   }
 
   .est <- .attr(x, ".est")
@@ -131,7 +132,7 @@ curve_projection <- function(x, model, transform = TRUE) {
   nm <- colnames(mm)
 
   if (!all(is.finite(mm))) {
-    .err("evaluation of the projection model produced non-finite values of `{(.treat)}`, which is not allowed")
+    .err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
   }
 
   n_by <- get_n_by(.contrast, .by_grid)
@@ -294,8 +295,8 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
       # Process df
       df <- df %or% .attr(object, ".df")
 
-      chk::chk_number(df)
-      chk::chk_gt(df, 0)
+      arg_number(df)
+      arg_gt(df, 0)
 
       stat <- if (is.finite(df)) "t" else "z"
 
@@ -425,7 +426,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
 
 #' @exportS3Method print summary.curve_projection
 print.summary.curve_projection <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
-  chk::chk_whole_number(digits)
+  arg_whole_number(digits)
 
   .reference <- .attr(x, ".reference")
   .contrast <- .attr(x, ".contrast")
@@ -485,7 +486,7 @@ model.matrix.curve_projection <- function(object, ...) {
   mm <- model.matrix(mt, data = proj_data)
 
   if (!all(is.finite(mm))) {
-    .err("evaluation of the projection model produced non-finite values of `{(.treat)}`, which is not allowed")
+    .err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
   }
 
   n_by <- get_n_by(.contrast, .by_grid)
@@ -505,30 +506,30 @@ formula.curve_projection <- function(x, ...) {
 #' @exportS3Method stats::anova curve_projection
 #' @rdname curve_projection
 anova.curve_projection <- function(object, object2, df = NULL, ...) {
-  chk::chk_not_missing(object, "`object`")
-  .chk_is(object, "curve_projection")
+  arg_not_missing(object)
+  arg_is(object, "curve_projection")
 
-  chk::chk_not_missing(object2, "`object2`")
-  .chk_is(object2, "curve_projection")
+  arg_not_missing(object2)
+  arg_is(object2, "curve_projection")
 
   if (any_apply(c(".values", ".treat", ".vcov_type", ".curve_type", ".response",
                   ".by_grid", ".contrast", ".reference", ".family", ".df"),
                 function(a) !identical(.attr(object, a), .attr(object2, a)))) {
-    .err("{.arg object} and {.arg object2} must be the outputs of {.fun curve_projection} applied to the same `effect_curve` object")
+    .err("{.arg object} and {.arg object2} must be the outputs of {.fun curve_projection} applied to the same {.cls effect_curve} object")
   }
 
   # Process df
   df <- df %or% .attr(object, ".df")
 
-  chk::chk_number(df)
-  chk::chk_gt(df, 0)
+  arg_number(df)
+  arg_gt(df, 0)
 
   test <- if (is.finite(df)) "F" else "Chisq"
 
   tolerance <- ...get("tolerance", 1e-7)
 
-  chk::chk_number(tolerance)
-  chk::chk_gt(tolerance, 0)
+  arg_number(tolerance)
+  arg_gt(tolerance, 0)
 
   b1 <- coef(object, complete = FALSE)
   b2 <- coef(object2, complete = FALSE)
@@ -545,7 +546,7 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   .q <- sum(keep)
 
   if (.q > length(b1) - length(b2)) {
-    .err("`object2` does not appear to be nested within `object`")
+    .err("{.arg object2} does not appear to be nested within {.arg object}")
   }
 
   L <- t(Z1_svd[["v"]][, keep, drop = FALSE])

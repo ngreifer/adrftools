@@ -40,7 +40,7 @@ process_subset <- function(index.sub, data, env = parent.frame(2L)) {
 
   subset <- eval(index.sub, data, env)
 
-  if (!chk::vld_atomic(subset)) {
+  if (!is.atomic(subset)) {
     .err("{.arg subset} must evaluate to an atomic vector")
   }
 
@@ -97,7 +97,7 @@ process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL)
 
   subset <- eval(index.sub, .by_grid)
 
-  if (!chk::vld_atomic(subset) || !is.logical(subset)) {
+  if (!is.atomic(subset) || !is.logical(subset)) {
     .err("{.arg subset} must evaluate to a logical vector")
   }
 
@@ -109,14 +109,14 @@ process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL)
 }
 
 process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
-  chk::chk_numeric(range)
+  arg_numeric(range)
 
   if (length(range) > 2L) {
     .err("{.arg range} must have length 1 or 2")
   }
 
-  chk::chk_count(n)
-  chk::chk_gte(n, 2)
+  arg_count(n)
+  arg_range(n, c(2L, 1000L))
 
   if (length(range) > 1L) {
     range <- sort(range)
@@ -141,7 +141,7 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   else if (range == 1) {
     range <- .range(treat_var)
   }
-  else if (chk::vld_range(range, c(0, 1), inclusive = FALSE)) {
+  else if (range > 0 && range < 1) {
     range <- .quantile(treat_var, probs = c(1 - range, 1 + range) / 2,
                        w = w)
   }
@@ -152,20 +152,21 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   seq(range[1L], range[2L], length.out = n)
 }
 
-check_reference <- function(reference, values, strict = FALSE) {
-  chk::chk_number(reference)
+check_reference <- function(reference, values, strict = TRUE) {
+  arg_number(reference)
 
   range_t <- .range(values)
 
+  range_diff <- range_t[2L] - range_t[1L]
+
   if (strict) {
-    if (any(reference < range_t[1L]) || any(reference > range_t[2L])) {
+    if (any(reference < range_t[1L] - .01 * range_diff) ||
+        any(reference > range_t[2L] + .01 * range_diff)) {
       r <- format(range_t, digits = 4L, drop0trailing = TRUE)
-      .err("{.arg reference} cannot be outside the range of treatment values supplied to {.fun adrf} ({r[1L]} to {r[2L]})")
+      .err("{.arg reference} must be within the range of treatment values supplied to {.fun adrf} ({r[1L]} to {r[2L]})")
     }
   }
   else {
-    range_diff <- range_t[2L] - range_t[1L]
-
     if (any(reference < range_t[1L] - .1 * range_diff) ||
         any(reference > range_t[2L] + .1 * range_diff)) {
       .wrn("{.arg reference} is outside the range of observed treatment values supplied to {.fun adrf}")
@@ -174,8 +175,8 @@ check_reference <- function(reference, values, strict = FALSE) {
 }
 
 process_eps <- function(eps, values) {
-  chk::chk_number(eps)
-  chk::chk_gt(eps, 0)
+  arg_number(eps)
+  arg_gt(eps, 0)
 
   eps * diff1(frange(values)) / 4
 }
@@ -216,7 +217,7 @@ process_model_data <- function(model, data = NULL) {
     }
   }
 
-  chk::chk_data(data)
+  arg_data(data)
 
   data
 }
@@ -229,10 +230,12 @@ process_model_data_mi <- function(model, data = NULL) {
       .err("the dataset used to fit the model could not be extracted. Please supply the dataset to {.arg data}")
     }
 
-    .chk_is(data, "mids")
+    arg_is(data, "mids")
 
-    if (!chk::vld_number(data[["m"]]) || data[["m"]] != length(model[["analyses"]])) {
-      .err("the `mids` object supplied to {.arg data} must have the same number of imputed datasets as models fit in {.arg x}")
+    m <- data[["m"]]
+
+    if (!is.numeric(m) || length(m) != 1L || m != length(model[["analyses"]])) {
+      .err("the {.cls mids} object supplied to {.arg data} must have the same number of imputed datasets as models fit in {.arg x}")
     }
 
     rlang::check_installed("mice")
@@ -289,12 +292,17 @@ get_data_mids <- function(x, imp = NULL) {
 }
 
 process_treat <- function(treat, data) {
-  chk::chk_string(treat)
-  chk::chk_subset(treat, names(data))
+  arg_string(treat)
+
+  if (!any(names(data) == treat)) {
+    .err(c("{.arg treat} must be the name of a variable in the original dataset.",
+           "*" = "Supplied value: {.val {treat}}",
+           "*" = "Available names: {.or {.val {names(data)}}}"))
+  }
 
   treat_var <- data[[treat]]
 
-  if (!chk::vld_numeric(treat_var)) {
+  if (!is.numeric(treat_var)) {
     .err("{.arg treat} must be the name of a numeric variable in the original dataset")
   }
 
@@ -314,15 +322,15 @@ process_wts <- function(wts, model, data = NULL) {
       wts <- FALSE
     }
   }
-  else if (!chk::vld_string(wts) && !chk::vld_flag(wts) && !is.numeric(wts)) {
-    .err("{.arg wts} must be `NULL`, `TRUE`, `FALSE`, a numeric vector, or a string containing the name of the variable containing weights in the original dataset")
+  else if (!rlang::is_string(wts) && !rlang::is_bool(wts) && !is.numeric(wts)) {
+    .err("{.arg wts} must be {.val {list(NULL)}}, {.val {TRUE}}, {.val {FALSE}}, a numeric vector, or a string containing the name of the variable containing weights in the original dataset")
   }
 
   if (isTRUE(wts)) {
     wts <- insight::get_weights(model) %or% FALSE
   }
 
-  if (chk::vld_string(wts)) {
+  if (rlang::is_string(wts)) {
     if (is_null(data)) {
       if (wts %in% c("(weights)", "(s.weights)") && is_not_null(model[["model"]]) &&
           utils::hasName(model[["model"]], wts)) {
@@ -334,7 +342,7 @@ process_wts <- function(wts, model, data = NULL) {
       }
     }
 
-    if (!chk::vld_data(data)) {
+    if (!is.data.frame(data)) {
       .err("no dataset could be found to extract the weights named in {.arg wts}. Please supply a dataset to {.arg data}")
     }
 
@@ -358,12 +366,12 @@ process_wts <- function(wts, model, data = NULL) {
       data <- try(insight::get_data(model, verbose = FALSE),
                   silent = FALSE)
 
-      if (!chk::vld_data(data)) {
+      if (!is.data.frame(data)) {
         .err("no dataset could be found to process the weights supplied to {.arg wts}. Please supply a dataset to {.arg data}")
       }
     }
     else {
-      chk::chk_data(data)
+      arg_data(data)
     }
 
     n <- nrow(data)
@@ -381,9 +389,9 @@ process_wts <- function(wts, model, data = NULL) {
 }
 
 process_wts_mi <- function(wts, model, data = NULL) {
-  if (is_not_null(wts) && !chk::vld_string(wts) &&
-      !chk::vld_flag(wts) && !is.numeric(wts)) {
-    .err("{.arg wts} must be `NULL`, `TRUE`, `FALSE`, a numeric vector, or a string containing the name of the variable containing weights in the original dataset")
+  if (is_not_null(wts) && !rlang::is_string(wts) &&
+      !rlang::is_bool(wts) && !is.numeric(wts)) {
+    .err("{.arg wts} must be {.val {list(NULL)}}, {.val {TRUE}}, {.val {FALSE}}, a numeric vector, or a string containing the name of the variable containing weights in the original dataset")
   }
 
   m <- length(model[["analyses"]])
@@ -423,12 +431,12 @@ process_wts_mi <- function(wts, model, data = NULL) {
           if (is_null(data)) {
             data.i <- try(get_data_mids(model, .i), silent = TRUE)
 
-            if (!chk::vld_data(data.i)) {
+            if (!is.data.frame(data.i)) {
               .err("no dataset could be found to extract the weights named in {.arg wts}. Please supply a dataset to {.arg data}")
             }
           }
           else {
-            .chk_is(data, "mids")
+            arg_is(data, "mids")
 
             rlang::check_installed("mice")
 
@@ -451,12 +459,12 @@ process_wts_mi <- function(wts, model, data = NULL) {
           data.i <- try(get_data_mids(model, .i), silent = TRUE)
         }
 
-        if (!chk::vld_data(data.i)) {
+        if (!is.data.frame(data.i)) {
           .err("no dataset could be found to extract the weights named in {.arg wts}. Please supply a dataset to {.arg data}")
         }
       }
       else {
-        .chk_is(data, "mids")
+        arg_is(data, "mids")
 
         rlang::check_installed("mice")
 
@@ -485,13 +493,13 @@ process_wts_mi <- function(wts, model, data = NULL) {
     n.i <- try(insight::n_obs(model[["analyses"]][[.i]]),
                silent = TRUE)
 
-    if (chk::vld_count(n.i)) {
+    if (is_count(n.i)) {
       ns[.i] <- n.i
       next
     }
 
     if (is_not_null(data)) {
-      .chk_is(data, "mids")
+      arg_is(data, "mids")
 
       rlang::check_installed("mice")
 
@@ -502,7 +510,7 @@ process_wts_mi <- function(wts, model, data = NULL) {
 
     data.i <- try(get_data_mids(model, .i), silent = TRUE)
 
-    if (!chk::vld_data(data.i)) {
+    if (!is.data.frame(data.i)) {
       .err("no dataset could be found to process the weights supplied to {.arg wts}. Please supply a dataset to {.arg data}")
     }
 
@@ -514,7 +522,7 @@ process_wts_mi <- function(wts, model, data = NULL) {
   }
 
   if (!all_the_same(ns)) {
-    .err("when {.arg wts} is supplied as a numeric vector with multiply imputed data, it must have length equal to the sum of the number of observations across all imputed datasets, or the imputed datasets must have the number of observations")
+    .err("when {.arg wts} is supplied as a numeric vector with multiply imputed data, it must have length equal to the sum of the number of observations across all imputed datasets, or the imputed datasets must have the same number of observations")
   }
 
   if (length(wts) != ns[1L]) {
@@ -582,7 +590,7 @@ process_transform <- function(transform, x = NULL, .est = NULL) {
                     dlinkfun = transform[["d_transform"]])
   }
   else {
-    .err("{.arg transform} must be `TRUE`, `FALSE`, a family, or a function")
+    .err("{.arg transform} must be {.val {TRUE}}, {.val {FALSE}}, a family, or a function")
   }
 
   transform <- .family$linkfun
@@ -641,12 +649,13 @@ process_response <- function(model) {
     deparse1()
 }
 
-process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FALSE, data = NULL) {
+process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FALSE,
+                                     data = NULL) {
   if (is_null(vcov) || isFALSE(vcov) || identical(vcov, "none")) {
     if (is_not_null(cluster)) {
-      .v <- if (is_null(vcov)) "NULL" else add_quotes(vcov, is.character(vcov))
+      .v <- if (is_null(vcov)) list(NULL) else vcov
 
-      .wrn("{.arg cluster} is ignored when `vcov = {.v}`")
+      .wrn("{.arg cluster} is ignored when {.code vcov = {.val {(.v)}}}")
     }
 
     return(list(vcov = "none"))
@@ -676,7 +685,7 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
 
   builtin_vcovs <- c("none", "unconditional", "conditional", "boot", "fwb")
 
-  if (chk::vld_string(vcov)) {
+  if (rlang::is_string(vcov)) {
     p <- pmatch(vcov, builtin_vcovs, nomatch = 0L)
 
     if (p != 0L) {
@@ -692,7 +701,7 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
           cl <- process_cluster(cluster, model, data)
 
           if (length(cl[["cluster"]]) > 1L) {
-            .err("only one level of clustering is allowed with `vcov = {add_quotes(builtin_vcovs[p])}`")
+            .err("only one level of clustering is allowed with {.code vcov = {.val {builtin_vcovs[p]}}}")
           }
 
           return(c(list(vcov = builtin_vcovs[p]),
@@ -705,7 +714,7 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
       if (builtin_vcovs[p] == "unconditional") {
         if (null_or_error(try(sandwich::bread(model), silent = TRUE)) ||
             null_or_error(try(sandwich::estfun(model), silent = TRUE))) {
-          .wrn('{.arg vcov} cannot be "unconditional" with this type of model. Using "conditional"')
+          .wrn('{.arg vcov} cannot be {.val {"unconditional"}} with this type of model. Using {.val {"conditional"}}')
 
           return(Recall(vcov = "conditional", model = model, cluster = cluster,
                         is_bayes = is_bayes, data = data))
@@ -737,7 +746,7 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
                   silent = TRUE)
 
   if (null_or_error(vcov_try)) {
-    .err("`vcov` must be {.or {c(add_quotes(builtin_vcovs), 'one of the allowed arguments to')}} {.fun marginaleffects::get_vcov}")
+    .err("{.arg vcov} must be either one of {.or {.val {builtin_vcovs}}} or one of the allowed arguments to {.fun marginaleffects::get_vcov}")
   }
 
   c(list(vcov = vcov_try),
@@ -748,9 +757,9 @@ process_vcov_and_cluster_mi <- function(vcov, models, cluster = NULL, is_bayes =
                                         data_complete = NULL, imp_split) {
   if (is_null(vcov) || isFALSE(vcov) || identical(vcov, "none")) {
     if (is_not_null(cluster)) {
-      .v <- if (is_null(vcov)) "NULL" else add_quotes(vcov, is.character(vcov))
+      .v <- if (is_null(vcov)) list(NULL) else vcov
 
-      .wrn("{.arg cluster} is ignored when `vcov = {.v}`")
+      .wrn("{.arg cluster} is ignored when {.code vcov = {.val {(.v)}}}")
     }
 
     return(rep_with(list(vcov = "none"),
@@ -783,7 +792,7 @@ process_vcov_and_cluster_mi <- function(vcov, models, cluster = NULL, is_bayes =
 
   builtin_vcovs <- c("none", "unconditional", "conditional", "boot", "fwb")
 
-  if (chk::vld_string(vcov)) {
+  if (rlang::is_string(vcov)) {
     p <- pmatch(vcov, builtin_vcovs, nomatch = 0L)
 
     if (p != 0L) {
@@ -794,14 +803,14 @@ process_vcov_and_cluster_mi <- function(vcov, models, cluster = NULL, is_bayes =
       }
 
       if (builtin_vcovs[p] %in% c("boot", "fwb")) {
-        .err("{.arg vcov} cannot be {add_quotes(builtin_vcovs[p])} with multiply imputed data")
+        .err("{.arg vcov} cannot be {.val {builtin_vcovs[p]}} with multiply imputed data")
       }
 
       if (builtin_vcovs[p] == "unconditional") {
         for (model in models) {
           if (null_or_error(try(sandwich::bread(model), silent = TRUE)) ||
               null_or_error(try(sandwich::estfun(model), silent = TRUE))) {
-            .wrn('{.arg vcov} cannot be "unconditional" with this type of model. Using "conditional"')
+            .wrn('{.arg vcov} cannot be {.val {"unconditional"}} with this type of model. Using {.val {"conditional"}}')
 
             return(Recall(vcov = "conditional", models = models, cluster = cluster,
                           is_bayes = is_bayes, data_complete = data_complete,
@@ -893,8 +902,7 @@ process_cluster <- function(.cluster, model, data) {
   }
 
   if (anyNA(cluster, recursive = TRUE)) {
-    .err("`NA`s are not allowed in the clustering variable%s",
-         n = ncol(cluster))
+    .err("{.val {NA}}s are not allowed in the {cli::qty(ncol(cluster))} clustering variable{?s}")
   }
 
   cluster[] <- lapply(cluster, qF)
@@ -929,26 +937,9 @@ get_tt <- function(model, model_data = NULL) {
   tt
 }
 
-process_call <- function(definition = sys.function(sys.parent()),
-                         call = sys.call(sys.parent()),
-                         expand.dots = TRUE) {
-
-  mcall <- match.call(definition = definition, call = call,
-                      expand.dots = expand.dots,
-                      envir = parent.frame(3L))
-
-  generic <- get0(".Generic", parent.frame(1L), inherits = FALSE)
-
-  if (is_not_null(generic)) {
-    mcall[[1L]] <- str2lang(generic)
-  }
-
-  mcall
-}
-
 process_conf_level <- function(conf_level = .95) {
-  chk::chk_number(conf_level)
-  chk::chk_range(conf_level, c(0, 1))
+  arg_number(conf_level)
+  arg_range(conf_level, c(0, 1), inclusive = c(TRUE, FALSE))
 
   conf_level
 }
@@ -959,7 +950,7 @@ process_ci.type <- function(ci.type, .vcov_type, simultaneous = NULL) {
   }
 
   if (.vcov_type == "posterior") {
-    chk::chk_string(ci.type)
+    arg_string(ci.type)
 
     ci.type <- match_arg(ci.type, c("perc", "wald"),
                          context = "with Bayesian models,")
@@ -971,14 +962,14 @@ process_ci.type <- function(ci.type, .vcov_type, simultaneous = NULL) {
     return("wald")
   }
 
-  chk::chk_string(ci.type)
+  arg_string(ci.type)
 
   if (!isTRUE(simultaneous)) {
     return(ci.type)
   }
 
   match_arg(ci.type, c("perc", "wald"),
-            context = "when `simultaneous = TRUE`,")
+            context = "when {.code simultaneous = TRUE},")
 }
 
 process_simultaneous <- function(simultaneous, .est) {
@@ -986,17 +977,17 @@ process_simultaneous <- function(simultaneous, .est) {
     return(FALSE)
   }
 
-  chk::chk_flag(simultaneous)
+  arg_flag(simultaneous)
 
   simultaneous
 }
 
 process_df <- function(fit) {
   if (inherits(fit, "mira")) {
-    df <- vapply(fit[["analyses"]], process_df, numeric(1L)) |>
+    .df <- vapply(fit[["analyses"]], process_df, numeric(1L)) |>
       min()
 
-    return(df)
+    return(.df)
   }
 
   if (!insight::is_model_supported(fit) ||
@@ -1019,7 +1010,7 @@ process_null <- function(null = NULL, x = NULL) {
       null <- NA_real_
     }
     else {
-      chk::chk_number(null)
+      arg_number(null)
     }
   }
   else if (inherits(x, "effect_curve")) {
@@ -1039,12 +1030,12 @@ process_null <- function(null = NULL, x = NULL) {
 
 check_proj <- function(x, proj = NULL) {
   if (is_not_null(proj)) {
-    .chk_is(proj, "curve_projection")
+    arg_is(proj, "curve_projection")
 
     if (any_apply(c(".values", ".treat", ".vcov_type", ".curve_type", ".response",
                     ".by_grid", ".contrast", ".reference", ".family", ".df"),
                   function(a) !identical(.attr(x, a), .attr(proj, a)))) {
-      .err("{.arg proj} must be the output of {.fun curve_projection} applied to the `effect_curve` object")
+      .err("{.arg proj} must be the output of {.fun curve_projection} applied to the {.cls effect_curve} object")
     }
   }
 }
@@ -1068,22 +1059,22 @@ check_effect_curve <- function(x, amef_ok = TRUE, reference_ok = TRUE,
                                contrast_ok = TRUE, projection_ok = TRUE) {
   nm <- deparse1(substitute(x))
 
-  .chk_is(x, "effect_curve")
+  arg_is(x, "effect_curve")
 
   if (!amef_ok && inherits(x, "amef_curve")) {
-    .err("{.arg {nm}} cannot be an `amef_curve` object")
+    .err("{.arg {nm}} cannot be an {.cls amef_curve} object")
   }
 
   if (!reference_ok && inherits(x, "reference_curve")) {
-    .err("{.arg {nm}} cannot be a `reference_curve` object")
+    .err("{.arg {nm}} cannot be a {.cls reference_curve} object")
   }
 
   if (!contrast_ok && inherits(x, "contrast_curve")) {
-    .err("{.arg {nm}} cannot be a `contrast_curve` object")
+    .err("{.arg {nm}} cannot be a {.cls contrast_curve} object")
   }
 
   if (!projection_ok && inherits(x, "curve_projection")) {
-    .err("{.arg {nm}} cannot be a `curve_projection` object")
+    .err("{.arg {nm}} cannot be a {.cls curve_projection} object")
   }
 }
 
@@ -1109,7 +1100,7 @@ process_bw <- function(bw, v, constant = .5) {
       return(bw.nrd(v))
     }
 
-    chk::chk_number(constant)
+    arg_number(constant)
 
     return(constant * spacing)
   }
@@ -1129,8 +1120,8 @@ process_bw <- function(bw, v, constant = .5) {
     .err("{.arg bw} must be a string, function, or number")
   }
 
-  chk::chk_number(bw)
-  chk::chk_gt(bw, 0)
+  arg_number(bw)
+  arg_gt(bw, 0)
 
   bw
 }
@@ -1282,7 +1273,7 @@ make_rmvt <- function(mu, Sigma, df = Inf, tol = 1e-7) {
   ev <- eS$values
 
   if (any(ev < -tol * abs(ev[1L]))) {
-    .err("{.arg Sigma} is not positive definite")
+    .err("{.arg Sigma} must be positive definite")
   }
 
   mu <- drop(mu)
@@ -1367,7 +1358,9 @@ get_kernel_w <- function(x, v = x, kernel = "gaussian", constant = .5, bw = NULL
                                 "triangular"))
 
   k <- switch(kernel,
-              gaussian = function(a, b) dnorm(a - b, sd = bw),
+              gaussian = function(a, b) {
+                dnorm(a - b, sd = bw)
+              },
               epanechnikov = function(a, b) {
                 bw_a <- bw * sqrt(5)
                 ax <- abs(a - b)
@@ -1410,14 +1403,14 @@ get_kernel_w <- function(x, v = x, kernel = "gaussian", constant = .5, bw = NULL
 #' @param p the degree of the local polynomial. Set to 0 to just NW interpolation.
 #' @param ... args passed to `get_kernel_w()` when `w` is `NULL`
 get_locpoly_w <- function(x, v = x, w = NULL, p = 3, ...) {
-  chk::chk_count(p)
+  arg_count(p)
 
   if (is_null(w)) {
     w <- get_kernel_w(x = x, v = v, ...)
   }
 
-  chk::chk_equal(length(x), nrow(w))
-  chk::chk_equal(length(v), ncol(w))
+  arg_equal(length(x), nrow(w))
+  arg_equal(length(v), ncol(w))
 
   if (p == 0) {
     return(w)
@@ -1484,7 +1477,7 @@ get_by_grid_labels <- function(.by_grid, sep = ", ") {
           lapply(names(.by_grid), function(i) {
             sprintf("%s = %s",
                     i,
-                    add_quotes(.by_grid[[i]], chk::vld_character_or_factor(.by_grid[[i]])))
+                    add_quotes(.by_grid[[i]], is.character(.by_grid[[i]]) || is.factor(.by_grid[[i]])))
           }))
 }
 

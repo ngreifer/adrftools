@@ -107,11 +107,9 @@ adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type 
                          data = NULL, subset = NULL, by = NULL, wts = NULL,
                          range = .95, n = 71, fwb.args = list(), ...) {
 
-  mcall <- process_call()
+  arg_not_missing(treat)
 
-  chk::chk_not_missing(treat, "`treat`")
-
-  chk::chk_string(type)
+  arg_string(type)
 
   subset_substitute <- substitute(subset)
 
@@ -140,7 +138,6 @@ adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type 
     estimator = estimator,
     grad_fun = grad_fun,
     pred_fun = pred_fun,
-    mcall = mcall,
     ...
   )
 }
@@ -150,11 +147,9 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                       data = NULL, subset = NULL, by = NULL, wts = NULL,
                       range = .95, n = 71, ...) {
 
-  mcall <- process_call()
+  arg_not_missing(treat)
 
-  chk::chk_not_missing(treat, "`treat`")
-
-  chk::chk_string(type)
+  arg_string(type)
 
   subset_substitute <- substitute(subset)
 
@@ -185,7 +180,6 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     estimator = estimator,
     grad_fun = grad_fun,
     pred_fun = pred_fun,
-    mcall = mcall,
     ...
   )
 }
@@ -193,7 +187,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 .effect_curve_internal <- function(x, treat, vcov, range = .95, n,
                                    data, subset, by, wts, cluster = NULL, fwb.args = list(),
                                    estimator = NULL, grad_fun = NULL,
-                                   pred_fun = NULL, mcall,
+                                   pred_fun = NULL,
                                    .adrf_env = parent.frame(2L), ...) {
 
   # get data
@@ -217,11 +211,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                                       is_bayes, model_data)
 
   vcov <- cl_list[["vcov"]]
-  # vcov <- process_vcov(vcov, x, is_bayes)
-
-  # cluster
   cl_list[["vcov"]] <- NULL
-  # cl_list <- process_cluster(cluster, x, vcov, model_data)
 
   # subset
   s <- process_subset(subset, model_data, env = .adrf_env)
@@ -242,7 +232,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   .response <- process_response(x)
 
   # Speed up if treat is the only variable by treating dataset as a single observation
-  if (allv(names(model_data), treat) && allv(by_id, by_id[1L]) && !isFALSE(...get(".quick"))) {
+  if (allv(names(model_data), treat) && all_the_same(by_id) && !isFALSE(...get(".quick"))) {
     model_data <- ss(model_data, 1L)
     wts <- 1.0
     s <- 1L
@@ -345,7 +335,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       fwb.args <- list()
     }
 
-    chk::chk_list(fwb.args)
+    arg_list(fwb.args)
 
     if (identical(vcov, "boot")) {
       fwb.args[["wtype"]] <- "multinom"
@@ -459,7 +449,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 .effect_curve_internal_mi <- function(x, treat, vcov, range = .95, n,
                                       data, subset, by, wts, cluster = NULL,
                                       estimator = NULL, grad_fun = NULL,
-                                      pred_fun = NULL, mcall,
+                                      pred_fun = NULL,
                                       .adrf_env = parent.frame(2L), ...) {
   # get data
   model_data.complete <- process_model_data_mi(x, data)
@@ -673,8 +663,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       est <- est_fun(xi) |>
         .fmean(g = cross_id, w = wi)
 
-      V <- marginaleffects::get_vcov(xi,
-                                     vcov = vcov)
+      V <- marginaleffects::get_vcov(xi, vcov = vcov)
 
       gr <- {
         if (is_null(grad_fun) || is_not_null(pred_fun)) {

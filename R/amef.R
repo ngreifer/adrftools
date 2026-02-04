@@ -51,7 +51,8 @@
 
 #' @export
 amef <- function(x, eps = 1e-5) {
-  chk::chk_not_missing(x, "`x`")
+  arg_not_missing(x)
+
   check_effect_curve(x, amef_ok = FALSE, projection_ok = FALSE)
 
   .values <- .attr(x, ".values")

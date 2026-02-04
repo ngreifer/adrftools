@@ -6,16 +6,16 @@ simultaneous_conf_level <- function(vcov, conf_level = .95, df = Inf,
     return(0)
   }
 
-  chk::chk_not_missing(vcov, "`vcov`")
+  arg_not_missing(vcov)
 
   if (!is.matrix(vcov) || !is.numeric(vcov) || !all(is.finite(vcov)) ||
       !all(check_if_zero(as.vector(vcov - t(vcov)))) ||
       any(diag(vcov) < 0)) {
-    .err("`vcov` must be a valid covariance matrix")
+    .err("{.arg vcov} must be a valid covariance matrix")
   }
 
-  chk::chk_number(df)
-  chk::chk_gt(df, 0)
+  arg_number(df)
+  arg_gt(df, 0)
 
   if (!all(check_if_zero(diag(vcov) - 1)) ||
       any(vcov < -1) || any(vcov > 1)) {
@@ -36,9 +36,7 @@ simultaneous_conf_level <- function(vcov, conf_level = .95, df = Inf,
                             ...)
   },
   error = function(e) {
-    .err(sprintf("There was an error computing simultaneous confidence intervals:\n%s",
-                 conditionMessage(e)),
-         tidy = FALSE)
+    .err("there was an error computing simultaneous confidence intervals:\n{conditionMessage(e)}")
   })
 
   1 - 2 * pt(-t_crit$quantile, df)

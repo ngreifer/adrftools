@@ -51,7 +51,8 @@
 
 #' @export
 curve_contrast <- function(x) {
-  chk::chk_not_missing(x, "`x`")
+  arg_not_missing(x)
+
   check_effect_curve(x, contrast_ok = FALSE, projection_ok = FALSE)
 
   .by_grid <- .attr(x, ".by_grid")

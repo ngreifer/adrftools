@@ -100,13 +100,13 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   .vcov_type <- .attr(object, ".vcov_type")
 
   if (.vcov_type == "none") {
-    .err('{.fun summary} cannot be used when `vcov = "none"` in the original call to {.fun adrf}')
+    .err('{.fun summary} cannot be used when {.code vcov = "none"} in the original call to {.fun adrf}')
   }
 
   if (missing(hypothesis) || is_null(hypothesis)) {
     hypothesis <- if (.is_pure_adrf(object)) "flat" else 0
   }
-  else if (chk::vld_string(hypothesis)) {
+  else if (rlang::is_string(hypothesis)) {
     hypothesis <- match_arg(hypothesis, c("flat", "linear", "quadratic", "cubic"))
   }
   else if (rlang::is_formula(hypothesis)) {
@@ -120,10 +120,10 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     vars_in_formula <- get_varnames(hypothesis)
 
     if (!all(get_varnames(hypothesis) %in% .treat)) {
-      .err("only the treatment variable `{(.treat)}` is allowed to appear in {.arg hypothesis} when supplied as a formula")
+      .err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg hypothesis} when supplied as a formula")
     }
   }
-  else if (!chk::vld_number(hypothesis)) {
+  else if (!is_number(hypothesis)) {
     .err("{.arg hypothesis} must be a string, formula, or a number")
   }
 
@@ -139,7 +139,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     }
   }
 
-  chk::chk_string(method)
+  arg_string(method)
   method <- tolower(method)
   method <- match_arg(method, c("sim", "imhof", "davies", "liu",
                                 "satterthwaite", "saddlepoint"))
@@ -154,13 +154,13 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   ev_tol <- 1e-10
   if (method %in% c("imhof", "davies", "liu", "sim", "satterthwaite",
                     "saddlepoint")) {
-    chk::chk_number(ev_tol)
-    chk::chk_gt(ev_tol, 0)
+    arg_number(ev_tol)
+    arg_gt(ev_tol, 0)
   }
 
   if (method == "sim") {
-    chk::chk_count(nsim)
-    chk::chk_gt(nsim, 100)
+    arg_count(nsim)
+    arg_gt(nsim, 100)
   }
   else {
     nsim <- NULL
@@ -168,8 +168,8 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   df <- df %or% .attr(object, ".df")
 
-  chk::chk_number(df)
-  chk::chk_gt(df, 0)
+  arg_number(df)
+  arg_gt(df, 0)
 
   .est0 <- .attr(object, ".est")
   .vcov0 <- .attr(object, ".vcov")
@@ -211,7 +211,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     else gsplit(seq_along(.est0), rep(seq_row(.by_grid), each = n))
   }
 
-  if (chk::vld_string(hypothesis)) {
+  if (rlang::is_string(hypothesis)) {
     mm <- switch(hypothesis,
                  flat = matrix(1, nrow = n, ncol = 1L),
                  linear = cbind(1, .values),

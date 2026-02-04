@@ -10,11 +10,11 @@ add_quotes <- function(x, quotes = 2L) {
     quotes <- '"'
   }
 
-  if (chk::vld_string(quotes)) {
+  if (rlang::is_string(quotes)) {
     return(paste0(quotes, x, str_rev(quotes)))
   }
 
-  if (!chk::vld_count(quotes) || quotes > 2L) {
+  if (length(quotes) != 1L || !is.numeric(quotes) || !(quotes %in% c(1, 2))) {
     stop("`quotes` must be boolean, 1, 2, or a string.")
   }
 
@@ -251,6 +251,12 @@ rep_with <- function(x, y) {
 }
 is_null <- function(x) {length(x) == 0L}
 is_not_null <- function(x) {!is_null(x)}
+is_number <- function(x) {
+  length(x) == 1L && is.numeric(x) && !anyNA(x)
+}
+is_count <- function(x) {
+  is_number(x) && x >= 0 && check_if_zero(x - trunc(x))
+}
 `%or%` <- function(x, y) {
   # like `%||%` but works for non-NULL length 0 objects
   if (is_null(x)) y else x
@@ -260,7 +266,7 @@ null_or_error <- function(x) {is_null(x) || inherits(x, "try-error")}
   attr(x, which, exact = exact)
 }
 block_diag <- function(m, n = 1L) {
-  chk::chk_count(n)
+  arg_count(n)
 
   m <- as.matrix(m)
 
@@ -307,15 +313,15 @@ get_varnames <- function(expr) {
   recurse(expr)
 }
 
-#More informative and cleaner version of base::match.arg(). Uses chk and cli.
-match_arg <- function(arg, choices, several.ok = FALSE, context = NULL) {
-  #Replaces match.arg() but gives cleaner error message and processing
-  #of arg.
+#More informative and cleaner version of base::match.arg(). Uses arg, rlang, and cli.
+match_arg <- function(arg, choices, several.ok = FALSE, context = NULL,
+                      arg.name = rlang::caller_arg(arg)) {
+  #Replaces match.arg() but gives cleaner error message and processing of arg.
   if (missing(arg)) {
     .err("no argument was supplied to match_arg() (this is a bug)")
   }
 
-  arg.name <- deparse1(substitute(arg), width.cutoff = 500L)
+  # arg.name <- deparse1(substitute(arg), width.cutoff = 500L)
 
   if (missing(choices)) {
     sysP <- sys.parent()
@@ -329,10 +335,10 @@ match_arg <- function(arg, choices, several.ok = FALSE, context = NULL) {
   }
 
   if (several.ok) {
-    chk::chk_character(arg, x_name = add_quotes(arg.name, "`"))
+    arg_character(arg, arg.name)
   }
   else {
-    chk::chk_string(arg, x_name = add_quotes(arg.name, "`"))
+    arg_string(arg, arg.name)
 
     if (identical(arg, choices)) {
       return(arg[1L])
@@ -348,7 +354,13 @@ match_arg <- function(arg, choices, several.ok = FALSE, context = NULL) {
       else "one of"
     }
 
-    .err("{(context)} the argument to {.arg {arg.name}} should be {one_of} {.or {add_quotes(choices)}}")
+    if (is_null(context)) {
+      .err("the argument to {.arg {arg.name}} should be {one_of} {.or {.val {choices}}}")
+    }
+    else {
+      .err(sprintf("%s the argument to {.arg {arg.name}} should be {one_of} {.or {.val {choices}}}",
+                   context))
+    }
   }
 
   i <- i[i > 0L]
@@ -364,9 +376,6 @@ len <- function(x, recursive = TRUE) {
 }
 diff1 <- function(x) {
   x[-1L] - x[-length(x)]
-}
-seq_prob <- function(n) {
-  seq(0.0, 1.0, length.out = n)
 }
 
 #Extract variables from ..., similar to ...elt(), by name without evaluating list(...)
@@ -431,80 +440,6 @@ all_apply <- function(X, FUN, ...) {
   TRUE
 }
 
-#-----chk utilities-------
-pkg_caller_call <- function() {
-  pn <- utils::packageName()
-  package.funs <- c(getNamespaceExports(pn),
-                    .getNamespaceInfo(asNamespace(pn), "S3methods")[, 3L])
-
-  for (i in seq_len(sys.nframe())) {
-    e <- sys.call(i)
-
-    n <- rlang::call_name(e)
-
-    if (is_not_null(n) && n %in% package.funs) {
-      return(e)
-    }
-  }
-
-  NULL
-}
-
-## Use cli
-.err <- function(m, n = NULL, tidy = TRUE, cli = TRUE) {
-  if (cli) {
-    m <- eval.parent(substitute(cli::format_inline(.m), list(.m = m)))
-  }
-
-  chk::message_chk(m, n = n, tidy = tidy) |>
-    cli::ansi_strwrap() |>
-    paste(collapse = "\n") |>
-    rlang::abort(call = pkg_caller_call())
-}
-.wrn <- function(m, n = NULL, tidy = TRUE, immediate = TRUE, cli = TRUE) {
-  if (cli) {
-    m <- eval.parent(substitute(cli::format_inline(.m), list(.m = m)))
-  }
-
-  m <- chk::message_chk(m, n = n, tidy = tidy)
-
-  if (immediate && isTRUE(all.equal(0, getOption("warn")))) {
-    rlang::with_options({
-      m |>
-        cli::ansi_strwrap() |>
-        paste(collapse = "\n") |>
-        rlang::warn()
-    }, warn = 1)
-  }
-  else {
-    m |>
-      cli::ansi_strwrap() |>
-      paste(collapse = "\n") |>
-      rlang::warn()
-  }
-}
-.msg <- function(m, n = NULL, tidy = TRUE, cli = TRUE) {
-  if (cli) {
-    m <- eval.parent(substitute(cli::format_inline(.m), list(.m = m)))
-  }
-
-  chk::message_chk(m, n = n, tidy = tidy) |>
-    cli::ansi_strwrap() |>
-    paste(collapse = "\n") |>
-    rlang::inform(tidy = FALSE)
-}
-
-.chk_is <- function(x, class, x_name = NULL) {
-  if (!inherits(x, class)) {
-    if (is_null(x_name)) {
-      x_name <- chk::deparse_backtick_chk(substitute(x))
-    }
-
-    .err("{.arg {chk::unbacktick_chk(x_name)}} must inherit from class {.or {add_quotes(class, 1)}}")
-  }
-}
-#-------------------------
-
-#cli utilities
+#-------#cli utilities-------
 .it <- function(...) cli::style_italic(...)
 .ul <- function(...) cli::style_underline(...)

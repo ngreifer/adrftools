@@ -118,7 +118,7 @@ NULL
   fn <- function(x, subset = NULL) {
     values <- get(.treat, inherits = FALSE)
 
-    chk::chk_numeric(values, add_quotes(.treat, "`"))
+    arg_numeric(values, add_quotes(.treat, "`"))
 
     # subset
     if (any(rlang::fn_fmls_names() == "subset") && is_null(.contrast)) {
