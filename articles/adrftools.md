@@ -1,4 +1,4 @@
-# Estimating the ADRF with \*adrftools\*
+# Estimating the ADRF with \`adrftools\`
 
 ## Introduction
 
@@ -1842,9 +1842,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 #>         ADRF Estimates
 #> ───────────────────────────────
 #>  logBLL Estimate CI Low CI High
-#>       0    8.434  8.063   9.160
-#>       1    7.968  7.590   8.377
-#>       2    7.180  6.613   7.837
+#>       0    8.455  8.056   9.216
+#>       1    7.957  7.574   8.383
+#>       2    7.234  6.562   8.081
 #> ───────────────────────────────
 #> Inference: posterior, simultaneous
 #> Confidence level: 95%
