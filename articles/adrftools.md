@@ -18,10 +18,10 @@ while allowing for a rich understanding of the relationship being
 studied.
 
 When certain causal assumptions are met by the data and study design,
-the ADRF can be identified as \\
-E\[Y(a)\]=E_X\left\[E\[Y\|A=a,X\]\right\] \\Much of the effort in the
-causal inference literature has been on finding consistent estimators of
-this function. This is often quite challenging because in addition to
+the ADRF can be identified as \\ E \left\[ Y(a) \right\] = E_X \left\[ E
+\left\[ Y\|A=a, X \right\] \right\] \\Much of the effort in the causal
+inference literature has been on finding consistent estimators of this
+function. This is often quite challenging because in addition to
 requiring knowledge of the relationship between \\X\\ and \\A\\ or
 between \\X\\ and \\Y\\ (or both), it requires knowledge about the
 relationship between \\A\\ and \\Y\\. With categorical treatments, this
@@ -1401,7 +1401,7 @@ directly as though fitted with a linear model, and the projection is
 linear. Transformed projections may be more realistic by respecting the
 scale of the outcome, but their coefficients can be harder to interpret.
 
-In the example above, the untransformed linear projection appear to fit
+In the example above, the untransformed linear projection appears to fit
 the ADRF slightly better; it would be reasonable to say that in the
 observed treatment range, the ADRF can be sufficiently described as
 linear. However, knowing that the outcome is bounded by 0 and 1, we know
@@ -1842,9 +1842,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 #>         ADRF Estimates
 #> ───────────────────────────────
 #>  logBLL Estimate CI Low CI High
-#>       0    8.455  8.056   9.216
-#>       1    7.957  7.574   8.383
-#>       2    7.234  6.562   8.081
+#>       0    8.447  8.025   9.486
+#>       1    7.971  7.614   8.390
+#>       2    7.166  6.531   7.789
 #> ───────────────────────────────
 #> Inference: posterior, simultaneous
 #> Confidence level: 95%
