@@ -28,6 +28,12 @@ knitr::opts_chunk$set(
 
 ### Installation
 
+You can install the current stable version of *adrftools* from CRAN with:
+
+``` r
+install.packages("adrftools")
+```
+
 You can install the development version of *adrftools* from [GitHub](https://github.com/ngreifer/adrftools) with:
 
 ``` r

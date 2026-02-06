@@ -18,6 +18,13 @@ full tutorial on using *adrftools*.
 
 ### Installation
 
+You can install the current stable version of *adrftools* from CRAN
+with:
+
+``` r
+install.packages("adrftools")
+```
+
 You can install the development version of *adrftools* from
 [GitHub](https://github.com/ngreifer/adrftools) with:
 
@@ -58,15 +65,13 @@ adrf_bll <- adrf(fit, treat = "logBLL")
 adrf_bll
 ```
 
-    #> An effect_curve object
+    #> An <effect_curve> object
     #> 
     #>  - curve type: ADRF
     #>  - response: Math
     #>  - treatment: logBLL
     #>    + range: -0.3567 to 2.4248
     #>  - inference: unconditional
-    #> 
-    #> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 We can plot the ADRF using `plot()`:
 
@@ -74,7 +79,7 @@ We can plot the ADRF using `plot()`:
 plot(adrf_bll)
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" alt="" style="display: block; margin: auto;" />
 
 By default, this produces simultaneous 95% confidence bands.
 
@@ -108,7 +113,7 @@ adrf_bll(logBLL = c(0, .5, 1, 1.5, 2)) |>
     #> ──────────────────────────────────────────
     #>  logBLL Estimate Std. Error CI Low CI High
     #>     0.0    8.394     0.1706  7.959   8.829
-    #>     0.5    8.305     0.1247  7.987   8.623
+    #>     0.5    8.305     0.1247  7.987   8.624
     #>     1.0    8.066     0.1129  7.778   8.354
     #>     1.5    7.484     0.1436  7.117   7.850
     #>     2.0    7.078     0.2186  6.520   7.635
@@ -164,7 +169,7 @@ Below, we plot the linear projection along with the original ADRF:
 plot(adrf_bll, proj = proj)
 ```
 
-<img src="man/figures/README-unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-9-1.png" alt="" style="display: block; margin: auto;" />
 
 To examine the coefficient describing the projection, we can use
 `summary()` on the projection:
