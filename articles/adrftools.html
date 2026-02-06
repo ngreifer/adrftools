@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">adrftools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,7 @@
                         <h4 data-toc-skip class="author">Noah
 Greifer</h4>
             
-            <h4 data-toc-skip class="date">2026-02-04</h4>
+            <h4 data-toc-skip class="date">2026-02-06</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/ngreifer/adrftools/blob/main/vignettes/adrftools.Rmd" class="external-link"><code>vignettes/adrftools.Rmd</code></a></small>
       <div class="d-none name"><code>adrftools.Rmd</code></div>
@@ -295,15 +295,13 @@ object. Printing the object displays some information about the effect
 curve.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll</span></span>
-<span><span class="co">#&gt; An <span style="font-style: italic;">effect_curve</span> object</span></span>
+<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  - curve type: ADRF</span></span>
 <span><span class="co">#&gt;  - response: Math</span></span>
 <span><span class="co">#&gt;  - treatment: logBLL</span></span>
 <span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span></span></code></pre></div>
+<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
 <p>An <code>effect_curve</code> object is a function that takes in
 values of the treatment and returns estimates of the ADRF at those
 points. For example, to display the ADRF estimates at values of
@@ -590,16 +588,14 @@ arbitrary in this example because the treatment is on a log scale).</p>
 printed, displays the reference level.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_ref</span></span>
-<span><span class="co">#&gt; An <span style="font-style: italic;">effect_curve</span> object</span></span>
+<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  - curve type: ADRF reference</span></span>
 <span><span class="co">#&gt;  - response: Math</span></span>
 <span><span class="co">#&gt;  - treatment: logBLL</span></span>
 <span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
 <span><span class="co">#&gt;  - reference level: 0</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span></span></code></pre></div>
+<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
 <p>We can plot the reference curve, which will essentially be the
 original ADRF shifted so that the curve height at the reference level is
 equal to 0.</p>
@@ -662,15 +658,13 @@ by supplying to it an <code>adrf_curve</code> object.</p>
 <code class="sourceCode R"><span><span class="va">amef_bll</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/amef.html">amef</a></span><span class="op">(</span><span class="va">adrf_bll</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">amef_bll</span></span>
-<span><span class="co">#&gt; An <span style="font-style: italic;">effect_curve</span> object</span></span>
+<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  - curve type: AMEF</span></span>
 <span><span class="co">#&gt;  - response: Math</span></span>
 <span><span class="co">#&gt;  - treatment: logBLL</span></span>
 <span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span></span></code></pre></div>
+<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
 <p>The result is an <code>amef_curve</code> object, which, like all
 <code>effect_curve</code> objects, is a function. We can plot the AMEF
 with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</p>
@@ -950,16 +944,14 @@ subgroup ADRFs. Using <code><a href="../reference/curve_contrast.html">curve_con
 two subgroups, all pairs of subgroups are compared.</p>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_male_contrast</span></span>
-<span><span class="co">#&gt; An <span style="font-style: italic;">effect_curve</span> object</span></span>
+<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  - curve type: ADRF contrast</span></span>
 <span><span class="co">#&gt;  - response: Math</span></span>
 <span><span class="co">#&gt;  - treatment: logBLL</span></span>
 <span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
 <span><span class="co">#&gt;  - contrast: [Male = 1] - [Male = 0]</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span></span></code></pre></div>
+<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
 <p>We can plot the difference between the two ADRFs using
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
@@ -1698,15 +1690,13 @@ additive regression tree (BART) model using <em>dbarts</em>.</p>
 <span><span class="va">adrf_bll_bayes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">bfit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">adrf_bll_bayes</span></span>
-<span><span class="co">#&gt; An <span style="font-style: italic;">effect_curve</span> object</span></span>
+<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  - curve type: ADRF</span></span>
 <span><span class="co">#&gt;  - response: Math</span></span>
 <span><span class="co">#&gt;  - treatment: logBLL</span></span>
 <span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - inference: posterior</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span></span></code></pre></div>
+<span><span class="co">#&gt;  - inference: posterior</span></span></code></pre></div>
 <p>All credible intervals and bands use the confidence interval
 interface (e.g., using <code>conf_level</code> in <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>
 and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> to request the credibility level). The posterior
@@ -1729,9 +1719,9 @@ credibility level that excludes the null value.</p>
 <span><span class="co">#&gt;         ADRF Estimates</span></span>
 <span><span class="co">#&gt; ───────────────────────────────</span></span>
 <span><span class="co">#&gt;  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">#&gt;       0    8.454  8.022   9.150</span></span>
-<span><span class="co">#&gt;       1    8.003  7.569   8.424</span></span>
-<span><span class="co">#&gt;       2    7.169  6.575   7.798</span></span>
+<span><span class="co">#&gt;       0    8.432  8.006   9.141</span></span>
+<span><span class="co">#&gt;       1    7.952  7.604   8.336</span></span>
+<span><span class="co">#&gt;       2    7.195  6.502   8.165</span></span>
 <span><span class="co">#&gt; ───────────────────────────────</span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>

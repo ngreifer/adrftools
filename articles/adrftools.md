@@ -220,15 +220,13 @@ about the effect curve.
 
 ``` r
 adrf_bll
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
 #>  - inference: unconditional
-#> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 ```
 
 An `effect_curve` object is a function that takes in values of the
@@ -576,7 +574,7 @@ the reference level.
 
 ``` r
 adrf_bll_ref
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF reference
 #>  - response: Math
@@ -584,8 +582,6 @@ adrf_bll_ref
 #>    + range: -0.3567 to 2.4248
 #>  - reference level: 0
 #>  - inference: unconditional
-#> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 ```
 
 We can plot the reference curve, which will essentially be the original
@@ -663,15 +659,13 @@ be used to compute the AMEF by supplying to it an `adrf_curve` object.
 amef_bll <- amef(adrf_bll)
 
 amef_bll
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: AMEF
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
 #>  - inference: unconditional
-#> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 ```
 
 The result is an `amef_curve` object, which, like all `effect_curve`
@@ -990,7 +984,7 @@ two subgroups, all pairs of subgroups are compared.
 
 ``` r
 adrf_bll_male_contrast
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF contrast
 #>  - response: Math
@@ -998,8 +992,6 @@ adrf_bll_male_contrast
 #>    + range: -0.3567 to 2.4248
 #>  - contrast: [Male = 1] - [Male = 0]
 #>  - inference: unconditional
-#> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 ```
 
 We can plot the difference between the two ADRFs using
@@ -1803,15 +1795,13 @@ bfit <- bart2(Math ~ logBLL + Male + Age + Race +
 adrf_bll_bayes <- adrf(bfit, treat = "logBLL")
 
 adrf_bll_bayes
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
 #>  - inference: posterior
-#> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 ```
 
 All credible intervals and bands use the confidence interval interface
@@ -1842,9 +1832,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 #>         ADRF Estimates
 #> ───────────────────────────────
 #>  logBLL Estimate CI Low CI High
-#>       0    8.454  8.022   9.150
-#>       1    8.003  7.569   8.424
-#>       2    7.169  6.575   7.798
+#>       0    8.432  8.006   9.141
+#>       1    7.952  7.604   8.336
+#>       2    7.195  6.502   8.165
 #> ───────────────────────────────
 #> Inference: posterior, simultaneous
 #> Confidence level: 95%

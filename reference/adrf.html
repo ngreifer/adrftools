@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">adrftools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,7 +82,7 @@
 
 
 <dt id="arg-vcov">vcov<a class="anchor" aria-label="anchor" href="#arg-vcov"></a></dt>
-<dd><p>how the covariance matrix of the estimates should be computed. If <code>"unconditional"</code> (default), use the sandwich estimator including sampling uncertainty. If <code>"boot"</code> or <code>"fwb"</code>, use the traditional or fractional weighted bootstrap, respectively (both of which require the <a href="https://CRAN.R-project.org/package=fwb" class="external-link"><span class="pkg">fwb</span></a> package to be installed). Otherwise, may be a covariance matrix or other allowed input to the <code>vcov</code> argument of <code><a href="https://marginaleffects.com/man/r/get_vcov.html" class="external-link">marginaleffects::get_vcov()</a></code>. Can also be <code>"none"</code> to avoid computing the uncertainty.</p></dd>
+<dd><p>how the covariance matrix of the estimates should be computed. If <code>"unconditional"</code> (the default for frequentist models), use the sandwich estimator including sampling uncertainty. If <code>"boot"</code> or <code>"fwb"</code>, use the traditional or fractional weighted bootstrap, respectively (both of which require the <a href="https://CRAN.R-project.org/package=fwb" class="external-link"><span class="pkg">fwb</span></a> package to be installed). Otherwise, may be a covariance matrix or other allowed input to the <code>vcov</code> argument of <code><a href="https://marginaleffects.com/man/r/get_vcov.html" class="external-link">marginaleffects::get_vcov()</a></code>. Can also be <code>"none"</code> to avoid computing the uncertainty. For Bayesian models, only <code>"posterior"</code>, which uses the posterior of the estimates, and <code>"none"</code> are allowed. For models fit to multiply imputed data, <code>"boot"</code> and <code>"fwb"</code> are not allowed.</p></dd>
 
 
 <dt id="arg-cluster">cluster<a class="anchor" aria-label="anchor" href="#arg-cluster"></a></dt>
@@ -128,7 +128,7 @@
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>adrf()</code> estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When <code>vcov = "unconditional"</code>, the variance is computed using the formula in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires <code><a href="https://sandwich.R-Forge.R-project.org/reference/estfun.html" class="external-link">sandwich::estfun()</a></code> and <code><a href="https://sandwich.R-Forge.R-project.org/reference/bread.html" class="external-link">sandwich::bread()</a></code> methods for the supplied object to be available.</p>
+    <p><code>adrf()</code> estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When <code>vcov = "unconditional"</code>, the variance is computed using the formulas in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires <code><a href="https://sandwich.R-Forge.R-project.org/reference/estfun.html" class="external-link">sandwich::estfun()</a></code> and <code><a href="https://sandwich.R-Forge.R-project.org/reference/bread.html" class="external-link">sandwich::bread()</a></code> methods for the supplied object to be available.</p>
 <p>When a <code>mira</code> object from <span class="pkg">mice</span> or a <code>mimira</code> object from <span class="pkg">MatchThem</span> is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. Bootstrapping is not allowed with such objects.</p>
 <p>When a <code>svyglm</code> object from <span class="pkg">survey</span> is supplied, <code>adrf()</code> automatically incorporates the survey weights extracted from the object. The same is true for <code>glm_weightit</code> objects, etc., from <span class="pkg">WeightIt</span> when <code>s.weights</code> are supplied in the original call to <code>weightit()</code>. See <code><a href="../articles/adrftools.html">vignette("adrftools")</a></code> for more details on using the <code>wts</code> argument.</p><div class="section">
 <h3 id="range"><code>range</code><a class="anchor" aria-label="anchor" href="#range"></a></h3>
@@ -167,7 +167,7 @@
 <span class="r-in"><span><span class="va">adrf1</span> <span class="op">&lt;-</span> <span class="fu">adrf</span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">adrf1</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="font-style: italic;">effect_curve</span> object</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - curve type: ADRF</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
@@ -175,7 +175,6 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Plot the ADRF</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf1</span><span class="op">)</span></span></span>
@@ -200,7 +199,7 @@
 <span class="r-in"><span>              range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">adrf2</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="font-style: italic;">effect_curve</span> object</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - curve type: ADRF</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
@@ -208,7 +207,6 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: 0 to 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf2</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="adrf-2.png" alt="" width="700" height="433"></span>
@@ -217,7 +215,7 @@
 <span class="r-in"><span><span class="co"># inference</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="va">adrf_b</span> <span class="op">&lt;-</span> <span class="fu">adrf</span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span>,</span></span>
-<span class="r-in"><span>              vcov <span class="op">=</span> <span class="st">"fwb"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>               vcov <span class="op">=</span> <span class="st">"fwb"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">adrf_b</span></span></span>
 <span class="r-in"><span></span></span>
@@ -229,7 +227,7 @@
 <span class="r-in"><span>               subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">adrf_m</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="font-style: italic;">effect_curve</span> object</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - curve type: ADRF</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
@@ -237,14 +235,13 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># ADRFs in subgroups</span></span></span>
 <span class="r-in"><span><span class="va">adrf_by</span> <span class="op">&lt;-</span> <span class="fu">adrf</span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span>,</span></span>
 <span class="r-in"><span>                by <span class="op">=</span> <span class="op">~</span><span class="va">Male</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">adrf_by</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="font-style: italic;">effect_curve</span> object</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - curve type: ADRF</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
@@ -253,7 +250,6 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - by: Male</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

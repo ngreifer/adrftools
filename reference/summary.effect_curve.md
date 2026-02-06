@@ -261,7 +261,7 @@ adrf1 <- adrf(fit, treat = "logBLL",
               by = ~Male)
 
 adrf1
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Block >= 12
@@ -270,7 +270,6 @@ adrf1
 #>  - by: Male
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # Test if ADRFs are flat
 summary(adrf1)

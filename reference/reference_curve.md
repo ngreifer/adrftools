@@ -76,7 +76,7 @@ adrf1 <- adrf(fit, treat = "logBLL")
 ref1 <- reference_curve(adrf1, reference = 0)
 
 ref1
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF reference
 #>  - response: Math
@@ -85,7 +85,6 @@ ref1
 #>  - reference level: 0
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # Plot the reference effect curve
 plot(ref1)

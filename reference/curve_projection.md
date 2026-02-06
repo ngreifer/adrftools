@@ -251,7 +251,7 @@ proj1 <- curve_projection(adrf1, "linear")
 # proj1 <- curve_projection(adrf1, ~logBLL) #same model
 
 proj1
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF projection
 #>  - response: Math
@@ -260,7 +260,6 @@ proj1
 #>  - projection model: ~logBLL
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # Coefficients of the projection model
 coef(proj1)

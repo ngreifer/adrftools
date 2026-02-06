@@ -46,14 +46,18 @@ adrf(
 - vcov:
 
   how the covariance matrix of the estimates should be computed. If
-  `"unconditional"` (default), use the sandwich estimator including
-  sampling uncertainty. If `"boot"` or `"fwb"`, use the traditional or
-  fractional weighted bootstrap, respectively (both of which require the
+  `"unconditional"` (the default for frequentist models), use the
+  sandwich estimator including sampling uncertainty. If `"boot"` or
+  `"fwb"`, use the traditional or fractional weighted bootstrap,
+  respectively (both of which require the
   [fwb](https://CRAN.R-project.org/package=fwb) package to be
   installed). Otherwise, may be a covariance matrix or other allowed
   input to the `vcov` argument of
   [`marginaleffects::get_vcov()`](https://marginaleffects.com/man/r/get_vcov.html).
-  Can also be `"none"` to avoid computing the uncertainty.
+  Can also be `"none"` to avoid computing the uncertainty. For Bayesian
+  models, only `"posterior"`, which uses the posterior of the estimates,
+  and `"none"` are allowed. For models fit to multiply imputed data,
+  `"boot"` and `"fwb"` are not allowed.
 
 - cluster:
 
@@ -127,7 +131,7 @@ grouping variables and accounting for estimation uncertainty via
 unconditional or conditional variance estimation or bootstrapping.
 Unconditional variance estimation and bootstrapping treat the sample as
 random. When `vcov = "unconditional"`, the variance is computed using
-the formula in Hansen et al. (2024), which involves augmenting the
+the formulas in Hansen et al. (2024), which involves augmenting the
 influence function with a term to account for sampling from the
 superpopulation. Unconditional variance estimation requires
 [`sandwich::estfun()`](https://sandwich.R-Forge.R-project.org/reference/estfun.html)
@@ -211,7 +215,7 @@ fit <- lm(Math ~ poly(logBLL, 5) *
 adrf1 <- adrf(fit, treat = "logBLL")
 
 adrf1
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
@@ -219,7 +223,6 @@ adrf1
 #>    + range: -0.3567 to 2.4248
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 ## Plot the ADRF
 plot(adrf1)
@@ -244,7 +247,7 @@ adrf2 <- adrf(fit, treat = "logBLL",
               range = c(0, 2))
 
 adrf2
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
@@ -252,7 +255,6 @@ adrf2
 #>    + range: 0 to 2
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 plot(adrf2)
 
@@ -261,7 +263,7 @@ plot(adrf2)
 # inference
 if (FALSE) { # \dontrun{
 adrf_b <- adrf(fit, treat = "logBLL",
-              vcov = "fwb")
+               vcov = "fwb")
 
 adrf_b
 
@@ -273,7 +275,7 @@ adrf_m <- adrf(fit, treat = "logBLL",
                subset = Male == 1)
 
 adrf_m
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
@@ -281,14 +283,13 @@ adrf_m
 #>    + range: -0.3567 to 2.4248
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # ADRFs in subgroups
 adrf_by <- adrf(fit, treat = "logBLL",
                 by = ~Male)
 
 adrf_by
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
@@ -297,5 +298,4 @@ adrf_by
 #>  - by: Male
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 ```

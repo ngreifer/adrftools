@@ -69,7 +69,7 @@ adrf_by <- adrf(fit, treat = "logBLL",
                 subset = Race != "Other")
 
 adrf_by
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
@@ -78,13 +78,12 @@ adrf_by
 #>  - by: Race
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # Contrast subgroup ADRFs
 adrf_contrast <- curve_contrast(adrf_by)
 
 adrf_contrast
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF contrast
 #>  - response: Math
@@ -93,7 +92,6 @@ adrf_contrast
 #>  - contrasts: [Race = "Hispanic"] - [Race = "Black"], [Race = "White"] - [Race = "Black"], [Race = "White"] - [Race = "Hispanic"]
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # Plot contrast ADRFs
 plot(adrf_contrast, simultaneous = FALSE)

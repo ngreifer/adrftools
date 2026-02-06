@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">adrftools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -187,7 +187,7 @@ where \(\hat{\theta}(a)\) is the effect curve estimate at treatment value \(a\),
 <span class="r-in"><span><span class="co"># proj1 &lt;- curve_projection(adrf1, ~logBLL) #same model</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">proj1</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="font-style: italic;">effect_curve</span> object</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - curve type: ADRF projection</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
@@ -196,7 +196,6 @@ where \(\hat{\theta}(a)\) is the effect curve estimate at treatment value \(a\),
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - projection model: ~logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Use `plot()` (`?adrftools::plot.effect_curve()`) to plot</span> <span style="font-style: italic;">the curve, `summary()`</span> <span style="font-style: italic;">(`?adrftools::summary.effect_curve()`) to test the curve,</span> <span style="font-style: italic;">or `{object}(values)` (`?adrftools::effect_curve-class()`)</span> <span style="font-style: italic;">to compute estimates.</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Coefficients of the projection model</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">proj1</span><span class="op">)</span></span></span>

@@ -95,7 +95,7 @@ fit <- lm(Math ~ poly(logBLL, 5) *
 adrf1 <- adrf(fit, treat = "logBLL")
 
 adrf1
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
@@ -103,7 +103,6 @@ adrf1
 #>    + range: -0.3567 to 2.4248
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # Compute estimates along the ADRF
 adrf1(logBLL = c(0, 1, 2))
@@ -133,7 +132,7 @@ adrf2 <- adrf(fit, treat = "logBLL",
               by = ~Male)
 
 adrf2
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: ADRF
 #>  - response: Math
@@ -142,7 +141,6 @@ adrf2
 #>  - by: Male
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # Estimates in both groups
 adrf2(logBLL = c(0, 1, 2))

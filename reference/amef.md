@@ -84,7 +84,7 @@ adrf1 <- adrf(fit, treat = "logBLL")
 amef1 <- amef(adrf1)
 
 amef1
-#> An effect_curve object
+#> An <effect_curve> object
 #> 
 #>  - curve type: AMEF
 #>  - response: Math
@@ -92,7 +92,6 @@ amef1
 #>    + range: -0.3567 to 2.4248
 #>  - inference: unconditional
 #> 
-#> Use `plot()` (`?adrftools::plot.effect_curve()`) to plot the curve, `summary()` (`?adrftools::summary.effect_curve()`) to test the curve, or `{object}(values)` (`?adrftools::effect_curve-class()`) to compute estimates.
 
 # Plot the AMEF
 plot(amef1)
