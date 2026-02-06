@@ -1,5 +1,5 @@
 ---
-title: "adrftools"
+title: "Estimating the ADRF with *adrftools*"
 author: "Noah Greifer"
 date: "`r Sys.Date()`"
 output: 
@@ -7,7 +7,7 @@ output:
       tabset: true
       toc: true
 vignette: >
-  %\VignetteIndexEntry{adrftools}
+  %\VignetteIndexEntry{Estimating the ADRF with *adrftools*}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown_notangle}
 bibliography: references.bib
@@ -117,9 +117,7 @@ The first step is to fit the outcome model. This model is not to be interpreted 
 Below, we use `lm()` to fit a linear regression of `Math` on `logBLL`, the covariates, and their interaction. We will supply `logBLL` as a natural cubic spline with 5 degrees of freedom to capture potential nonlinearities using `splines::ns()`. We will also allow the full ADRF to vary across levels of `Male` to allow us to examine sex differences later.
 
 ```{r}
-library(splines)
-
-fit <- lm(Math ~ ns(logBLL, df = 5) * Male *
+fit <- lm(Math ~ splines::ns(logBLL, df = 5) * Male *
             (Age + Race + PIR + Enough_Food + Smoke_in_Home +
                Smoke_Pregnant + NICU),
           data = nhanes3lead)
@@ -139,19 +137,19 @@ The ADRF is only evaluated for a range of treatment values. That range can be co
 
 `adrf()` also provides options for uncertainty estimation using the `vcov` argument. The default, `vcov = "unconditional"`, uses M-estimation to account for uncertainty in estimation and sampling analytically as described by @hansenVarianceEstimationAverage2024; this requires the model object to have `estfun()` and `bread()` methods. Setting `vcov = "boot"` or `vcov = "fwb"` use the traditional or fractional weighted bootstrap [@xu2020], respectively, as implemented in *fwb*; these both also account for sampling and estimation uncertainty. Finally, any argument to the `vcov` argument of `marginaleffects::vcov()` can be supplied to perform conditional inference (i.e., treating the sample as fixed); the "default" variance can be requested by setting `vcov = "conditional"` (which typically just uses the `vcov()` method for the model object).
 
-The output of `adrf()` is an `effect_curve` object. Printing the object displays some information about the effect curve.
+The output of `adrf()` is an `<effect_curve>` object. Printing the object displays some information about the effect curve.
 
 ```{r}
 adrf_bll
 ```
 
-An `effect_curve` object is a function that takes in values of the treatment and returns estimates of the ADRF at those points. For example, to display the ADRF estimates at values of `logBLL` equal to 0, 1, and 2, we can run the following:
+An `<effect_curve>` object is a function that takes in values of the treatment and returns estimates of the ADRF at those points. For example, to display the ADRF estimates at values of `logBLL` equal to 0, 1, and 2, we can run the following:
 
 ```{r}
 adrf_bll(logBLL = c(0, 1, 2))
 ```
 
-Perhaps the most useful summary of an effect curve is its plot, which we can produce simply by running `plot()` on the `effect_curve` object:
+Perhaps the most useful summary of an effect curve is its plot, which we can produce simply by running `plot()` on the `<effect_curve>` object:
 
 ```{r}
 plot(adrf_bll)
@@ -161,7 +159,7 @@ The x-axis is the treatment and the y-axis is the value of the ADRF at the treat
 
 By default, confidence bands are computed providing uniform coverage, meaning the nominal rate refers to simultaneous coverage of all points on the line rather for a single given point [@montielolea2019]. Pointwise confidence bands can instead be requested by setting `simultaneous = FALSE` in the call to `plot()`. This is generally not recommended as it overstates the precision of the estimated ADRF. The confidence level can be set with `conf_level`, and if bootstrapping is used in `adrf()`, the method of computing the confidence interval can be controlled by the `ci.type` argument, which is passed to `fwb::summary.fwb()`. Simultaneous coverage is only possible when `ci.type` is `"perc"` (percentile confidence intervals, the default for bootstrapping) or `"wald"`.
 
-To compute confidence intervals around specific points of the ADRF, one can use `summary()` on the output of the `effect_curve` object:
+To compute confidence intervals around specific points of the ADRF, one can use `summary()` on the output of the `<effect_curve>` object:
 
 ```{r}
 adrf_bll(logBLL = c(0, 1, 2)) |>
@@ -170,7 +168,7 @@ adrf_bll(logBLL = c(0, 1, 2)) |>
 
 `summary()` accepts the same arguments as `plot()` to control the confidence interval coverage and whether inference is simultaneous. Unlike with `plot()`, with `summary()`, simultaneous inference only accounts for the estimates requested, not the full effect curve.
 
-Points along the ADRF can be contrasted pairwise using `point_contrast()` on the output of the `effect_curve` object (and then using `summary()` on that output):
+Points along the ADRF can be contrasted pairwise using `point_contrast()` on the output of the `<effect_curve>` object (and then using `summary()` on that output):
 
 ```{r}
 adrf_bll(logBLL = c(0, 1, 2)) |>
@@ -182,7 +180,7 @@ In addition to the contrast estimates and confidence intervals, test statistics 
 
 ### Testing the ADRF
 
-To test omnibus hypotheses about the ADRF, such as whether it is flat or linear, we can use `summary()` on the `effect_curve` object itself, rather than on its output. In particular, `summary()` tests whether a given projection of the ADRF is sufficient to characterize it. This projection is determined by the argument to `hypothesis`. By default, this is `"flat"`, which tests that null hypothesis that the ADRF is flat. If this hypothesis is rejected, this implies there is some effect of the treatment.
+To test omnibus hypotheses about the ADRF, such as whether it is flat or linear, we can use `summary()` on the `<effect_curve>` object itself, rather than on its output. In particular, `summary()` tests whether a given projection of the ADRF is sufficient to characterize it. This projection is determined by the argument to `hypothesis`. By default, this is `"flat"`, which tests that null hypothesis that the ADRF is flat. If this hypothesis is rejected, this implies there is some effect of the treatment.
 
 ```{r}
 summary(adrf_bll)
@@ -223,7 +221,7 @@ It's important to only interpret these tests within the range listed in the test
 
 Though we have characterized, visualized, and tested the ADRF in a flexible way, there may be use in finding a simpler representation of it that can be used as a more interpretable summary. We were unable to reject the null hypothesis that the ADRF is linear, so we can try projecting the ADRF onto a linear model to more easily interpret its form as a slope and intercept. This will also allow us to make a firmer statement about the magnitude and direction of the effect of `logBLL` on `Math`. We don't need to re-fit the outcome model; the outcome model does not correspond to the ADRF because it is a conditional model, whereas the ADRF marginalizes over the distribution of covariates. Instead, we can use `curve_projection()` to perform the projection.
 
-`curve_projection()` takes in an `effect_curve` object and a projection model that includes only the treatment. This model can be in any form, but in this case, it makes sense to supply a simple linear model. Any value that can be supplied to `hypothesis` in `summary()` can be supplied to the `model` argument of `curve_projection()`, which essentially fits a linear regression of the effect curve estimates on the treatment values and correctly accounts for the uncertainty in the effect curve estimates for estimating the uncertainty of the projection model parameters. The projection is formed by minimizing the loss function
+`curve_projection()` takes in an `<effect_curve>` object and a projection model that includes only the treatment. This model can be in any form, but in this case, it makes sense to supply a simple linear model. Any value that can be supplied to `hypothesis` in `summary()` can be supplied to the `model` argument of `curve_projection()`, which essentially fits a linear regression of the effect curve estimates on the treatment values and correctly accounts for the uncertainty in the effect curve estimates for estimating the uncertainty of the projection model parameters. The projection is formed by minimizing the loss function
 
 $$
 \int_{a_\text{low}}^{a_\text{high}}{\left(\hat{\theta}(a)-\hat{P}(a)\right)^2 \,da}
@@ -243,7 +241,7 @@ proj <- curve_projection(adrf_bll, "linear")
 summary(proj)
 ```
 
-The output of `summary()` is similar to that when applied to an `lm()` object; we can see the coefficient estimates, standard errors, tests, and confidence intervals. As expected, we find a negative slope that is significant at the .001 level, indicating that a one-unit increase in `logBLL` corresponds to a decrease in average `Math` scores.
+The output of `summary()` is similar to that when applied to an `<lm>` object; we can see the coefficient estimates, standard errors, tests, and confidence intervals. As expected, we find a negative slope that is significant at the .001 level, indicating that an increase in `logBLL` corresponds to a decrease in average `Math` scores.
 
 We can plot the projection either alone or on top of the ADRF plot. To plot it alone, we can simply use `plot()` on the `curve_projection()` output:
 
@@ -253,7 +251,7 @@ plot(proj)
 
 This plot is similar in interpretation to the ADRF plot.
 
-To add the projection to the original estimated ADRF plot, we can supply the `curve_projection()` output to the `proj` argument of `plot()` applied to the original `effect_curve` object:
+To add the projection to the original estimated ADRF plot, we can supply the `curve_projection()` output to the `proj` argument of `plot()` applied to the original `<effect_curve>` object:
 
 ```{r}
 plot(adrf_bll, proj = proj)
@@ -277,7 +275,7 @@ To compute a reference effect curve for the ADRF, we can supply the ADRF to `ref
 adrf_bll_ref <- reference_curve(adrf_bll, reference = 0)
 ```
 
-This produces a `reference_curve` object, which, when printed, displays the reference level.
+This produces a `<reference_curve>` object, which, when printed, displays the reference level.
 
 ```{r}
 adrf_bll_ref
@@ -299,7 +297,7 @@ summary(adrf_bll_ref)
 
 Theoretically, this is equivalent to testing whether the ADRF is flat (no matter what the reference level is set to), though there may be slight differences between the results of this test and those of the test for flatness applied directly to the ADRF.
 
-We can test whether individual values of the ADRF differ from the value of the ADRF at the reference level by calling `summary()` on the output of the `reference_curve` object applied to the desired treatment levels:
+We can test whether individual values of the ADRF differ from the value of the ADRF at the reference level by calling `summary()` on the output of the `<reference_curve>` object applied to the desired treatment levels:
 
 ```{r}
 adrf_bll_ref(logBLL = c(.5, 1, 1.5)) |>
@@ -310,7 +308,7 @@ From this output, we can see that the value of the ADRF at `logBLL = 1.5` differ
 
 #### The AMEF
 
-The AMEF is the derivative of the ADRF. Because it is a level of abstraction away from the ADRF, it can be more challenging to interpret. Each point on the AMEF represents the instantaneous effect of the treatment on the outcome. Where the AMEF is 0, the ADRF is flat. In *adrftools*, `amef()` can be used to compute the AMEF by supplying to it an `adrf_curve` object.
+The AMEF is the derivative of the ADRF. Because it is a level of abstraction away from the ADRF, it can be more challenging to interpret. Each point on the AMEF represents the instantaneous effect of the treatment on the outcome. Where the AMEF is 0, the ADRF is flat. In *adrftools*, `amef()` can be used to compute the AMEF by supplying to it an `<effect_curve>` object.
 
 ```{r}
 amef_bll <- amef(adrf_bll)
@@ -318,7 +316,7 @@ amef_bll <- amef(adrf_bll)
 amef_bll
 ```
 
-The result is an `amef_curve` object, which, like all `effect_curve` objects, is a function. We can plot the AMEF with `plot()`.
+The result is an `<amef_curve>` object, which, like all `<effect_curve>` objects, is a function. We can plot the AMEF with `plot()`.
 
 ```{r}
 plot(amef_bll)
@@ -326,7 +324,7 @@ plot(amef_bll)
 
 Unlike when plotting the ADRF, plotting the AMEF automatically includes a horizontal line with a y-intercept of 0. This can be controlled with the `null` argument to `plot()`.
 
-We can compute estimates of the AMEF as specific values by supplying those values to the `amef_curve` object and using `summary()` to examine its output:
+We can compute estimates of the AMEF as specific values by supplying those values to the `<amef_curve>` object and using `summary()` to examine its output:
 
 ```{r}
 amef_bll(c(0, 1, 2)) |>
@@ -335,7 +333,7 @@ amef_bll(c(0, 1, 2)) |>
 
 Here, a p-value for the test that the AMEF value is equal to 0 is displayed along with confidence intervals. The null value for this test can be controlled with the `null` argument to `summary()`.
 
-Testing whether the AMEF is uniformly equal to 0 is theoretically equivalent testing whether the ADRF is flat. We can perform this test using `summary()` on the `amef_curve` object itself. The default value for `hypothesis` is 0 to test whether the AMEF is 0 everywhere.
+Testing whether the AMEF is uniformly equal to 0 is theoretically equivalent testing whether the ADRF is flat. We can perform this test using `summary()` on the `<amef_curve>` object itself. The default value for `hypothesis` is 0 to test whether the AMEF is 0 everywhere.
 
 ```{r}
 summary(amef_bll)
@@ -367,7 +365,11 @@ adrf_bll_by_male <- adrf(fit, treat = "logBLL",
                          by = ~Male)
 ```
 
-Printing the stratified `adrf_curve` object displays which variables were supplied to `by`:
+Printing the stratified `<effect_curve>` object displays which variables were supplied to `by`:
+
+```{r}
+adrf_bll_by_male
+```
 
 When we plot the ADRF, we can see curves for both groups:
 
@@ -383,7 +385,7 @@ summary(adrf_bll_by_male)
 
 We can reject the null hypothesis for the `Male = 1` group, but not for the `Male = 0` group at the .05 level.
 
-We can display ADRF estimates for each subgroup by supplying values of the treatment to the `adrf_curve` object and calling `summary()` on its output:
+We can display ADRF estimates for each subgroup by supplying values of the treatment to the `<effect_curve>` object and calling `summary()` on its output:
 
 ```{r}
 adrf_bll_by_male(logBLL = c(0, 1, 2)) |>
@@ -409,7 +411,7 @@ plot(adrf_bll_by_male, proj = proj_by_male)
 
 Note that any corrections for multiple comparisons when `simultaneous = TRUE` in `plot()` and `summary()` will be made accounting for all subgroups, which can quickly escalate with the additional estimates within subgroups.
 
-To display results for a subset of the subgroups, `plot()`, the `adrf_curve` object, and `summary()` all accept a `subset` argument that works like that supplied to `adrf()`, but it operates only on the subgroup estimates included in the `ardf_curve` object by the `by` argument. For example, to plot each of the subgroups separately, we can use the following:
+To display results for a subset of the subgroups, `plot()`, the `<effect_curve>` object, and `summary()` all accept a `subset` argument that works like that supplied to `adrf()`, but it operates only on the subgroup estimates included in the `<effect_curve>` object by the `by` argument. For example, to plot each of the subgroups separately, we can use the following:
 
 ####  {.tabset .unlisted .unnumbered}
 
@@ -461,7 +463,7 @@ Notice the critical $t$ value (displayed as `t*` in the output) differs when exa
 
 #### Subgroup ADRF contrasts
 
-When `by` is used to compute the ADRF within subgroups, we compute a new effect curve corresponding to the contrast between subgroup ADRFs. Using `curve_contrast()` produces a `contrast_curve` object, which is an `effect_curve` object.
+When `by` is used to compute the ADRF within subgroups, we compute a new effect curve corresponding to the contrast between subgroup ADRFs. Using `curve_contrast()` produces a `<contrast_curve>` object, which is an `<effect_curve>` object.
 
 ```{r}
 adrf_bll_male_contrast <- curve_contrast(adrf_bll_by_male)
@@ -487,7 +489,7 @@ summary(adrf_bll_male_contrast)
 
 Given the small p-value, we can reject the null hypothesis that the ADRF contrast is 0, implying the subgroup ADRFs differ from each other.
 
-We can use `summary()` on the output of the `contrast_curve` object to test for differences between the subgroup ADRFs at specific points:
+We can use `summary()` on the output of the `<contrast_curve>` object to test for differences between the subgroup ADRFs at specific points:
 
 ```{r}
 adrf_bll_male_contrast(logBLL = c(0, 1, 2)) |>
@@ -511,7 +513,7 @@ nhanes3lead$Block_bin <- as.integer(nhanes3lead$Block >= 12)
 
 table(nhanes3lead$Block_bin)
 
-fit_bin <- glm(Block_bin ~ ns(logBLL, df = 5) *
+fit_bin <- glm(Block_bin ~ splines::ns(logBLL, df = 5) *
                  (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
                     Smoke_Pregnant + NICU),
                data = nhanes3lead,
@@ -522,6 +524,8 @@ To compute the ADRF, we simply call `adrf()`. We can supply the `type` argument,
 
 ```{r}
 adrf_bll_bin <- adrf(fit_bin, treat = "logBLL")
+
+adrf_bll_bin
 ```
 
 We can plot the ADRF with `plot()`:
@@ -542,14 +546,14 @@ To instead compute symmetric confidence bands around the original ADRF estimates
 
 ```{r}
 plot(adrf_bll_bin) +
-  ggplot2::coord_cartesian(ylim = c(-.03, .37), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(-.05, .4), expand = FALSE)
 ```
 
 ##### Untransformed {.active}
 
 ```{r}
 plot(adrf_bll_bin, transform = FALSE) +
-  ggplot2::coord_cartesian(ylim = c(-.03, .37), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(-.05, .4), expand = FALSE)
 ```
 
 ####  {.unlisted .unnumbered}
@@ -578,7 +582,7 @@ adrf_bll_bin(logBLL = c(0, 1, 2)) |>
 
 When `transform = FALSE`, standard errors are displayed; otherwise, they are omitted because the computed standard errors are on the transformed estimates. Note that regardless of `transform`, all estimates and confidence intervals are reported on the scale of the original prediction type (in this case, probabilities). `transform` only changes how the confidence intervals are computed.
 
-`transform` can be `TRUE`, `FALSE`, a `family` object, or a function. When `TRUE` (the default for all *adrftools* functions that use it), the link function of the outcome model will be used. When a `family` object is supplied, its link function will be used. When a function is supplied, it will be used as the transformation. Typically a transformation function takes in as input the estimate on the outcome scale (e.g., probabilities for binary outcomes) and returns a quantity on an unbounded scale; examples include `qlogis()` and `qnorm()` for binary outcomes (corresponding to logistic and probit links) and `log()` for count outcomes.
+`transform` can be `TRUE`, `FALSE`, a `<family>` object, or a function. When `TRUE` (the default for all *adrftools* functions that use it), the link function of the outcome model will be used. When a `<family>` object is supplied, its link function will be used. When a function is supplied, it will be used as the transformation. Typically a transformation function takes in as input the estimate on the outcome scale (e.g., probabilities for binary outcomes) and returns a quantity on an unbounded scale; examples include `qlogis()` and `qnorm()` for binary outcomes (corresponding to logistic and probit links) and `log()` for count outcomes.
 
 When projecting the ADRF onto a simpler model, one has the option of specifying the projection either as a transformation of the linear predictor or as the linear predictor itself (i.e., untransformed). For example, with a binary outcome and a logistic transformation, specifying the projection as a transformation will yield a logistic (S-shaped) curve, whereas specifying the projection as the linear predictor will yield a straight line. For a transformation $g(\mu)$ with inverse $g^{-1}(\eta)$ (e.g., $g(\mu) = \log{\frac{\mu}{1-\mu}}$ with $g^{-1}(\eta) = \frac{1}{1 + \exp(-\eta)}$), the transformed projection is estimated by minimizing
 
@@ -634,18 +638,22 @@ summary(proj_u)
 
 ```{r}
 # Plot transformed projection
-plot(proj_t)
+plot(proj_t) +
+  coord_cartesian(ylim = c(0, .4), expand = FALSE)
 
-plot(adrf_bll_bin, proj = proj_t)
+plot(adrf_bll_bin, proj = proj_t) +
+  coord_cartesian(ylim = c(0, .4), expand = FALSE)
 ```
 
 ##### Untransformed
 
 ```{r}
 # Plot untransformed projection
-plot(proj_u)
+plot(proj_u) +
+  coord_cartesian(ylim = c(0, .4), expand = FALSE)
 
-plot(adrf_bll_bin, proj = proj_u)
+plot(adrf_bll_bin, proj = proj_u) +
+  coord_cartesian(ylim = c(0, .4), expand = FALSE)
 ```
 
 ####  {.unlisted .unnumbered}
@@ -674,7 +682,7 @@ w_fit
 Normally, we would assess balance on the weights, but we'll skip that here (see `vignette("cobalt", package = "cobalt")` for details on how to do this). We'll use `glm_weightit()` to fit a linear model for `Math`, incorporating the estimation of the weights into the variance of the outcome model parameters.
 
 ```{r, eval = weightit_ok}
-fit <- glm_weightit(Math ~ ns(logBLL, df = 5) *
+fit <- glm_weightit(Math ~ splines::ns(logBLL, df = 5) *
                       (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
                          Smoke_Pregnant + NICU),
                     data = nhanes3lead,
@@ -706,7 +714,7 @@ library(survey)
 
 des <- svydesign(~1, weights = ~MEC_wt, data = nhanes3lead)
 
-fit_sv <- svyglm(Math ~ ns(logBLL, df = 5) *
+fit_sv <- svyglm(Math ~ splines::ns(logBLL, df = 5) *
                    (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
                       Smoke_Pregnant + NICU),
                  design = des)
@@ -725,7 +733,7 @@ plot(adrf_sv)
 If the survey design is simple and can be captured using weights alone (i.e., without stratification or clustering), `glm()` with the `weights` argument can be used instead of `svyglm()`. A special standard error is required for the estimates to be valid, but `adrf()` calculates that standard error automatically when `vcov = "unconditional"` (the default).
 
 ```{r}
-fit_gs <- glm(Math ~ ns(logBLL, df = 5) *
+fit_gs <- glm(Math ~ splines::ns(logBLL, df = 5) *
                (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
                   Smoke_Pregnant + NICU),
              data = nhanes3lead,
@@ -758,7 +766,7 @@ w_sw_fit <- weightit(logBLL ~ Male + Age + Race + PIR + Enough_Food +
                      method = "glm",
                      s.weights = "MEC_wt")
 
-fit_sw <- glm_weightit(Math ~ ns(logBLL, df = 5) *
+fit_sw <- glm_weightit(Math ~ splines::ns(logBLL, df = 5) *
                          (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
                             Smoke_Pregnant + NICU),
                        data = nhanes3lead,
@@ -783,7 +791,7 @@ In general, `wts` can accept one of a few arguments. Leaving it `NULL`, as we di
 
 Multiple imputation is a popular strategy to deal with missing data, and *adrftools* can accept models fit to multiply imputed data to compute the ADRF. `adrf()` computes the ADRF in each imputed dataset and pools the results, yielding a single object similar to one had `adrf()` been called on a single model. Rubin's rules are used to pool the ADRF estimates and covariance matrix.
 
-*adrftools* requires `mira` objects from *mice* (including `mimira` objects from *MatchThem*); other forms of model fit to imputed data need to be converted to this form, e.g., using `mice::as.mira()`. Below, we'll demonstrate using multiply imputed data generated by *mice* with *adrftools*. First, we'll generate some missing data artificially using `mice::ampute()`.
+*adrftools* requires `<mira>` objects from *mice* (including `<mimira>` objects from *MatchThem*); other forms of model fit to imputed data need to be converted to this form, e.g., using `mice::as.mira()`. Below, we'll demonstrate using multiply imputed data generated by *mice* with *adrftools*. First, we'll generate some missing data artificially using `mice::ampute()`.
 
 ```{r, eval = mice_ok}
 library(mice)
@@ -800,16 +808,18 @@ Next, we'll use `mice::mice()` to impute the missing data into 5 imputed dataset
 imp <- mice(nhanes3lead_mis, m = 5, print = FALSE)
 ```
 
-Next, we can fit an outcome model using `with()` to create a `mira` object containing a list of the model fits.
+Next, we can fit an outcome model using `with()` to create a `<mira>` object containing a list of the model fits.
 
 ```{r, eval = mice_ok}
-fit_mi <- with(imp,
-               lm(Math ~ ns(logBLL, df = 5) *
-                    (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                       Smoke_Pregnant + NICU)))
+fit_mi <- with(
+  imp,
+  lm(Math ~ splines::ns(logBLL, df = 5) *
+       (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
+          Smoke_Pregnant + NICU))
+)
 ```
 
-We can supply the `mira` object to `adrf()`, which automatically estimates the ADRF in each imputed dataset and pools the results.
+We can supply the `<mira>` object to `adrf()`, which automatically estimates the ADRF in each imputed dataset and pools the results.
 
 ```{r, eval = mice_ok}
 adrf_mi <- adrf(fit_mi, treat = "logBLL")
@@ -827,14 +837,16 @@ To estimate balancing weights in multiply imputed data, we can use `MatchThem::w
 library(MatchThem)
 
 w_mi <- weightthem(logBLL ~ Male + Age + Race + PIR + Enough_Food +
-                    Smoke_in_Home + Smoke_Pregnant + NICU,
-                  datasets = imp,
-                  method = "glm")
+                     Smoke_in_Home + Smoke_Pregnant + NICU,
+                   datasets = imp,
+                   method = "glm")
 
-fit_w_mi <- with(w_mi,
-                 glm_weightit(Math ~ splines::ns(logBLL, df = 5) *
-                                (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                                   Smoke_Pregnant + NICU)))
+fit_w_mi <- with(
+  w_mi,
+  glm_weightit(Math ~ splines::ns(logBLL, df = 5) *
+                 (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
+                    Smoke_Pregnant + NICU))
+)
 
 adrf_w_mi <- adrf(fit_w_mi, treat = "logBLL")
 
@@ -845,7 +857,7 @@ plot(adrf_w_mi)
 
 All of the described functionality works similarly for Bayesian models (e.g., those fit with `brms::brm()`, `dbarts::bart2()`, or `rstanarm::stan_glm()`) as it does for frequentist models. *adrftools* is a primarily frequentist ecosystem, but special procedures exist for Bayesian models as well. After fitting a Bayesian outcome model, it can be supplied to `adrf()` as usual to compute the ADRF. Unlike with frequentist models, the ADRF posterior is also computed and forms the basis for inference on the ADRF. All reported estimates are expected *a posteriori* (EAP) estimates.
 
-When calling `adrf()` on a Bayesian model, `vcov` can be set either to `"none"` to omit the posterior and just use the EAP estimates or to `"posterior"` to retain the posterior for inference. Leaving `vcov` unspecified uses `"posterior"`. Below, we fit a Bayesian additive regression tree (BART) model using *dbarts*.
+When calling `adrf()` on a Bayesian model, `vcov` can be set either to `"none"` to omit the posterior and just use the EAP estimates or to `"posterior"` to retain the posterior for inference. Leaving `vcov` unspecified uses `"posterior"`. Below, we fit a Bayesian additive regression trees (BART) model using *dbarts*.
 
 ```{r, eval = bart_ok}
 library(dbarts)
@@ -871,7 +883,7 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
   summary()
 ```
 
-Omnibus tests for the shape of the line (i.e., by using `summary()` on an `effect_curve` object) are strictly frequentist and use a shifted version of the posterior as if it were the sampling distribution of the effect curve under the null hypothesis.
+Omnibus tests for the shape of the line (i.e., by using `summary()` on an `<effect_curve>` object) are strictly frequentist and use a shifted version of the posterior as if it were the sampling distribution of the effect curve under the null hypothesis.
 
 When Bayesian models are fit to multiply imputed data, the draws of the ADRF estimates across imputed datasets are pooled to form a single posterior as described by @zhouNoteBayesianInference2010.
 

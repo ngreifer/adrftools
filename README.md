@@ -1,9 +1,11 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# *adrftools*
+# *adrftools*: Tools for Estimating Average Dose-Response Functions
 
 <!-- badges: start -->
+
+<!-- [![CRAN status](https://www.r-pkg.org/badges/version/adrftools)](https://CRAN.R-project.org/package=adrftools) -->
 
 ## <!-- badges: end -->
 
@@ -83,7 +85,7 @@ plot(adrf_bll)
 
 By default, this produces simultaneous 95% confidence bands.
 
-`adrf_bll` is an `effect_curve` object, which is a function. We can
+`adrf_bll` is an `<effect_curve>` object, which is a function. We can
 supply to it values of the treatment to compute the corresponding value
 of the ADRF at those treatment values:
 
@@ -122,7 +124,7 @@ adrf_bll(logBLL = c(0, .5, 1, 1.5, 2)) |>
     #> Confidence level: 95% (t* = 2.55, df = 2455)
 
 To test an omnibus hypothesis about the ADRF, such as whether it is flat
-or linear, we can use `summary()` on the `effect_curve` object itself:
+or linear, we can use `summary()` on the `<effect_curve>` object itself:
 
 ``` r
 # Test for flatness
