@@ -2,4 +2,5 @@
 
 ### All vignettes
 
-- [adrftools](https://ngreifer.github.io/adrftools/articles/adrftools.md):
+- [Estimating the ADRF with
+  \*adrftools\*](https://ngreifer.github.io/adrftools/articles/adrftools.md):

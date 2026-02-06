@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>adrftools • adrftools</title>
+<title>Estimating the ADRF with *adrftools* • adrftools</title>
 <!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
   window.MathJax = {
     chtml: {
@@ -16,7 +16,7 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="adrftools">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Estimating the ADRF with *adrftools*">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -57,7 +57,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>adrftools</h1>
+      <h1>Estimating the ADRF with *adrftools*</h1>
                         <h4 data-toc-skip class="author">Noah
 Greifer</h4>
             
@@ -247,9 +247,7 @@ using <code><a href="https://rdrr.io/r/splines/ns.html" class="external-link">sp
 vary across levels of <code>Male</code> to allow us to examine sex
 differences later.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">splines</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span> <span class="va">Male</span> <span class="op">*</span></span>
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span> <span class="va">Male</span> <span class="op">*</span></span>
 <span>            <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>               <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>          data <span class="op">=</span> <span class="va">nhanes3lead</span><span class="op">)</span></span></code></pre></div>
@@ -291,9 +289,9 @@ conditional inference (i.e., treating the sample as fixed); the
 “default” variance can be requested by setting
 <code>vcov = "conditional"</code> (which typically just uses the
 <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> method for the model object).</p>
-<p>The output of <code><a href="../reference/adrf.html">adrf()</a></code> is an <code>effect_curve</code>
-object. Printing the object displays some information about the effect
-curve.</p>
+<p>The output of <code><a href="../reference/adrf.html">adrf()</a></code> is an
+<code>&lt;effect_curve&gt;</code> object. Printing the object displays
+some information about the effect curve.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll</span></span>
 <span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
@@ -303,8 +301,8 @@ curve.</p>
 <span><span class="co">#&gt;  - treatment: logBLL</span></span>
 <span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
 <span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
-<p>An <code>effect_curve</code> object is a function that takes in
-values of the treatment and returns estimates of the ADRF at those
+<p>An <code>&lt;effect_curve&gt;</code> object is a function that takes
+in values of the treatment and returns estimates of the ADRF at those
 points. For example, to display the ADRF estimates at values of
 <code>logBLL</code> equal to 0, 1, and 2, we can run the following:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -318,7 +316,7 @@ points. For example, to display the ADRF estimates at values of
 <span><span class="co">#&gt; ────────────────</span></span></code></pre></div>
 <p>Perhaps the most useful summary of an effect curve is its plot, which
 we can produce simply by running <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> on the
-<code>effect_curve</code> object:</p>
+<code>&lt;effect_curve&gt;</code> object:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll</span><span class="op">)</span></span></code></pre></div>
 <p><img src="adrftools_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
@@ -340,7 +338,7 @@ when <code>ci.type</code> is <code>"perc"</code> (percentile confidence
 intervals, the default for bootstrapping) or <code>"wald"</code>.</p>
 <p>To compute confidence intervals around specific points of the ADRF,
 one can use <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the output of the
-<code>effect_curve</code> object:</p>
+<code>&lt;effect_curve&gt;</code> object:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -360,8 +358,8 @@ whether inference is simultaneous. Unlike with <code><a href="https://rdrr.io/r/
 estimates requested, not the full effect curve.</p>
 <p>Points along the ADRF can be contrasted pairwise using
 <code><a href="../reference/point_contrast.html">point_contrast()</a></code> on the output of the
-<code>effect_curve</code> object (and then using <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>
-on that output):</p>
+<code>&lt;effect_curve&gt;</code> object (and then using
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on that output):</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/point_contrast.html">point_contrast</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -386,13 +384,13 @@ indicates the null value used for the tests.</p>
 </h3>
 <p>To test omnibus hypotheses about the ADRF, such as whether it is flat
 or linear, we can use <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the
-<code>effect_curve</code> object itself, rather than on its output. In
-particular, <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> tests whether a given projection of
-the ADRF is sufficient to characterize it. This projection is determined
-by the argument to <code>hypothesis</code>. By default, this is
-<code>"flat"</code>, which tests that null hypothesis that the ADRF is
-flat. If this hypothesis is rejected, this implies there is some effect
-of the treatment.</p>
+<code>&lt;effect_curve&gt;</code> object itself, rather than on its
+output. In particular, <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> tests whether a given
+projection of the ADRF is sufficient to characterize it. This projection
+is determined by the argument to <code>hypothesis</code>. By default,
+this is <code>"flat"</code>, which tests that null hypothesis that the
+ADRF is flat. If this hypothesis is rejected, this implies there is some
+effect of the treatment.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
@@ -499,17 +497,17 @@ outcome model; the outcome model does not correspond to the ADRF because
 it is a conditional model, whereas the ADRF marginalizes over the
 distribution of covariates. Instead, we can use
 <code><a href="../reference/curve_projection.html">curve_projection()</a></code> to perform the projection.</p>
-<p><code><a href="../reference/curve_projection.html">curve_projection()</a></code> takes in an <code>effect_curve</code>
-object and a projection model that includes only the treatment. This
-model can be in any form, but in this case, it makes sense to supply a
-simple linear model. Any value that can be supplied to
-<code>hypothesis</code> in <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> can be supplied to the
-<code>model</code> argument of <code><a href="../reference/curve_projection.html">curve_projection()</a></code>, which
-essentially fits a linear regression of the effect curve estimates on
-the treatment values and correctly accounts for the uncertainty in the
-effect curve estimates for estimating the uncertainty of the projection
-model parameters. The projection is formed by minimizing the loss
-function</p>
+<p><code><a href="../reference/curve_projection.html">curve_projection()</a></code> takes in an
+<code>&lt;effect_curve&gt;</code> object and a projection model that
+includes only the treatment. This model can be in any form, but in this
+case, it makes sense to supply a simple linear model. Any value that can
+be supplied to <code>hypothesis</code> in <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> can be
+supplied to the <code>model</code> argument of
+<code><a href="../reference/curve_projection.html">curve_projection()</a></code>, which essentially fits a linear
+regression of the effect curve estimates on the treatment values and
+correctly accounts for the uncertainty in the effect curve estimates for
+estimating the uncertainty of the projection model parameters. The
+projection is formed by minimizing the loss function</p>
 <p><span class="math display">\[
 \int_{a_\text{low}}^{a_\text{high}}{\left(\hat{\theta}(a)-\hat{P}(a)\right)^2
 \,da}
@@ -536,11 +534,11 @@ projection,</p>
 <span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 1.961, df = 2401)</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <p>The output of <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> is similar to that when applied
-to an <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> object; we can see the coefficient estimates,
-standard errors, tests, and confidence intervals. As expected, we find a
-negative slope that is significant at the .001 level, indicating that a
-one-unit increase in <code>logBLL</code> corresponds to a decrease in
-average <code>Math</code> scores.</p>
+to an <code>&lt;lm&gt;</code> object; we can see the coefficient
+estimates, standard errors, tests, and confidence intervals. As
+expected, we find a negative slope that is significant at the .001
+level, indicating that an increase in <code>logBLL</code> corresponds to
+a decrease in average <code>Math</code> scores.</p>
 <p>We can plot the projection either alone or on top of the ADRF plot.
 To plot it alone, we can simply use <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> on the
 <code><a href="../reference/curve_projection.html">curve_projection()</a></code> output:</p>
@@ -551,7 +549,7 @@ To plot it alone, we can simply use <code><a href="https://rdrr.io/r/graphics/pl
 <p>To add the projection to the original estimated ADRF plot, we can
 supply the <code><a href="../reference/curve_projection.html">curve_projection()</a></code> output to the
 <code>proj</code> argument of <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> applied to the
-original <code>effect_curve</code> object:</p>
+original <code>&lt;effect_curve&gt;</code> object:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll</span>, proj <span class="op">=</span> <span class="va">proj</span><span class="op">)</span></span></code></pre></div>
 <p><img src="adrftools_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
@@ -585,8 +583,8 @@ use as the reference. Below, we set the reference to 0 (which is
 arbitrary in this example because the treatment is on a log scale).</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reference_curve.html">reference_curve</a></span><span class="op">(</span><span class="va">adrf_bll</span>, reference <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
-<p>This produces a <code>reference_curve</code> object, which, when
-printed, displays the reference level.</p>
+<p>This produces a <code>&lt;reference_curve&gt;</code> object, which,
+when printed, displays the reference level.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_ref</span></span>
 <span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
@@ -626,8 +624,9 @@ slight differences between the results of this test and those of the
 test for flatness applied directly to the ADRF.</p>
 <p>We can test whether individual values of the ADRF differ from the
 value of the ADRF at the reference level by calling
-<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the output of the <code>reference_curve</code>
-object applied to the desired treatment levels:</p>
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the output of the
+<code>&lt;reference_curve&gt;</code> object applied to the desired
+treatment levels:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_ref</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.5</span>, <span class="fl">1</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -654,7 +653,7 @@ abstraction away from the ADRF, it can be more challenging to interpret.
 Each point on the AMEF represents the instantaneous effect of the
 treatment on the outcome. Where the AMEF is 0, the ADRF is flat. In
 <em>adrftools</em>, <code><a href="../reference/amef.html">amef()</a></code> can be used to compute the AMEF
-by supplying to it an <code>adrf_curve</code> object.</p>
+by supplying to it an <code>&lt;effect_curve&gt;</code> object.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">amef_bll</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/amef.html">amef</a></span><span class="op">(</span><span class="va">adrf_bll</span><span class="op">)</span></span>
 <span></span>
@@ -666,9 +665,9 @@ by supplying to it an <code>adrf_curve</code> object.</p>
 <span><span class="co">#&gt;  - treatment: logBLL</span></span>
 <span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
 <span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
-<p>The result is an <code>amef_curve</code> object, which, like all
-<code>effect_curve</code> objects, is a function. We can plot the AMEF
-with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</p>
+<p>The result is an <code>&lt;amef_curve&gt;</code> object, which, like
+all <code>&lt;effect_curve&gt;</code> objects, is a function. We can
+plot the AMEF with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">amef_bll</span><span class="op">)</span></span></code></pre></div>
 <p><img src="adrftools_files/figure-html/unnamed-chunk-22-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
@@ -677,7 +676,7 @@ includes a horizontal line with a y-intercept of 0. This can be
 controlled with the <code>null</code> argument to
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</p>
 <p>We can compute estimates of the AMEF as specific values by supplying
-those values to the <code>amef_curve</code> object and using
+those values to the <code>&lt;amef_curve&gt;</code> object and using
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> to examine its output:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">amef_bll</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -698,9 +697,9 @@ can be controlled with the <code>null</code> argument to
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>.</p>
 <p>Testing whether the AMEF is uniformly equal to 0 is theoretically
 equivalent testing whether the ADRF is flat. We can perform this test
-using <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the <code>amef_curve</code> object
-itself. The default value for <code>hypothesis</code> is 0 to test
-whether the AMEF is 0 everywhere.</p>
+using <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the <code>&lt;amef_curve&gt;</code>
+object itself. The default value for <code>hypothesis</code> is 0 to
+test whether the AMEF is 0 everywhere.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">amef_bll</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
@@ -744,16 +743,26 @@ subgrouping variables on the right side.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_by_male</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span>,</span>
 <span>                         by <span class="op">=</span> <span class="op">~</span><span class="va">Male</span><span class="op">)</span></span></code></pre></div>
-<p>Printing the stratified <code>adrf_curve</code> object displays which
-variables were supplied to <code>by</code>:</p>
-<p>When we plot the ADRF, we can see curves for both groups:</p>
+<p>Printing the stratified <code>&lt;effect_curve&gt;</code> object
+displays which variables were supplied to <code>by</code>:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">adrf_bll_by_male</span></span>
+<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  - curve type: ADRF</span></span>
+<span><span class="co">#&gt;  - response: Math</span></span>
+<span><span class="co">#&gt;  - treatment: logBLL</span></span>
+<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">#&gt;  - by: Male</span></span>
+<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
+<p>When we plot the ADRF, we can see curves for both groups:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-28-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-29-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Indeed, all functions that operate on the ADRF or its estimates
 produce results for all subgroups. Below, we test the null hypotheses
 that the ADRF for each subgroup is flat:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
 <span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
@@ -768,9 +777,9 @@ that the ADRF for each subgroup is flat:</p>
 <p>We can reject the null hypothesis for the <code>Male = 1</code>
 group, but not for the <code>Male = 0</code> group at the .05 level.</p>
 <p>We can display ADRF estimates for each subgroup by supplying values
-of the treatment to the <code>adrf_curve</code> object and calling
-<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on its output:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+of the treatment to the <code>&lt;effect_curve&gt;</code> object and
+calling <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on its output:</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_by_male</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                 ADRF Estimates</span></span>
@@ -788,7 +797,7 @@ of the treatment to the <code>adrf_curve</code> object and calling
 <p>Columns for the subgrouping variables are displayed on the left.</p>
 <p>When we project the ADRFs onto a linear model, we also get separate
 projection coefficients for each subgroup:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">proj_by_male</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/curve_projection.html">curve_projection</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, <span class="st">"linear"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Coefficient estimates</span></span>
@@ -807,23 +816,23 @@ projection coefficients for each subgroup:</p>
 <span></span>
 <span><span class="co"># Projection plot</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_by_male</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-31-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<p><img src="adrftools_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># ADRF plot with projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, proj <span class="op">=</span> <span class="va">proj_by_male</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-31-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-32-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Note that any corrections for multiple comparisons when
 <code>simultaneous = TRUE</code> in <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> and
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> will be made accounting for all subgroups, which
 can quickly escalate with the additional estimates within subgroups.</p>
 <p>To display results for a subset of the subgroups,
-<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>, the <code>adrf_curve</code> object, and
+<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>, the <code>&lt;effect_curve&gt;</code> object, and
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> all accept a <code>subset</code> argument that
 works like that supplied to <code><a href="../reference/adrf.html">adrf()</a></code>, but it operates only on
-the subgroup estimates included in the <code>ardf_curve</code> object by
-the <code>by</code> argument. For example, to plot each of the subgroups
-separately, we can use the following:</p>
+the subgroup estimates included in the <code>&lt;effect_curve&gt;</code>
+object by the <code>by</code> argument. For example, to plot each of the
+subgroups separately, we can use the following:</p>
 </div>
 <div class="section level4 tabset unlisted unnumbered">
 <h4 class="tabset unlisted unnumbered" id="section"></h4>
@@ -836,17 +845,15 @@ separately, we can use the following:</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="male-0" role="tabpanel" aria-labelledby="male-0-tab">
 
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-34-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="tab-pane" id="male-1" role="tabpanel" aria-labelledby="male-1-tab">
 
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-33-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-36-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -867,7 +874,7 @@ arguments. We can do the same with other functions as well:</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="male-0-1" role="tabpanel" aria-labelledby="male-0-1-tab">
 
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Testing whether the ADRF is flat</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
@@ -895,7 +902,7 @@ arguments. We can do the same with other functions as well:</p>
 </div>
 <div class="tab-pane" id="male-1-1" role="tabpanel" aria-labelledby="male-1-1-tab">
 
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Testing whether the ADRF is flat</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
@@ -937,13 +944,13 @@ estimates.</p>
 <p>When <code>by</code> is used to compute the ADRF within subgroups, we
 compute a new effect curve corresponding to the contrast between
 subgroup ADRFs. Using <code><a href="../reference/curve_contrast.html">curve_contrast()</a></code> produces a
-<code>contrast_curve</code> object, which is an
-<code>effect_curve</code> object.</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code>&lt;contrast_curve&gt;</code> object, which is an
+<code>&lt;effect_curve&gt;</code> object.</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_male_contrast</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/curve_contrast.html">curve_contrast</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span><span class="op">)</span></span></code></pre></div>
 <p>Printing the object displays the contrast(s) computed. With more than
 two subgroups, all pairs of subgroups are compared.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_male_contrast</span></span>
 <span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -955,15 +962,15 @@ two subgroups, all pairs of subgroups are compared.</p>
 <span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
 <p>We can plot the difference between the two ADRFs using
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_male_contrast</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" alt="" width="691.2" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-41-1.png" class="r-plt" alt="" width="691.2" style="display: block; margin: auto;"></p>
 <p>Here, the y-axis corresponds to the difference between the subgroup
 ADRF estimates, and a horizontal line at 0 is displayed. We can use
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> to test whether the ADRF contrast curve is equal
 to 0 everywhere, which would indicate that the ADRF does not differ
 across subgroups:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_male_contrast</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
 <span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
@@ -978,9 +985,9 @@ across subgroups:</p>
 ADRF contrast is 0, implying the subgroup ADRFs differ from each
 other.</p>
 <p>We can use <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the output of the
-<code>contrast_curve</code> object to test for differences between the
-subgroup ADRFs at specific points:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code>&lt;contrast_curve&gt;</code> object to test for differences
+between the subgroup ADRFs at specific points:</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_male_contrast</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                          ADRF Contrast Estimates</span></span>
@@ -1021,7 +1028,7 @@ when dealing with such models.</p>
 <code>Block</code>, <code>Block_bin</code>, which is 1 if
 <code>Block</code> is 12 or greater and 0 otherwise. We’ll create that
 variable below and use it as the outcome of our outcome model:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nhanes3lead</span><span class="op">$</span><span class="va">Block_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">nhanes3lead</span><span class="op">$</span><span class="va">Block</span> <span class="op">&gt;=</span> <span class="fl">12</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">nhanes3lead</span><span class="op">$</span><span class="va">Block_bin</span><span class="op">)</span></span>
@@ -1029,7 +1036,7 @@ variable below and use it as the outcome of our outcome model:</p>
 <span><span class="co">#&gt;    0    1 </span></span>
 <span><span class="co">#&gt; 2049  472</span></span>
 <span></span>
-<span><span class="va">fit_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Block_bin</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<span><span class="va">fit_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Block_bin</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>                 <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                    <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>               data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
@@ -1039,12 +1046,21 @@ supply the <code>type</code> argument, which specifies the type of
 prediction to use. The default, <code>type = "response"</code>, computes
 the ADRF on the probability scale, which is the most natural for a
 binary outcome.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">adrf_bll_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_bin</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span></code></pre></div>
-<p>We can plot the ADRF with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">adrf_bll_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_bin</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">adrf_bll_bin</span></span>
+<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  - curve type: ADRF</span></span>
+<span><span class="co">#&gt;  - response: Block_bin</span></span>
+<span><span class="co">#&gt;  - treatment: logBLL</span></span>
+<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
+<p>We can plot the ADRF with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-43-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-46-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>An important thing to notice is that the confidence bands are
 asymmetrical. This is because symmetrical Wald confidence bands are
 first computed on transformed versions of the ADRF estimates before
@@ -1078,17 +1094,15 @@ below:</p>
 <div class="tab-content">
 <div class="tab-pane" id="transformed" role="tabpanel" aria-labelledby="transformed-tab">
 
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">.03</span>, <span class="fl">.37</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-44-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span></span></code></pre></div>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-48-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="active tab-pane" id="untransformed" role="tabpanel" aria-labelledby="untransformed-tab">
 
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">.03</span>, <span class="fl">.37</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-45-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-50-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -1112,7 +1126,7 @@ computes transformed confidence intervals.</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="transformed-1" role="tabpanel" aria-labelledby="transformed-1-tab">
 
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_bin</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         ADRF Estimates</span></span>
@@ -1127,7 +1141,7 @@ computes transformed confidence intervals.</p>
 </div>
 <div class="tab-pane" id="untransformed-1" role="tabpanel" aria-labelledby="untransformed-1-tab">
 
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_bin</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt;               ADRF Estimates</span></span>
@@ -1152,16 +1166,17 @@ reported on the scale of the original prediction type (in this case,
 probabilities). <code>transform</code> only changes how the confidence
 intervals are computed.</p>
 <p><code>transform</code> can be <code>TRUE</code>, <code>FALSE</code>,
-a <code>family</code> object, or a function. When <code>TRUE</code> (the
-default for all <em>adrftools</em> functions that use it), the link
-function of the outcome model will be used. When a <code>family</code>
-object is supplied, its link function will be used. When a function is
-supplied, it will be used as the transformation. Typically a
-transformation function takes in as input the estimate on the outcome
-scale (e.g., probabilities for binary outcomes) and returns a quantity
-on an unbounded scale; examples include <code><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">qlogis()</a></code> and
-<code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm()</a></code> for binary outcomes (corresponding to logistic and
-probit links) and <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code> for count outcomes.</p>
+a <code>&lt;family&gt;</code> object, or a function. When
+<code>TRUE</code> (the default for all <em>adrftools</em> functions that
+use it), the link function of the outcome model will be used. When a
+<code>&lt;family&gt;</code> object is supplied, its link function will
+be used. When a function is supplied, it will be used as the
+transformation. Typically a transformation function takes in as input
+the estimate on the outcome scale (e.g., probabilities for binary
+outcomes) and returns a quantity on an unbounded scale; examples include
+<code><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">qlogis()</a></code> and <code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm()</a></code> for binary outcomes
+(corresponding to logistic and probit links) and <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code> for
+count outcomes.</p>
 <p>When projecting the ADRF onto a simpler model, one has the option of
 specifying the projection either as a transformation of the linear
 predictor or as the linear predictor itself (i.e., untransformed). For
@@ -1219,7 +1234,7 @@ the test statistic.</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="transformed-2" role="tabpanel" aria-labelledby="transformed-2-tab">
 
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Test for flatness</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
@@ -1260,7 +1275,7 @@ the test statistic.</p>
 </div>
 <div class="tab-pane" id="untransformed-2" role="tabpanel" aria-labelledby="untransformed-2-tab">
 
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Test for flatness</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
@@ -1315,25 +1330,21 @@ the test statistic.</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="transformed-3" role="tabpanel" aria-labelledby="transformed-3-tab">
 
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Plot transformed projection</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_t</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-50-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<code class="sourceCode R"><span><span class="co"># Plot transformed projection</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_t</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, proj <span class="op">=</span> <span class="va">proj_t</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-50-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"><img src="adrftools_files/figure-html/unnamed-chunk-56-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="tab-pane" id="untransformed-3" role="tabpanel" aria-labelledby="untransformed-3-tab">
 
 <div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Plot untransformed projection</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_u</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-51-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_u</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, proj <span class="op">=</span> <span class="va">proj_u</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-51-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-58-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"><img src="adrftools_files/figure-html/unnamed-chunk-58-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -1378,7 +1389,7 @@ to estimate weights, one can use one of <em>WeightIt</em>’s built-in
 outcome modeling functions like <code><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit()</a></code> to fit the
 outcome model. See an example below, in which we first estimate
 balancing weights using generalized propensity score weighting.</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ngreifer.github.io/WeightIt/" class="external-link">WeightIt</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">w_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/weightit.html" class="external-link">weightit</a></span><span class="op">(</span><span class="va">logBLL</span> <span class="op">~</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
@@ -1398,19 +1409,19 @@ here (see <code><a href="https://ngreifer.github.io/cobalt/articles/cobalt.html"
 details on how to do this). We’ll use <code><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit()</a></code> to fit
 a linear model for <code>Math</code>, incorporating the estimation of
 the weights into the variance of the outcome model parameters.</p>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>                      <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                         <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>                    data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
 <span>                    weightit <span class="op">=</span> <span class="va">w_fit</span><span class="op">)</span></span></code></pre></div>
 <p>Finally, we can use <code><a href="../reference/adrf.html">adrf()</a></code> to compute the ADRF, just as
 we did with the output of <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>.</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_w</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-54-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-61-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="sampling-weights">Sampling weights<a class="anchor" aria-label="anchor" href="#sampling-weights"></a>
@@ -1442,22 +1453,22 @@ these three requires using the the <code>wts</code> argument.</p>
 </h4>
 <p>First, we’ll use <em>survey</em> functionality to incorporate
 sampling weights.</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://r-survey.r-forge.r-project.org/survey/" class="external-link">survey</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">des</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span><span class="op">~</span><span class="fl">1</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">MEC_wt</span>, data <span class="op">=</span> <span class="va">nhanes3lead</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">fit_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<span><span class="va">fit_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>                   <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                      <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>                 design <span class="op">=</span> <span class="va">des</span><span class="op">)</span></span></code></pre></div>
 <p>Simply calling <code><a href="../reference/adrf.html">adrf()</a></code> automatically incorporates
 sampling weights.</p>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_sv</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_sv</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-63-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level4">
 <h4 id="using-glm">Using <code>glm()</code><a class="anchor" aria-label="anchor" href="#using-glm"></a>
@@ -1469,8 +1480,8 @@ with the <code>weights</code> argument can be used instead of
 estimates to be valid, but <code><a href="../reference/adrf.html">adrf()</a></code> calculates that standard
 error automatically when <code>vcov = "unconditional"</code> (the
 default).</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>               <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                  <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>             data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
@@ -1482,12 +1493,12 @@ in fitting the outcome mode, but the ADRF will generalize to the
 unweighted population. This is okay if the weights are balancing
 weights, but if they are sampling weights, it is critical for them to be
 incorporated into the ADRF as well.</p>
-<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_gs</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span>,</span>
 <span>                wts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_gs</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-58-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-65-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Using <code>wts = "MEC_wts"</code> would yield the same results and
 can be used if the weights used to fit the outcome model are different
 from those used to generalized the ADRF (as we will see below when
@@ -1508,7 +1519,7 @@ automatically included in the outcome model when fit with
 estimating balancing weights by setting &lt;code&gt;method = NULL&lt;/code&gt; in
 the call to &lt;code&gt;&lt;a href="https://ngreifer.github.io/WeightIt/reference/weightit.html" class="external-link"&gt;weightit()&lt;/a&gt;&lt;/code&gt;. This yields the same results as the
 previous two methods.&lt;/p&gt;'><sup>2</sup></a>.</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ngreifer.github.io/WeightIt/" class="external-link">WeightIt</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">w_sw_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/weightit.html" class="external-link">weightit</a></span><span class="op">(</span><span class="va">logBLL</span> <span class="op">~</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
@@ -1517,7 +1528,7 @@ previous two methods.&lt;/p&gt;'><sup>2</sup></a>.</p>
 <span>                     method <span class="op">=</span> <span class="st">"glm"</span>,</span>
 <span>                     s.weights <span class="op">=</span> <span class="st">"MEC_wt"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">fit_sw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<span><span class="va">fit_sw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>                         <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                            <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>                       data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
@@ -1527,11 +1538,11 @@ the balancing weights, in standardizing the ADRF estimate. This ensures
 the estimates generalize to the sampling-weighted sample<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content="&lt;p&gt;If, for some reason, you want to include the product of
 the sampling weights and balancing weights in the estimation of the
 ADRF, set &lt;code&gt;wts = TRUE&lt;/code&gt; instead of leaving it unspecified.&lt;/p&gt;"><sup>3</sup></a>.</p>
-<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_sw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_sw</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_sw</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-60-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-67-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level4">
 <h4 id="other-scenarios">Other scenarios<a class="anchor" aria-label="anchor" href="#other-scenarios"></a>
@@ -1563,14 +1574,14 @@ compute the ADRF. <code><a href="../reference/adrf.html">adrf()</a></code> compu
 dataset and pools the results, yielding a single object similar to one
 had <code><a href="../reference/adrf.html">adrf()</a></code> been called on a single model. Rubin’s rules are
 used to pool the ADRF estimates and covariance matrix.</p>
-<p><em>adrftools</em> requires <code>mira</code> objects from
-<em>mice</em> (including <code>mimira</code> objects from
+<p><em>adrftools</em> requires <code>&lt;mira&gt;</code> objects from
+<em>mice</em> (including <code>&lt;mimira&gt;</code> objects from
 <em>MatchThem</em>); other forms of model fit to imputed data need to be
 converted to this form, e.g., using <code><a href="https://amices.org/mice/reference/as.mira.html" class="external-link">mice::as.mira()</a></code>. Below,
 we’ll demonstrate using multiply imputed data generated by <em>mice</em>
 with <em>adrftools</em>. First, we’ll generate some missing data
 artificially using <code><a href="https://amices.org/mice/reference/ampute.html" class="external-link">mice::ampute()</a></code>.</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amices/mice" class="external-link">mice</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span></span>
@@ -1613,23 +1624,26 @@ artificially using <code><a href="https://amices.org/mice/reference/ampute.html"
 into 5 imputed datasets. Note that in practice, many more imputations
 should be used and the usual methods for assessing convergence and
 imputation quality should be implemented; we skip those here.</p>
-<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice</a></span><span class="op">(</span><span class="va">nhanes3lead_mis</span>, m <span class="op">=</span> <span class="fl">5</span>, print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>Next, we can fit an outcome model using <code><a href="https://rdrr.io/r/base/with.html" class="external-link">with()</a></code> to create
-a <code>mira</code> object containing a list of the model fits.</p>
+a <code>&lt;mira&gt;</code> object containing a list of the model
+fits.</p>
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span></span>
+<span>  <span class="va">imp</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<span>       <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
+<span>          <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>We can supply the <code>&lt;mira&gt;</code> object to
+<code><a href="../reference/adrf.html">adrf()</a></code>, which automatically estimates the ADRF in each
+imputed dataset and pools the results.</p>
 <div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">imp</span>,</span>
-<span>               <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>                    <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                       <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>We can supply the <code>mira</code> object to <code><a href="../reference/adrf.html">adrf()</a></code>,
-which automatically estimates the ADRF in each imputed dataset and pools
-the results.</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_mi</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_mi</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-64-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-71-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>The only option not supported with multiply imputed data is
 bootstrapping. Setting <code>vcov = "boot"</code> or
 <code>vcov = "fwb"</code> in <code><a href="../reference/adrf.html">adrf()</a></code> will yield an
@@ -1640,23 +1654,25 @@ error.</p>
 <p>To estimate balancing weights in multiply imputed data, we can use
 <code><a href="https://rdrr.io/pkg/MatchThem/man/weightthem.html" class="external-link">MatchThem::weightthem()</a></code>. All analyses work similarly to
 when using <em>mice</em> alone.</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/FarhadPishgar/MatchThem" class="external-link">MatchThem</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/MatchThem/man/weightthem.html" class="external-link">weightthem</a></span><span class="op">(</span><span class="va">logBLL</span> <span class="op">~</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
-<span>                    <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span>,</span>
-<span>                  datasets <span class="op">=</span> <span class="va">imp</span>,</span>
-<span>                  method <span class="op">=</span> <span class="st">"glm"</span><span class="op">)</span></span>
+<span>                     <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span>,</span>
+<span>                   datasets <span class="op">=</span> <span class="va">imp</span>,</span>
+<span>                   method <span class="op">=</span> <span class="st">"glm"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">fit_w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">w_mi</span>,</span>
-<span>                 <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>                                <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                                   <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fit_w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span></span>
+<span>  <span class="va">w_mi</span>,</span>
+<span>  <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<span>                 <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
+<span>                    <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">adrf_w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_w_mi</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_w_mi</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-65-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-72-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level3">
@@ -1677,8 +1693,8 @@ basis for inference on the ADRF. All reported estimates are expected
 posterior and just use the EAP estimates or to <code>"posterior"</code>
 to retain the posterior for inference. Leaving <code>vcov</code>
 unspecified uses <code>"posterior"</code>. Below, we fit a Bayesian
-additive regression tree (BART) model using <em>dbarts</em>.</p>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+additive regression trees (BART) model using <em>dbarts</em>.</p>
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/vdorie/dbarts" class="external-link">dbarts</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">bfit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/dbarts/man/bart.html" class="external-link">bart2</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="va">logBLL</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span></span>
@@ -1710,26 +1726,26 @@ described by <span class="citation">Montiel Olea and Plagborg-Møller (<a href="
 credibility across the whole effect curve. P-values for estimates along
 the effect curve are computed as the complement of the smallest
 credibility level that excludes the null value.</p>
-<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bayes</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-67-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
+<p><img src="adrftools_files/figure-html/unnamed-chunk-74-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu">adrf_bll_bayes</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         ADRF Estimates</span></span>
 <span><span class="co">#&gt; ───────────────────────────────</span></span>
 <span><span class="co">#&gt;  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">#&gt;       0    8.459  8.032   9.320</span></span>
-<span><span class="co">#&gt;       1    7.992  7.603   8.388</span></span>
-<span><span class="co">#&gt;       2    7.159  6.510   7.877</span></span>
+<span><span class="co">#&gt;       0    8.434  8.063   9.160</span></span>
+<span><span class="co">#&gt;       1    7.968  7.590   8.377</span></span>
+<span><span class="co">#&gt;       2    7.180  6.613   7.837</span></span>
 <span><span class="co">#&gt; ───────────────────────────────</span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>
 <p>Omnibus tests for the shape of the line (i.e., by using
-<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on an <code>effect_curve</code> object) are
-strictly frequentist and use a shifted version of the posterior as if it
-were the sampling distribution of the effect curve under the null
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on an <code>&lt;effect_curve&gt;</code> object)
+are strictly frequentist and use a shifted version of the posterior as
+if it were the sampling distribution of the effect curve under the null
 hypothesis.</p>
 <p>When Bayesian models are fit to multiply imputed data, the draws of
 the ADRF estimates across imputed datasets are pooled to form a single

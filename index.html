@@ -54,10 +54,11 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="adrftools">
-<em>adrftools</em><a class="anchor" aria-label="anchor" href="#adrftools"></a>
+<div class="page-header"><h1 id="adrftools-tools-for-estimating-average-dose-response-functions">
+<em>adrftools</em>: Tools for Estimating Average Dose-Response Functions<a class="anchor" aria-label="anchor" href="#adrftools-tools-for-estimating-average-dose-response-functions"></a>
 </h1></div>
 <!-- badges: start -->
+<!-- [![CRAN status](https://www.r-pkg.org/badges/version/adrftools)](https://CRAN.R-project.org/package=adrftools) -->
 <div class="section level2">
 <h2 id="section">
 <!-- badges: end --><a class="anchor" aria-label="anchor" href="#section"></a>
@@ -109,7 +110,7 @@
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-4-1.png" alt="" style="display: block; margin: auto;"></p>
 <p>By default, this produces simultaneous 95% confidence bands.</p>
-<p><code>adrf_bll</code> is an <code>effect_curve</code> object, which is a function. We can supply to it values of the treatment to compute the corresponding value of the ADRF at those treatment values:</p>
+<p><code>adrf_bll</code> is an <code>&lt;effect_curve&gt;</code> object, which is a function. We can supply to it values of the treatment to compute the corresponding value of the ADRF at those treatment values:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">.5</span>, <span class="fl">1</span>, <span class="fl">1.5</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co">#&gt;  ADRF Estimates</span></span>
@@ -136,7 +137,7 @@
 <span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#&gt; ──────────────────────────────────────────</span></span>
 <span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#&gt; Inference: unconditional, simultaneous</span></span>
 <span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; Confidence level: 95% (t* = 2.55, df = 2455)</span></span></code></pre></div>
-<p>To test an omnibus hypothesis about the ADRF, such as whether it is flat or linear, we can use <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the <code>effect_curve</code> object itself:</p>
+<p>To test an omnibus hypothesis about the ADRF, such as whether it is flat or linear, we can use <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the <code>&lt;effect_curve&gt;</code> object itself:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Test for flatness</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll</span>, hypothesis <span class="op">=</span> <span class="st">"flat"</span><span class="op">)</span></span></code></pre></div>

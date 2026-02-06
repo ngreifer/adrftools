@@ -1,4 +1,4 @@
-# *adrftools*
+# *adrftools*: Tools for Estimating Average Dose-Response Functions
 
 ## 
 
@@ -84,7 +84,7 @@ plot(adrf_bll)
 
 By default, this produces simultaneous 95% confidence bands.
 
-`adrf_bll` is an `effect_curve` object, which is a function. We can
+`adrf_bll` is an `<effect_curve>` object, which is a function. We can
 supply to it values of the treatment to compute the corresponding value
 of the ADRF at those treatment values:
 
@@ -128,7 +128,7 @@ adrf_bll(logBLL = c(0, .5, 1, 1.5, 2)) |>
 
 To test an omnibus hypothesis about the ADRF, such as whether it is flat
 or linear, we can use [`summary()`](https://rdrr.io/r/base/summary.html)
-on the `effect_curve` object itself:
+on the `<effect_curve>` object itself:
 
 ``` r
 # Test for flatness
@@ -270,4 +270,5 @@ available.
 
 ### All vignettes
 
-- [adrftools](https://ngreifer.github.io/adrftools/articles/adrftools.md):
+- [Estimating the ADRF with
+  \*adrftools\*](https://ngreifer.github.io/adrftools/articles/adrftools.md):
