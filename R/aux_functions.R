@@ -620,8 +620,11 @@ process_transform <- function(transform, x = NULL, .est = NULL) {
        d_inv_transform = d_inv_transform)
 }
 
-process_family <- function(model) {
-  if (inherits(model, "bart")) {
+process_family <- function(model, type = "response") {
+  if (type %!in% c("response", "probs")) {
+    .family <- stats::quasi("identity")
+  }
+  else if (inherits(model, "bart")) {
     if (is_null(model[["sigma"]])) {
       .family <- stats::binomial("probit")
     }
@@ -742,6 +745,11 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
     }
   }
 
+  if (is.numeric(vcov) && is_not_null(cluster)) {
+    .wrn("{.arg cluster} is ignored when {.arg vcov} is supplied as a numeric matrix")
+    cluster <- NULL
+  }
+
   vcov_try <- try(marginaleffects::get_vcov(model, vcov = cluster %or% vcov),
                   silent = TRUE)
 
@@ -854,6 +862,11 @@ process_vcov_and_cluster_mi <- function(vcov, models, cluster = NULL, is_bayes =
   }
   else if (length(vcov) != length(models)) {
     .err("{.arg vcov} must have length equal to the number of imputed datasets")
+  }
+
+  if (any_apply(vcov, is.numeric) && is_not_null(cluster)) {
+    .wrn("{.arg cluster} is ignored when {.arg vcov} is supplied as a numeric matrix or list thereof")
+    cluster <- NULL
   }
 
   for (.i in seq_along(models)) {
@@ -1056,8 +1069,8 @@ get_curve_type <- function(x) {
 }
 
 check_effect_curve <- function(x, amef_ok = TRUE, reference_ok = TRUE,
-                               contrast_ok = TRUE, projection_ok = TRUE) {
-  nm <- deparse1(substitute(x))
+                               contrast_ok = TRUE, projection_ok = TRUE,
+                               nm = rlang::caller_arg(x)) {
 
   arg_is(x, "effect_curve")
 
@@ -1218,7 +1231,7 @@ add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = 
     return(insight::is_bayesian_model(x))
   }
 
-  if (inherits(x, "bart")) {
+  if (inherits(x, c("bart", "stan4bartFit"))) {
     return(TRUE)
   }
 
@@ -1579,7 +1592,7 @@ get_by_grid_labels <- function(.by_grid, sep = ", ") {
     out <- c(out, txtbar(nc))
   }
 
-  cat(out, sep = "\n")
+  cli::cat_line(out)
 
   invisible(out)
 }

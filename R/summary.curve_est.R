@@ -420,7 +420,7 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
   }
 
   if (.print && is_not_null(out)) {
-    cat(out, sep = "\n")
+    cli::cat_line(out)
   }
 
   invisible(paste(out, collapse = "\n"))

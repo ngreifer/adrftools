@@ -57,6 +57,21 @@ fit <- WeightIt::glm_weightit(Block >= 12 ~ ns(logBLL, df = 5) * Male *
 a <- adrf(fit, treat = "logBLL")
 plot(a, sim = F)
 
+# WeightIt::ordinal_weightit() (with weightit)
+w_fit <- WeightIt::weightit(logBLL ~ Male + Age + Race + PIR + Enough_Food +
+                              Smoke_in_Home + Smoke_Pregnant + NICU,
+                            data = nhanes3lead,
+                            method = "glm")
+
+fit <- WeightIt::ordinal_weightit(Math ~ ns(logBLL, df = 5) * Male *
+                                (Age + Race + PIR + Enough_Food + Smoke_in_Home +
+                                   Smoke_Pregnant + NICU),
+                              data = nhanes3lead,
+                              weightit = w_fit)
+
+a <- adrf(fit, treat = "logBLL", type = "mean")
+plot(a, sim = F, transform = F)
+
 # survey::svyglm()
 des <- survey::svydesign(~1, weights = ~MEC_wt, data = nhanes3lead)
 
@@ -77,7 +92,7 @@ fit <- dbarts::bart2(Math ~ logBLL + Male +
                      keepTrees = TRUE,
                      verbose = FALSE)
 
-a <- adrf(fit, treat = "logBLL", n = 25)
+a <- adrf(fit, treat = "logBLL")
 plot(a, sim = F)
 
 # dbarts::bart2() binary
@@ -88,7 +103,7 @@ fit <- dbarts::bart2(Block >= 12 ~ logBLL + Male +
                      keepTrees = TRUE,
                      verbose = FALSE)
 
-a <- adrf(fit, treat = "logBLL", n = 25)
+a <- adrf(fit, treat = "logBLL")
 plot(a, sim = F)
 
 # estimatr::lm_robust()
@@ -119,7 +134,7 @@ fit <- fixest::feglm(Block >= 12 ~ ns(logBLL, df = 5) * Male *
 a <- adrf(fit, treat = "logBLL")
 plot(a, sim = F)
 
-# fixest::fenegbin
+# fixest::fepois
 fit <- fixest::fepois(Math ~ ns(logBLL, df = 5) * Male *
                         (Age + Race + PIR + Enough_Food + Smoke_in_Home +
                            Smoke_Pregnant + NICU),
@@ -137,6 +152,15 @@ fit <- fixest::fenegbin(Math ~ ns(logBLL, df = 5) * Male *
 a <- adrf(fit, treat = "logBLL")
 plot(a, sim = F)
 
+# stan4bart::stan4bart
+fit <- stan4bart::stan4bart(Math ~ bart(logBLL + Male + Age + Race + PIR + Enough_Food) + Smoke_in_Home +
+                                                 Smoke_Pregnant + NICU,
+                            data = nhanes3lead,
+                            bart_args = list(keepTrees = TRUE))
+
+a <- adrf(fit, treat = "logBLL", type = "ev")
+plot(a, sim = F)
+
 # rstanarm::stan_lm
 fit <- rstanarm::stan_lm(Math ~ ns(logBLL, df = 5) * Male *
                            (Age + Race + PIR + Enough_Food + Smoke_in_Home +
@@ -148,7 +172,7 @@ a <- adrf(fit, treat = "logBLL")
 plot(a, sim = F)
 
 # rstanarm::stan_glm
-fit <- rstanarm::stan_glm(Block >= 12 ~ ns(logBLL, df = 5) * Male *
+fit <- rstanarm::stan_glm(Block >= 12 ~ ns(logBLL, df = 5) + Male +
                             (Age + Race + PIR + Enough_Food + Smoke_in_Home +
                                Smoke_Pregnant + NICU),
                           data = nhanes3lead,
@@ -159,7 +183,7 @@ a <- adrf(fit, treat = "logBLL")
 plot(a, sim = F)
 
 # brms::brm (linear)
-fit <- brms::brm(Math ~ ns(logBLL, df = 5) * Male *
+fit <- brms::brm(Math ~ ns(logBLL, df = 5) + Male +
                    (Age + Race + PIR + Enough_Food + Smoke_in_Home +
                       Smoke_Pregnant + NICU),
                  data = nhanes3lead,

@@ -3,6 +3,10 @@
     return("default")
   }
 
+  if (class(x)[1L] %in% "ordinal_weightit" && type %in% c("link", "lp")) {
+    return("lm")
+  }
+
   if (class(x)[1L] %in% c("lm", "lm_robust")) {
     return("lm")
   }
@@ -101,19 +105,34 @@
 
 #' @exportS3Method NULL
 .get_pred_fun.default <- function(.x, type = NULL, ...) {
-  function(data_grid, beta0 = NULL, model, ...) {
-    if (is_not_null(beta0)) {
-      model <- marginaleffects::set_coef(model, beta0)
+  if (inherits(.x, "stan4bartFit")) {
+    rlang::check_installed("stan4bart")
+
+    function(data_grid, beta0 = NULL, model, ...) {
+      p <- predict(object = model, newdata = data_grid,
+                   type = "ev", ...)
+
+      out <- rowMeans(p)
+      attr(out, "posterior_draws") <- p
+
+      out
     }
+  }
+  else {
+    function(data_grid, beta0 = NULL, model, ...) {
+      if (is_not_null(beta0)) {
+        model <- marginaleffects::set_coef(model, beta0)
+      }
 
-    rlang::with_options(marginaleffects_posterior_center = "mean", {
-      p <- marginaleffects::get_predict(model = model, newdata = data_grid,
-                                        type = type, ...)
-    })
+      rlang::with_options(marginaleffects_posterior_center = "mean", {
+        p <- marginaleffects::get_predict(model = model, newdata = data_grid,
+                                          type = type, ...)
+      })
 
-    out <- p$estimate
-    attr(out, "posterior_draws") <- .attr(p, "posterior_draws")
+      out <- p$estimate
+      attr(out, "posterior_draws") <- .attr(p, "posterior_draws")
 
-    out
+      out
+    }
   }
 }

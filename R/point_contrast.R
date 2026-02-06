@@ -72,11 +72,9 @@ point_contrast <- function(object) {
   if (.vcov_type == "bootstrap") {
     .boot <- .attr(object, ".boot")
 
-    .boot[["t"]] <- .boot[["t"]] |>
-      tcrossprod(contr_mat)
+    .boot[["t"]] <- tcrossprod(.boot[["t"]], contr_mat)
 
-    .boot[["t0"]] <- .boot[["t0"]] |>
-      tcrossprod(contr_mat) |>
+    .boot[["t0"]] <- tcrossprod(.boot[["t0"]], contr_mat) |>
       drop()
 
     attr(object, ".vcov") <- stats::vcov(.boot)

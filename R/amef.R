@@ -85,8 +85,7 @@ amef <- function(x, eps = 1e-5) {
 
   n_by <- get_n_by(.contrast, .by_grid)
 
-  contrast_mat <- (contrast_mat %*% val_mat) |>
-    block_diag(n_by)
+  contrast_mat <- block_diag(contrast_mat %*% val_mat, n_by)
 
   .make_fun(x, .contrast_mat = contrast_mat,
             .curve_type = "AMEF")

@@ -5,7 +5,7 @@
 #'
 #' @param x a fitted model object (e.g., from [lm()] or [glm()]).
 #' @param treat a string specifying the name of the treatment variable.
-#' @param vcov how the covariance matrix of the estimates should be computed. If `"unconditional"` (default), use the sandwich estimator including sampling uncertainty. If `"boot"` or `"fwb"`, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the `vcov` argument of [marginaleffects::get_vcov()]. Can also be `"none"` to avoid computing the uncertainty.
+#' @param vcov how the covariance matrix of the estimates should be computed. If `"unconditional"` (the default for frequentist models), use the sandwich estimator including sampling uncertainty. If `"boot"` or `"fwb"`, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the `vcov` argument of [marginaleffects::get_vcov()]. Can also be `"none"` to avoid computing the uncertainty. For Bayesian models, only `"posterior"`, which uses the posterior of the estimates, and `"none"` are allowed. For models fit to multiply imputed data, `"boot"` and `"fwb"` are not allowed.
 #' @param cluster an optional data frame or one-sided formula with the clustering terms for cluster-robust inference.
 #' @param range numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the affect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.
 #' @param n integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 70; higher numbers increase computation time and size of the resulting object but improve accuracy.
@@ -21,7 +21,7 @@
 #' An object of class `effect_curve`. This object is a function with attributes. See [`effect_curve-class`] for details on this function and its outputs.
 #'
 #' @details
-#' `adrf()` estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When `vcov = "unconditional"`, the variance is computed using the formula in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires [sandwich::estfun()] and [sandwich::bread()] methods for the supplied object to be available.
+#' `adrf()` estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When `vcov = "unconditional"`, the variance is computed using the formulas in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires [sandwich::estfun()] and [sandwich::bread()] methods for the supplied object to be available.
 #'
 #' When a `mira` object from \pkg{mice} or a `mimira` object from \pkg{MatchThem} is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. Bootstrapping is not allowed with such objects.
 #'
@@ -77,7 +77,7 @@
 #' # inference
 #' \dontrun{
 #' adrf_b <- adrf(fit, treat = "logBLL",
-#'               vcov = "fwb")
+#'                vcov = "fwb")
 #'
 #' adrf_b
 #'
@@ -109,36 +109,14 @@ adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type 
 
   arg_not_missing(treat)
 
-  arg_string(type)
-
   subset_substitute <- substitute(subset)
-
-  switch(.get_model_type(x, type = type),
-         "lm" = {
-           estimator <- .get_estimator.lm(x)
-           grad_fun <- .get_grad_fun.lm(x)
-           pred_fun <- .get_pred_fun.lm(x)
-         },
-         "glm" = {
-           estimator <- .get_estimator.glm(x)
-           grad_fun <- .get_grad_fun.glm(x)
-           pred_fun <- .get_pred_fun.glm(x, type = type)
-         },
-         "default" = {
-           estimator <- .get_estimator.default(x)
-           grad_fun <- .get_grad_fun.default(x)
-           pred_fun <- .get_pred_fun.default(x, type = type)
-         })
 
   .effect_curve_internal(
     x = x, treat = treat, vcov = vcov,
     range = range, n = n,
-    data = data, subset = subset_substitute, by = by, wts = wts,
-    cluster = cluster, fwb.args = fwb.args,
-    estimator = estimator,
-    grad_fun = grad_fun,
-    pred_fun = pred_fun,
-    ...
+    data = data, subset = subset_substitute,
+    by = by, wts = wts, cluster = cluster, fwb.args = fwb.args,
+    type = type, ...
   )
 }
 
@@ -149,46 +127,22 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
   arg_not_missing(treat)
 
-  arg_string(type)
-
   subset_substitute <- substitute(subset)
-
-  x1 <- x[["analyses"]][[1L]]
-
-  switch(.get_model_type(x1, type = type),
-         "lm" = {
-           estimator <- .get_estimator.lm(x1)
-           grad_fun <- .get_grad_fun.lm(x1)
-           pred_fun <- .get_pred_fun.lm(x1)
-         },
-         "glm" = {
-           estimator <- .get_estimator.glm(x1)
-           grad_fun <- .get_grad_fun.glm(x1)
-           pred_fun <- .get_pred_fun.glm(x1, type = type)
-         },
-         "default" = {
-           estimator <- .get_estimator.default(x1)
-           grad_fun <- .get_grad_fun.default(x1)
-           pred_fun <- .get_pred_fun.default(x1, type = type)
-         })
 
   .effect_curve_internal_mi(
     x = x, treat = treat, vcov = vcov,
     range = range, n = n,
-    data = data, subset = subset_substitute, by = by, wts = wts,
-    cluster = cluster,
-    estimator = estimator,
-    grad_fun = grad_fun,
-    pred_fun = pred_fun,
-    ...
+    data = data, subset = subset_substitute,
+    by = by, wts = wts, cluster = cluster,
+    type = type, ...
   )
 }
 
 .effect_curve_internal <- function(x, treat, vcov, range = .95, n,
                                    data, subset, by, wts, cluster = NULL, fwb.args = list(),
-                                   estimator = NULL, grad_fun = NULL,
-                                   pred_fun = NULL,
-                                   .adrf_env = parent.frame(2L), ...) {
+                                   type, .adrf_env = parent.frame(2L), ...) {
+  # type
+  arg_string(type)
 
   # get data
   model_data <- process_model_data(x, data)
@@ -223,7 +177,24 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   by_id <- processed_by_list$by_id
 
   # family
-  .family <- process_family(x)
+  .family <- process_family(x, type)
+
+  switch(.get_model_type(x, type = type),
+         "lm" = {
+           estimator <- .get_estimator.lm(x)
+           grad_fun <- .get_grad_fun.lm(x)
+           pred_fun <- .get_pred_fun.lm(x)
+         },
+         "glm" = {
+           estimator <- .get_estimator.glm(x)
+           grad_fun <- .get_grad_fun.glm(x)
+           pred_fun <- .get_pred_fun.glm(x, type = type)
+         },
+         "default" = {
+           estimator <- .get_estimator.default(x)
+           grad_fun <- .get_grad_fun.default(x)
+           pred_fun <- .get_pred_fun.default(x, type = type)
+         })
 
   # df
   .df <- process_df(x)
@@ -427,6 +398,10 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       }
     }
 
+    if (ncol(gr) != nrow(V)) {
+      .err("the supplied covariance matrix does not have the right dimensions. It should have dimension {ncol(gr)} by {ncol(gr)} but actually has dimension {nrow(V)} by {ncol(V)}")
+    }
+
     .vcov <- quad_mult(gr, V)
   }
 
@@ -448,9 +423,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
 .effect_curve_internal_mi <- function(x, treat, vcov, range = .95, n,
                                       data, subset, by, wts, cluster = NULL,
-                                      estimator = NULL, grad_fun = NULL,
-                                      pred_fun = NULL,
-                                      .adrf_env = parent.frame(2L), ...) {
+                                      type, .adrf_env = parent.frame(2L), ...) {
   # get data
   model_data.complete <- process_model_data_mi(x, data)
 
@@ -484,8 +457,11 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
   is_bayes <- any(are_bayes)
 
+  # type
+  arg_string(type)
+
   # family
-  .family <- process_family(x[["analyses"]][[1L]])
+  .family <- process_family(x[["analyses"]][[1L]], type)
 
   if (any_apply(x[["analyses"]][-1L], function(mod) {
     !identical(.family, process_family(mod),
@@ -493,6 +469,23 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   })) {
     .err("all models must have the same family")
   }
+
+  switch(.get_model_type(x[["analyses"]][[1L]]),
+         "lm" = {
+           estimator <- .get_estimator.lm(x[["analyses"]][[1L]])
+           grad_fun <- .get_grad_fun.lm(x[["analyses"]][[1L]])
+           pred_fun <- .get_pred_fun.lm(x[["analyses"]][[1L]])
+         },
+         "glm" = {
+           estimator <- .get_estimator.glm(x[["analyses"]][[1L]])
+           grad_fun <- .get_grad_fun.glm(x[["analyses"]][[1L]])
+           pred_fun <- .get_pred_fun.glm(x[["analyses"]][[1L]], type = type)
+         },
+         "default" = {
+           estimator <- .get_estimator.default(x[["analyses"]][[1L]])
+           grad_fun <- .get_grad_fun.default(x[["analyses"]][[1L]])
+           pred_fun <- .get_pred_fun.default(x[["analyses"]][[1L]], type = type)
+         })
 
   # df
   .df <- process_df(x)
@@ -521,9 +514,6 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     .imp <- imp_split[[.i]]
 
     model_data <- ss(model_data.complete, .imp)
-
-    # treat
-    treat_var <- treat_var.complete[.imp]
 
     # wts
     wts <- wts.complete[.imp]

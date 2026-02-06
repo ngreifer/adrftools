@@ -30,7 +30,7 @@ adrf(x, ...)
 
 \item{treat}{a string specifying the name of the treatment variable.}
 
-\item{vcov}{how the covariance matrix of the estimates should be computed. If \code{"unconditional"} (default), use the sandwich estimator including sampling uncertainty. If \code{"boot"} or \code{"fwb"}, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the \code{vcov} argument of \code{\link[marginaleffects:get_vcov]{marginaleffects::get_vcov()}}. Can also be \code{"none"} to avoid computing the uncertainty.}
+\item{vcov}{how the covariance matrix of the estimates should be computed. If \code{"unconditional"} (the default for frequentist models), use the sandwich estimator including sampling uncertainty. If \code{"boot"} or \code{"fwb"}, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the \code{vcov} argument of \code{\link[marginaleffects:get_vcov]{marginaleffects::get_vcov()}}. Can also be \code{"none"} to avoid computing the uncertainty. For Bayesian models, only \code{"posterior"}, which uses the posterior of the estimates, and \code{"none"} are allowed. For models fit to multiply imputed data, \code{"boot"} and \code{"fwb"} are not allowed.}
 
 \item{cluster}{an optional data frame or one-sided formula with the clustering terms for cluster-robust inference.}
 
@@ -57,7 +57,7 @@ An object of class \code{effect_curve}. This object is a function with attribute
 Estimates the average dose-response function (ADRF) for a fitted model object.
 }
 \details{
-\code{adrf()} estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When \code{vcov = "unconditional"}, the variance is computed using the formula in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires \code{\link[sandwich:estfun]{sandwich::estfun()}} and \code{\link[sandwich:bread]{sandwich::bread()}} methods for the supplied object to be available.
+\code{adrf()} estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When \code{vcov = "unconditional"}, the variance is computed using the formulas in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires \code{\link[sandwich:estfun]{sandwich::estfun()}} and \code{\link[sandwich:bread]{sandwich::bread()}} methods for the supplied object to be available.
 
 When a \code{mira} object from \pkg{mice} or a \code{mimira} object from \pkg{MatchThem} is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. Bootstrapping is not allowed with such objects.
 
@@ -103,7 +103,7 @@ plot(adrf2)
 # inference
 \dontrun{
 adrf_b <- adrf(fit, treat = "logBLL",
-              vcov = "fwb")
+               vcov = "fwb")
 
 adrf_b
 

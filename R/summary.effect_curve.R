@@ -456,7 +456,7 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
                    round(max(.values), digits)) |>
              cli::ansi_strwrap(width, exdent = 4))
 
-  cat(c(out, ""), sep = "\n")
+  cli::cat_line(c(out, ""))
 
   .print_estimate_table(x, digits = digits, topn = Inf, bar = FALSE)
 
@@ -469,9 +469,10 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
                                    prettyNum(nsim, big.mark = ",", scientific = FALSE)),
                    "saddlepoint" = "Kuonen's saddlepoint approximation")
 
-  cat(c(txtbar(width),
-        .it(sprintf("Computed using %s", method)) |>
-          cli::ansi_strwrap(width, exdent = 2L)), sep = "\n")
+  c(txtbar(width),
+    cli::format_inline("{.emph Computed using {method}}") |>
+      cli::ansi_strwrap(width, exdent = 2L)) |>
+    cli::cat_line()
 
   invisible(x)
 }

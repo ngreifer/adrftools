@@ -238,5 +238,3 @@ arg_equal <- function(x1, x2, arg1 = rlang::caller_arg(x1), arg2 = rlang::caller
     .err("{.arg {arg1}} must be equal to {.arg {arg2}}")
   }
 }
-
-

@@ -481,9 +481,8 @@ model.matrix.curve_projection <- function(object, ...) {
     setNames(.treat) |>
     model.frame(formula = formula(object))
 
-  mt <- .attr(proj_data, "terms")
-
-  mm <- model.matrix(mt, data = proj_data)
+  mm <- .attr(proj_data, "terms") |>
+    model.matrix(data = proj_data)
 
   if (!all(is.finite(mm))) {
     .err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
@@ -605,18 +604,18 @@ print.anova.curve_projection <- function(x, digits = max(4L, getOption("digits")
                              width, exdent = 4L),
            "")
 
-  cat(out, sep = "\n")
+  cli::cat_line(out)
 
   .print_estimate_table(x, digits = digits, topn = Inf, bar = FALSE)
 
   .df <- .attr(x, ".df")
 
-  cat(c(txtbar(width),
-        .it(sprintf("Inference: %s%s",
-                    .get_vcov_type_name(attr(x, ".vcov_type")),
-                    if (is.finite(.df)) sprintf(" (df = %s)", round(.df, 1L)) else "")) |>
-          cli::ansi_strwrap(width, exdent = 2L)),
-      sep = "\n")
+  c(txtbar(width),
+    .it(sprintf("Inference: %s%s",
+                .get_vcov_type_name(attr(x, ".vcov_type")),
+                if (is.finite(.df)) sprintf(" (df = %s)", round(.df, 1L)) else "")) |>
+      cli::ansi_strwrap(width, exdent = 2L)) |>
+    cli::cat_line()
 
   invisible(x)
 }

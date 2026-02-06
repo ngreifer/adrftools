@@ -303,7 +303,8 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
     }
 
     p <- p +
-      scale_color_brewer(palette = "Set1", aesthetics = c("color", "fill"),
+      scale_color_brewer(palette = "Set1",
+                         aesthetics = c("color", "fill"),
                          breaks = .contrast,
                          limits = .contrast)
   }
@@ -351,7 +352,8 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                          show.legend = FALSE)
     }
 
-    p <- p + scale_color_brewer(palette = "Set1", aesthetics = c("color", "fill"),
+    p <- p + scale_color_brewer(palette = "Set1",
+                                aesthetics = c("color", "fill"),
                                 breaks = .labels[.subset],
                                 limits = .labels)
   }
@@ -412,7 +414,6 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   if (is_not_null(.contrast)) {
     label <- bquote(.(label) ~ .("Difference"))
   }
-
 
   label
 }
