@@ -29,7 +29,7 @@ h1:empty, h2:empty, h3:empty, h4:empty, h5:empty, h6:empty {
 </style>
 ```
 
-```{r, include = FALSE}
+```{r, echo = FALSE}
 splines_ok <- rlang::is_installed("splines")
 
 knitr::opts_chunk$set(
@@ -417,14 +417,20 @@ To display results for a subset of the subgroups, `plot()`, the `<effect_curve>`
 
 ##### `Male = 0`
 
-```{r}
+```{r, eval = FALSE}
+plot(adrf_bll_by_male, subset = Male == 0)
+```
+```{r, echo = FALSE}
 plot(adrf_bll_by_male, subset = Male == 0) +
   ggplot2::coord_cartesian(ylim = c(5, 10), expand = FALSE)
 ```
 
 ##### `Male = 1`
 
-```{r}
+```{r, eval = FALSE}
+plot(adrf_bll_by_male, subset = Male == 1)
+```
+```{r, echo = FALSE}
 plot(adrf_bll_by_male, subset = Male == 1) +
   ggplot2::coord_cartesian(ylim = c(5, 10), expand = FALSE)
 ```
@@ -544,14 +550,20 @@ To instead compute symmetric confidence bands around the original ADRF estimates
 
 ##### Transformed
 
-```{r}
+```{r, eval = FALSE}
+plot(adrf_bll_bin)
+```
+```{r, echo = FALSE}
 plot(adrf_bll_bin) +
   ggplot2::coord_cartesian(ylim = c(-.05, .4), expand = FALSE)
 ```
 
 ##### Untransformed {.active}
 
-```{r}
+```{r, eval = FALSE}
+plot(adrf_bll_bin, transform = FALSE)
+```
+```{r, echo = FALSE}
 plot(adrf_bll_bin, transform = FALSE) +
   ggplot2::coord_cartesian(ylim = c(-.05, .4), expand = FALSE)
 ```
@@ -636,24 +648,36 @@ summary(proj_u)
 
 ##### Transformed
 
-```{r}
+```{r, eval = FALSE}
+# Plot transformed projection
+plot(proj_t)
+
+plot(adrf_bll_bin, proj = proj_t)
+```
+```{r, echo = FALSE}
 # Plot transformed projection
 plot(proj_t) +
-  coord_cartesian(ylim = c(0, .4), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(0, .4), expand = FALSE)
 
 plot(adrf_bll_bin, proj = proj_t) +
-  coord_cartesian(ylim = c(0, .4), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(0, .4), expand = FALSE)
 ```
 
 ##### Untransformed
 
-```{r}
+```{r, eval = FALSE}
+# Plot untransformed projection
+plot(proj_u)
+
+plot(adrf_bll_bin, proj = proj_u)
+```
+```{r, echo = FALSE}
 # Plot untransformed projection
 plot(proj_u) +
-  coord_cartesian(ylim = c(0, .4), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(0, .4), expand = FALSE)
 
 plot(adrf_bll_bin, proj = proj_u) +
-  coord_cartesian(ylim = c(0, .4), expand = FALSE)
+  ggplot2::coord_cartesian(ylim = c(0, .4), expand = FALSE)
 ```
 
 ####  {.unlisted .unnumbered}
