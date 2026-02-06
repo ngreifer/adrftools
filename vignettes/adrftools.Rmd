@@ -1,5 +1,5 @@
 ---
-title: "Estimating the ADRF with *adrftools*"
+title: "Estimating the ADRF with `adrftools`"
 author: "Noah Greifer"
 date: "`r Sys.Date()`"
 output: 
@@ -7,7 +7,7 @@ output:
       tabset: true
       toc: true
 vignette: >
-  %\VignetteIndexEntry{Estimating the ADRF with *adrftools*}
+  %\VignetteIndexEntry{Estimating the ADRF with `adrftools`}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown_notangle}
 bibliography: references.bib
