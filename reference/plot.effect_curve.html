@@ -114,7 +114,7 @@
 <li><p>Remove the legend:
 </p><div class="sourceCode"><pre><code><span><span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></code></pre></div></li>
 <li><p>Change the color of the plotted line:
-</p><div class="sourceCode"><pre><code>theme(geom = element_geom(ink = "{COLOR}")</code></pre></div></li>
+</p><div class="sourceCode"><pre><code><span><span class="fu">theme</span><span class="op">(</span>geom <span class="op">=</span> <span class="fu">element_geom</span><span class="op">(</span>ink <span class="op">=</span> <span class="st">"{COLOR}"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div></li>
 <li><p>Change the color scheme of the plotted lines:
 </p><div class="sourceCode"><pre><code><span><span class="fu">scale_color_brewer</span><span class="op">(</span>aesthetics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"color"</span>, <span class="st">"fill"</span><span class="op">)</span>,</span>
 <span>                   palette <span class="op">=</span> <span class="st">"{PALETTE}"</span><span class="op">)</span></span></code></pre></div></li>
@@ -124,7 +124,7 @@
 <li><p>Change the y-axis range:
 </p><div class="sourceCode"><pre><code><span><span class="fu">coord_cartesian</span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">{</span><span class="va">LOWER</span><span class="op">}</span>, <span class="op">{</span><span class="va">UPPER</span><span class="op">}</span><span class="op">)</span>,</span>
 <span>                expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div></li>
-</ul><p>Strings in brackets are to be changed by the user. Refer to the <a href="https://CRAN.R-project.org/package=ggplot2" class="external-link"><span class="pkg">ggplot2</span></a> documentation for other options.</p>
+</ul><p>Values in brackets are to be changed by the user. Refer to the <a href="https://CRAN.R-project.org/package=ggplot2" class="external-link"><span class="pkg">ggplot2</span></a> documentation for other options.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

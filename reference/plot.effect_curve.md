@@ -105,7 +105,7 @@ be run after running
 
 - Change the color of the plotted line:
 
-      theme(geom = element_geom(ink = "{COLOR}")
+      theme(geom = element_geom(ink = "{COLOR}"))
 
 - Change the color scheme of the plotted lines:
 
@@ -122,7 +122,7 @@ be run after running
       coord_cartesian(ylim = c({LOWER}, {UPPER}),
                       expand = FALSE)
 
-Strings in brackets are to be changed by the user. Refer to the
+Values in brackets are to be changed by the user. Refer to the
 [ggplot2](https://CRAN.R-project.org/package=ggplot2) documentation for
 other options.
 

@@ -221,5 +221,5 @@ adrf1(logBLL = c(0, 1, 2)) |>
 #> ───────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
 #> Confidence level: 95% (z* = 2.386)
-#> Null value: -2.19722457733622
+#> Null value: 0.1
 ```

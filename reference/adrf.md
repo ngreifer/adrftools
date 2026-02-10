@@ -112,7 +112,7 @@ adrf(
 
 - fwb.args:
 
-  an option list of arguments to be passed to
+  an optional list of arguments to be passed to
   [`fwb::fwb()`](https://ngreifer.github.io/fwb/reference/fwb.html) when
   `vcov` is `"boot"` or `"fwb"`.
 
