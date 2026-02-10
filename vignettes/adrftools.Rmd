@@ -42,6 +42,8 @@ knitr::opts_chunk$set(
   message = FALSE
 )
 
+rlang::local_options(width = 200)
+
 test <- FALSE #set to FALSE to run the whole thing, TRUE for speed
 survey_ok <- rlang::is_installed("survey") && splines_ok && !test
 quadform_ok <- rlang::is_installed("CompQuadForm") && splines_ok
