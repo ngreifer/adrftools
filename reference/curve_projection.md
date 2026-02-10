@@ -202,7 +202,7 @@ hypothesis implies that the larger model fits better.
 Neugebauer, R., & van der Laan, M. (2007). Nonparametric causal effects
 based on marginal structural models. *Journal of Statistical Planning
 and Inference*, 137(2), 419–434.
-[doi:/10.1016/j.jspi.2005.12.008](https://doi.org//10.1016/j.jspi.2005.12.008)
+[doi:10.1016/j.jspi.2005.12.008](https://doi.org/10.1016/j.jspi.2005.12.008)
 
 ## See also
 

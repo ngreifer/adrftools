@@ -32,7 +32,7 @@ An object of class `amef_curve`, which inherits from
 The AMEF is calculated numerically using the central finite derivative
 formula:
 
-\$\$\frac{df(x)}\frac{dx} \approx \frac{f(x + e) - f(x - e)}{2e}\$\$
+\$\$\frac{df(x)}{dx} \approx \frac{f(x + e) - f(x - e)}{2e}\$\$
 
 The values of the ADRF at the evaluation points are computed using a
 local polynomial regression as described at

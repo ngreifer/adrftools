@@ -143,14 +143,14 @@ the compliment of the cumulative density function of the distribution
 evaluated at the test statistic value. The test statistic depends on
 `"hypothesis"`. For `hypothesis` equal to a constant, say, \\c\\, the
 test statistic is \$\$T^\* = \int\_\mathcal{A} (\theta(a) - c)^2 \\
-da\$\$ Otherwise, the test statistic is \$\$T^\* = \iint\_\mathcal{A}
+da\$\$ Otherwise, the test statistic is \$\$T^\* = \int\_\mathcal{A}
 (\theta(a) - \hat{\theta}\_0(a))^2 \\ da\$\$ where \\\hat{\theta}\_0\\
 is the projection of \\\theta(a)\\ onto the null subspace specified by
 `hypothesis`.
 
 Each of these can be approximated as a quadratic form,
-\\T=\mathbf{\Theta}'\mathbf{W}\mathbf{\Theta}\\ where
-\\\mathbf{\Theta}\\ is a vector of estimates at evaluation points along
+\\T=\mathbf{\theta}'\mathbf{W}\mathbf{\theta}\\ where
+\\\mathbf{\theta}\\ is a vector of estimates at evaluation points along
 the curve and \\\mathbf{W}\\ is a diagonal matrix of weights
 implementing a trapezoidal approximation to the integral. The null
 hypothesis is that \\T=0\\, which approximates the null hypothesis that

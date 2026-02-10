@@ -208,6 +208,7 @@ plot(adrf1, transform = FALSE)
 plot(adrf1, simultaneous = FALSE)
 
 
+# \donttest{
 # ADRF within subgroups
 adrf2 <- adrf(fit, treat = "logBLL",
               by = ~Male, n = 50)
@@ -224,4 +225,6 @@ plot(adrf2, subset = Male == 1)
 adrf_contrast <- curve_contrast(adrf2)
 
 plot(adrf_contrast)
+
+# }
 ```

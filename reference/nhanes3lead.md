@@ -18,6 +18,7 @@ An object of class `data.frame` with 2521 rows and 14 columns.
 ## Details
 
 The treatment is `logBLL`, the natural log of blood levels measured in
-μg/dL. The covariates are `Age`, `Male`, `Race`, `PIR`, `Enough_Food`,
-`Smoke_in_Home`, `Smoke_Pregnant`, and `NICU`. The outcomes are `Math`,
-`Reading`, `Block`, and `Digit`. `MEC_wt` are sampling weights.
+\\\mu\\g/dL. The covariates are `Age`, `Male`, `Race`, `PIR`,
+`Enough_Food`, `Smoke_in_Home`, `Smoke_Pregnant`, and `NICU`. The
+outcomes are `Math`, `Reading`, `Block`, and `Digit`. `MEC_wt` are
+sampling weights.

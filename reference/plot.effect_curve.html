@@ -110,25 +110,19 @@
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>ggplot</code> object that can modified using functions in <span class="pkg">ggplot2</span>. Below are some common tasks and instructions to perform them. Note all should be run after running <code><a href="https://ggplot2.tidyverse.org" class="external-link">library("ggplot2")</a></code>.</p>
 <ul><li><p>Change the position of the legend:
-</p><div class="sourceCode"><pre><code><span></span>
-<span><span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"{POSITION}"</span><span class="op">)</span></span></code></pre></div></li>
+</p><div class="sourceCode"><pre><code><span><span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"{POSITION}"</span><span class="op">)</span></span></code></pre></div></li>
 <li><p>Remove the legend:
-</p><div class="sourceCode"><pre><code><span></span>
-<span><span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></code></pre></div></li>
+</p><div class="sourceCode"><pre><code><span><span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></code></pre></div></li>
 <li><p>Change the color of the plotted line:
-</p><div class="sourceCode"><pre><code>
-theme(geom = element_geom(ink = "{COLOR}")</code></pre></div></li>
+</p><div class="sourceCode"><pre><code>theme(geom = element_geom(ink = "{COLOR}")</code></pre></div></li>
 <li><p>Change the color scheme of the plotted lines:
-</p><div class="sourceCode"><pre><code><span></span>
-<span><span class="fu">scale_color_brewer</span><span class="op">(</span>aesthetics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"color"</span>, <span class="st">"fill"</span><span class="op">)</span>,</span>
+</p><div class="sourceCode"><pre><code><span><span class="fu">scale_color_brewer</span><span class="op">(</span>aesthetics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"color"</span>, <span class="st">"fill"</span><span class="op">)</span>,</span>
 <span>                   palette <span class="op">=</span> <span class="st">"{PALETTE}"</span><span class="op">)</span></span></code></pre></div></li>
 <li><p>Change the title, subtitle, or axis labels:
-</p><div class="sourceCode"><pre><code><span></span>
-<span><span class="fu">labs</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"{TITLE}"</span>, subtitle <span class="op">=</span> <span class="st">"{SUBTITLE}"</span>,</span>
+</p><div class="sourceCode"><pre><code><span><span class="fu">labs</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"{TITLE}"</span>, subtitle <span class="op">=</span> <span class="st">"{SUBTITLE}"</span>,</span>
 <span>     x <span class="op">=</span> <span class="st">"{X-AXIS}"</span>, y <span class="op">=</span> <span class="st">"{Y-AXIS}"</span><span class="op">)</span></span></code></pre></div></li>
 <li><p>Change the y-axis range:
-</p><div class="sourceCode"><pre><code><span></span>
-<span><span class="fu">coord_cartesian</span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">{</span><span class="va">LOWER</span><span class="op">}</span>, <span class="op">{</span><span class="va">UPPER</span><span class="op">}</span><span class="op">)</span>,</span>
+</p><div class="sourceCode"><pre><code><span><span class="fu">coord_cartesian</span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">{</span><span class="va">LOWER</span><span class="op">}</span>, <span class="op">{</span><span class="va">UPPER</span><span class="op">}</span><span class="op">)</span>,</span>
 <span>                expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div></li>
 </ul><p>Strings in brackets are to be changed by the user. Refer to the <a href="https://CRAN.R-project.org/package=ggplot2" class="external-link"><span class="pkg">ggplot2</span></a> documentation for other options.</p>
     </div>
@@ -186,6 +180,7 @@ theme(geom = element_geom(ink = "{COLOR}")</code></pre></div></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf1</span>, simultaneous <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="plot.effect_curve-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="co"># ADRF within subgroups</span></span></span>
 <span class="r-in"><span><span class="va">adrf2</span> <span class="op">&lt;-</span> <span class="fu"><a href="adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span>,</span></span>
 <span class="r-in"><span>              by <span class="op">=</span> <span class="op">~</span><span class="va">Male</span>, n <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span></span>
@@ -203,6 +198,7 @@ theme(geom = element_geom(ink = "{COLOR}")</code></pre></div></li>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_contrast</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="plot.effect_curve-6.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
