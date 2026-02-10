@@ -18,7 +18,7 @@ adrf(x, ...)
   by = NULL,
   wts = NULL,
   range = 0.95,
-  n = 71,
+  n = 51,
   fwb.args = list(),
   ...
 )
@@ -46,7 +46,7 @@ adrf(x, ...)
 
 \item{range}{numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the affect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.}
 
-\item{n}{integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 70; higher numbers increase computation time and size of the resulting object but improve accuracy.}
+\item{n}{integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.}
 
 \item{fwb.args}{an option list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}.}
 }

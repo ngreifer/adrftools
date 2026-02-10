@@ -8,7 +8,7 @@
 #' @param vcov how the covariance matrix of the estimates should be computed. If `"unconditional"` (the default for frequentist models), use the sandwich estimator including sampling uncertainty. If `"boot"` or `"fwb"`, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the `vcov` argument of [marginaleffects::get_vcov()]. Can also be `"none"` to avoid computing the uncertainty. For Bayesian models, only `"posterior"`, which uses the posterior of the estimates, and `"none"` are allowed. For models fit to multiply imputed data, `"boot"` and `"fwb"` are not allowed.
 #' @param cluster an optional data frame or one-sided formula with the clustering terms for cluster-robust inference.
 #' @param range numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the affect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.
-#' @param n integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 70; higher numbers increase computation time and size of the resulting object but improve accuracy.
+#' @param n integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.
 #' @param type character string indicating the type of prediction. Passed to [marginaleffects::get_predict()]. Default is `"response"` for predictions on the scale of the outcome variable. Other options might include `"link"` for the linear predictor. This argument is ignored for `lm` objects.
 #' @param data an optional data frame containing the observations originally used to fit the outcome model supplied to `x`. This should only be used if the supplied model is not supported by \pkg{insight}. In most cases, this should not need to be supplied.
 #' @param subset an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function.
@@ -105,7 +105,7 @@ adrf <- function(x, ...) {
 #' @rdname adrf
 adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "response",
                          data = NULL, subset = NULL, by = NULL, wts = NULL,
-                         range = .95, n = 71, fwb.args = list(), ...) {
+                         range = .95, n = 51, fwb.args = list(), ...) {
 
   arg_not_missing(treat)
 
@@ -123,7 +123,7 @@ adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type 
 #' @exportS3Method adrf mira
 adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "response",
                       data = NULL, subset = NULL, by = NULL, wts = NULL,
-                      range = .95, n = 71, ...) {
+                      range = .95, n = 51, ...) {
 
   arg_not_missing(treat)
 
@@ -138,7 +138,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   )
 }
 
-.effect_curve_internal <- function(x, treat, vcov, range = .95, n,
+.effect_curve_internal <- function(x, treat, vcov, range, n,
                                    data, subset, by, wts, cluster = NULL, fwb.args = list(),
                                    type, .adrf_env = parent.frame(2L), ...) {
   # type
@@ -421,7 +421,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
             .by_grid = by_grid)
 }
 
-.effect_curve_internal_mi <- function(x, treat, vcov, range = .95, n,
+.effect_curve_internal_mi <- function(x, treat, vcov, range, n,
                                       data, subset, by, wts, cluster = NULL,
                                       type, .adrf_env = parent.frame(2L), ...) {
   # get data
