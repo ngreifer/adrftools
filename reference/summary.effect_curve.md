@@ -293,7 +293,7 @@ summary(adrf1, hypothesis = "linear")
 #>     between -0.3567 and 2.4248
 #> 
 #>  Male P-value
-#>     0  0.1644
+#>     0  0.1652
 #>     1  0.0189
 #> ───────────────────────────────────────────────────────
 #> Computed using the Imhof approximation
@@ -313,8 +313,8 @@ summary(adrf1, hypothesis = "linear",
 #>     -0.3567 and 2.4248
 #> 
 #>  Male P-value
-#>     0  0.4736
-#>     1  0.0903
+#>     0  0.4743
+#>     1  0.0908
 #> ───────────────────────────────────────────────────────
 #> Computed using the Imhof approximation
 

@@ -144,13 +144,13 @@ is described in Neugebauer and van der Laan (2007).
 uncertainty in the estimates of the effect curve in computing
 uncertainty estimates for the projection model parameters. Because the
 true effect curve is continuous, the model is fit minimizing
-\$\$\int\_{a\_\text{lower}}^{a\_\text{upper}}{\left(\hat{\theta}(a)-\hat{\mathbf{\beta}}
-B(a) \right)^2 da}\$\$ where \\\hat{\theta}(a)\\ is the effect curve
-estimate at treatment value \\a\\, \\B(a)\\ is the basis function
-representation of \\a\\ (i.e., as specified in `model`), and
-\\\hat{\mathbf{\beta}}\\ is the vector of projection parameters to be
-estimated. This integral is approximated using a trapezoidal Riemann sum
-over the effect curve grid points.
+\$\$\int\_{a\_\text{lower}}^{a\_\text{upper}}{\left(\hat{\theta}(a)-
+B(a)\hat{\mathbf{\beta}} \right)^2 da}\$\$ where \\\hat{\theta}(a)\\ is
+the effect curve estimate at treatment value \\a\\, \\B(a)\\ is the
+basis function representation of \\a\\ (i.e., as specified in `model`),
+and \\\hat{\mathbf{\beta}}\\ is the vector of projection parameters to
+be estimated. This integral is approximated using a trapezoidal Riemann
+sum over the effect curve grid points.
 
 The covariance of the projection parameters can be computed using the
 delta method applied to the estimated covariance of the original effect
@@ -163,15 +163,15 @@ When `transform` is specified, the projection minimizes the distance
 between the original effect curve and the transformed linear predictor;
 that is, it minimizes
 
-\$\$\int\_{a\_\text{lower}}^{a\_\text{upper}}{\left(\hat{\theta}(a)-f^{-1}\left(\hat{\mathbf{\beta}}
-B(a) \right) \right)^2 da}\$\$
+\$\$\int\_{a\_\text{lower}}^{a\_\text{upper}}{\left(\hat{\theta}(a)-f^{-1}\left(
+B(a) \hat{\mathbf{\beta}} \right) \right)^2 da}\$\$
 
 where \\f^{-1}(y)\\ is the inverse of the transformation supplied to
 `transform` (i.e., corresponding to the inverse link function of a
 generalized linear model), essentially using nonlinear least squares
 (NLS) to estimate the effect curve projection. This make the
 coefficients in the projection model correspond to the coefficients on
-the linear predictor \\\hat{\mathbf{\beta}} B(a)\\. In this case, the
+the linear predictor \\B(a)\hat{\mathbf{\beta}}\\. In this case, the
 projection is not simply a linear projection, but it may still be more
 interpretable than the original ADRF. For example, if the outcome model
 was originally fit using logistic regression and `transform = TRUE` in
@@ -242,7 +242,7 @@ summary(adrf1, hypothesis = "linear")
 #>     -0.3567 and 2.4248
 #> 
 #>  P-value
-#>    0.375
+#>   0.3764
 #> ───────────────────────────────────────────────────────
 #> Computed using the Imhof approximation
 
@@ -264,13 +264,13 @@ proj1
 # Coefficients of the projection model
 coef(proj1)
 #> (Intercept)      logBLL 
-#>   8.5703241  -0.7198424 
+#>   8.5702157  -0.7197566 
 summary(proj1)
 #>                  ADRF Projection Coefficients
 #> ──────────────────────────────────────────────────────────────
 #>         Term Estimate Std. Error     t  P-value CI Low CI High
-#>  (Intercept)     8.57     0.1494 57.37 < 0.0001  8.277   8.863
-#>       logBLL    -0.72     0.1424 -5.06 < 0.0001 -0.999  -0.441
+#>  (Intercept)     8.57     0.1493 57.42 < 0.0001  8.278   8.863
+#>       logBLL    -0.72     0.1423 -5.06 < 0.0001 -0.999  -0.441
 #> ──────────────────────────────────────────────────────────────
 #> Inference: unconditional
 #> Confidence level: 95% (t* = 1.961, df = 2473)
@@ -299,7 +299,7 @@ anova(proj2, proj1)
 #>     0 (i.e., Model 2 is sufficient)
 #> 
 #>  df      F P-value
-#>   2 1.3587  0.2572
+#>   2 1.3605  0.2567
 #> ───────────────────────────────────────────────────────
 #> Inference: unconditional (df = 2473)
 ```

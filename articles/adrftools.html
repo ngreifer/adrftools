@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Estimating the ADRF with `adrftools` • adrftools</title>
+<title>Estimating the ADRF with adrftools • adrftools</title>
 <!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
   window.MathJax = {
     chtml: {
@@ -16,7 +16,7 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Estimating the ADRF with `adrftools`">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Estimating the ADRF with adrftools">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -57,7 +57,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Estimating the ADRF with `adrftools`</h1>
+      <h1>Estimating the ADRF with adrftools</h1>
                         <h4 data-toc-skip class="author">Noah
 Greifer</h4>
             
@@ -134,31 +134,35 @@ ADRF.</p>
 <h3 id="effect-curves">Effect Curves<a class="anchor" aria-label="anchor" href="#effect-curves"></a>
 </h3>
 <p>The ADRF is one of a variety of functions we call “effect curves”,
-which are functions of the treatment. The following are the other effect
+which are functions of the treatment. The following are the effect
 curves available in <em>adrftools</em>:</p>
 <ul>
+<li>The ARDF: <span class="math display">\[\theta_\text{ADRF}(a) =
+E[Y(a)]\]</span>
+</li>
 <li>A subgroup ADRF (where <span class="math inline">\(G\)</span> is a
 grouping variable and <span class="math inline">\(g\)</span> is a level
 of <span class="math inline">\(G\)</span>): <span class="math display">\[\theta_{\text{ADRF},g}(a) =
 E\left[Y(a)|G=g\right]\]</span>
 </li>
-<li>The average marginal effect function (AMEF), defined as the
-derivative of the ADRF: <span class="math display">\[\theta_\text{AMEF}(a) =
-\frac{d\theta_\text{ADRF}(a_0)}{da_0}\Bigr|_{a_0 = a}\]</span>
+<li>The average marginal effect function (AMEF)—the derivative of the
+ADRF: <span class="math display">\[\theta_\text{AMEF}(a) =
+\frac{d\theta_\text{ADRF}(t)}{dt}\Bigr|_{t = a}\]</span>
 </li>
-<li>The reference effect curve, defined as the contrast between each
-point on an effect curve (<span class="math inline">\(\theta(a)\)</span>) and a given (fixed) value on
-that curve (<span class="math inline">\(\theta(a')\)</span>): <span class="math display">\[\theta_\text{ref}(a; a') = \theta(a) -
-\theta(a')\]</span>
+<li>The reference effect curve—the contrast between each point on an
+effect curve (<span class="math inline">\(\theta(a)\)</span>) and a
+given (fixed) value on that curve (<span class="math inline">\(\theta(a_0)\)</span>): <span class="math display">\[\theta_\text{ref}(a; a_0) = \theta(a) -
+\theta(a_0)\]</span>
 </li>
-<li>The effect curve contrast, defined as the contrast between effect
-curves computed within subgroups <span class="math inline">\(G=g_1\)</span> and <span class="math inline">\(G=g_2\)</span>: <span class="math display">\[\theta_\text{contr}(a; g_1, g_2) =
+<li>The effect curve contrast—the contrast between effect curves
+computed within subgroups <span class="math inline">\(G=g_1\)</span> and
+<span class="math inline">\(G=g_2\)</span>: <span class="math display">\[\theta_\text{contr}(a; g_1, g_2) =
 \theta_{g_1}(a) - \theta_{g_2}(a)\]</span>
 </li>
 </ul>
 <p>All of these are linear functions of the ADRF, which means if we can
 account for uncertainty in the ADRF, we can account for uncertainty in
-the effect curves derived from it.</p>
+the effect curves derived from it using the delta method.</p>
 </div>
 <div class="section level3">
 <h3 id="this-guide">This Guide<a class="anchor" aria-label="anchor" href="#this-guide"></a>
@@ -189,20 +193,20 @@ confounders.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"nhanes3lead"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">nhanes3lead</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         Age Male     Race   PIR Enough_Food Smoke_in_Home Smoke_Pregnant NICU</span></span>
-<span><span class="co">#&gt; 1 10.583333    0    White 1.266           1             0              0    0</span></span>
-<span><span class="co">#&gt; 2  7.166667    0    Black 0.603           1             1              1    0</span></span>
-<span><span class="co">#&gt; 3 11.916667    0 Hispanic 3.173           1             0              0    0</span></span>
-<span><span class="co">#&gt; 4  6.583333    1    White 1.543           1             1              0    0</span></span>
-<span><span class="co">#&gt; 5  8.250000    0    White 3.043           1             0              0    0</span></span>
-<span><span class="co">#&gt; 6  8.250000    1    Other 1.746           1             1              0    0</span></span>
-<span><span class="co">#&gt;       logBLL Math Reading Block Digit   MEC_wt</span></span>
-<span><span class="co">#&gt; 1 -0.3566749   10       8    12     7  7785.67</span></span>
-<span><span class="co">#&gt; 2  2.0014800   13       9     8    12 11001.98</span></span>
-<span><span class="co">#&gt; 3  1.3609766    6      10    11     7  7024.62</span></span>
-<span><span class="co">#&gt; 4  1.1631508    6       5     8     5  7901.41</span></span>
-<span><span class="co">#&gt; 5  0.7419373    8       9    14     8  9997.87</span></span>
-<span><span class="co">#&gt; 6  1.3609766   12      10    11     8 11979.76</span></span></code></pre></div>
+<span><span class="co">##         Age Male     Race   PIR Enough_Food Smoke_in_Home Smoke_Pregnant NICU</span></span>
+<span><span class="co">## 1 10.583333    0    White 1.266           1             0              0    0</span></span>
+<span><span class="co">## 2  7.166667    0    Black 0.603           1             1              1    0</span></span>
+<span><span class="co">## 3 11.916667    0 Hispanic 3.173           1             0              0    0</span></span>
+<span><span class="co">## 4  6.583333    1    White 1.543           1             1              0    0</span></span>
+<span><span class="co">## 5  8.250000    0    White 3.043           1             0              0    0</span></span>
+<span><span class="co">## 6  8.250000    1    Other 1.746           1             1              0    0</span></span>
+<span><span class="co">##       logBLL Math Reading Block Digit   MEC_wt</span></span>
+<span><span class="co">## 1 -0.3566749   10       8    12     7  7785.67</span></span>
+<span><span class="co">## 2  2.0014800   13       9     8    12 11001.98</span></span>
+<span><span class="co">## 3  1.3609766    6      10    11     7  7024.62</span></span>
+<span><span class="co">## 4  1.1631508    6       5     8     5  7901.41</span></span>
+<span><span class="co">## 5  0.7419373    8       9    14     8  9997.87</span></span>
+<span><span class="co">## 6  1.3609766   12      10    11     8 11979.76</span></span></code></pre></div>
 <p>The treatment variables is <code>logBLL</code>, the natural log of
 blood lead levels in μg/dL, and for this analysis, we will use
 <code>Math</code> as the outcome variable, which is the score on the
@@ -236,9 +240,9 @@ level of blood lead exposure?</li>
 <p>The first step is to fit the outcome model. This model is not to be
 interpreted and should flexible enough to capture nonlinear
 relationships, especially between the treatment and the outcome.
-<em>adrftools</em> supports any model also supported by
-<em>marginaleffects</em>, but performance is improved with models fit
-with <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> or <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>.</p>
+<em>adrftools</em> supports any model also supported by <a href="https://cran.r-project.org/package=marginaleffects" class="external-link"><em>marginaleffects</em></a>,
+but performance is improved with models fit with <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> or
+<code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>.</p>
 <p>Below, we use <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> to fit a linear regression of
 <code>Math</code> on <code>logBLL</code>, the covariates, and their
 interaction. We will supply <code>logBLL</code> as a natural cubic
@@ -281,10 +285,10 @@ requires the model object to have <code>estfun()</code> and
 <code>bread()</code> methods. Setting <code>vcov = "boot"</code> or
 <code>vcov = "fwb"</code> use the traditional or fractional weighted
 bootstrap <span class="citation">(<a href="#ref-xu2020">Xu et al.
-2020</a>)</span>, respectively, as implemented in <em>fwb</em>; these
-both also account for sampling and estimation uncertainty. Finally, any
-argument to the <code>vcov</code> argument of
-<code>marginaleffects::vcov()</code> can be supplied to perform
+2020</a>)</span>, respectively, as implemented in <a href="https://ngreifer.github.io/fwb/" class="external-link"><em>fwb</em></a>; these both also
+account for sampling and estimation uncertainty. Finally, any argument
+to the <code>vcov</code> argument of
+<code><a href="https://marginaleffects.com/man/r/get_vcov.html" class="external-link">marginaleffects::get_vcov()</a></code> can be supplied to perform
 conditional inference (i.e., treating the sample as fixed); the
 “default” variance can be requested by setting
 <code>vcov = "conditional"</code> (which typically just uses the
@@ -294,26 +298,26 @@ conditional inference (i.e., treating the sample as fixed); the
 some information about the effect curve.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll</span></span>
-<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  - curve type: ADRF</span></span>
-<span><span class="co">#&gt;  - response: Math</span></span>
-<span><span class="co">#&gt;  - treatment: logBLL</span></span>
-<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">## An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  - curve type: ADRF</span></span>
+<span><span class="co">##  - response: Math</span></span>
+<span><span class="co">##  - treatment: logBLL</span></span>
+<span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
 <p>An <code>&lt;effect_curve&gt;</code> object is a function that takes
 in values of the treatment and returns estimates of the ADRF at those
 points. For example, to display the ADRF estimates at values of
 <code>logBLL</code> equal to 0, 1, and 2, we can run the following:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  ADRF Estimates</span></span>
-<span><span class="co">#&gt; ────────────────</span></span>
-<span><span class="co">#&gt;  logBLL Estimate</span></span>
-<span><span class="co">#&gt;       0    8.421</span></span>
-<span><span class="co">#&gt;       1    8.025</span></span>
-<span><span class="co">#&gt;       2    7.146</span></span>
-<span><span class="co">#&gt; ────────────────</span></span></code></pre></div>
+<span><span class="co">##  ADRF Estimates</span></span>
+<span><span class="co">## ────────────────</span></span>
+<span><span class="co">##  logBLL Estimate</span></span>
+<span><span class="co">##       0    8.421</span></span>
+<span><span class="co">##       1    8.025</span></span>
+<span><span class="co">##       2    7.146</span></span>
+<span><span class="co">## ────────────────</span></span></code></pre></div>
 <p>Perhaps the most useful summary of an effect curve is its plot, which
 we can produce simply by running <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> on the
 <code>&lt;effect_curve&gt;</code> object:</p>
@@ -342,15 +346,15 @@ one can use <code><a href="https://rdrr.io/r/base/summary.html" class="external-
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;               ADRF Estimates</span></span>
-<span><span class="co">#&gt; ──────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;  logBLL Estimate Std. Error CI Low CI High</span></span>
-<span><span class="co">#&gt;       0    8.421     0.1678  8.021   8.822</span></span>
-<span><span class="co">#&gt;       1    8.025     0.1124  7.757   8.293</span></span>
-<span><span class="co">#&gt;       2    7.146     0.2162  6.630   7.661</span></span>
-<span><span class="co">#&gt; ──────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span></code></pre></div>
+<span><span class="co">##               ADRF Estimates</span></span>
+<span><span class="co">## ──────────────────────────────────────────</span></span>
+<span><span class="co">##  logBLL Estimate Std. Error CI Low CI High</span></span>
+<span><span class="co">##       0    8.421     0.1678  8.021   8.822</span></span>
+<span><span class="co">##       1    8.025     0.1124  7.757   8.293</span></span>
+<span><span class="co">##       2    7.146     0.2162  6.630   7.661</span></span>
+<span><span class="co">## ──────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span></code></pre></div>
 <p><code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> accepts the same arguments as
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> to control the confidence interval coverage and
 whether inference is simultaneous. Unlike with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>, with
@@ -364,16 +368,16 @@ estimates requested, not the full effect curve.</p>
 <code class="sourceCode R"><span><span class="fu">adrf_bll</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/point_contrast.html">point_contrast</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                           ADRF Point Contrasts</span></span>
-<span><span class="co">#&gt; ────────────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;                         Term Estimate Std. Error      t  P-value  CI Low</span></span>
-<span><span class="co">#&gt;  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2127 -1.863   0.1476 -0.8938</span></span>
-<span><span class="co">#&gt;  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2800 -4.556 &lt; 0.0001 -1.9305</span></span>
-<span><span class="co">#&gt;  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2642 -3.328   0.0025 -1.4972</span></span>
-<span><span class="co">#&gt; ────────────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 2.338, df = 2401)</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
+<span><span class="co">##                           ADRF Point Contrasts</span></span>
+<span><span class="co">## ────────────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">##                         Term Estimate Std. Error      t  P-value  CI Low</span></span>
+<span><span class="co">##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2127 -1.863   0.1476 -0.8938</span></span>
+<span><span class="co">##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2800 -4.556 &lt; 0.0001 -1.9305</span></span>
+<span><span class="co">##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2642 -3.328   0.0025 -1.4972</span></span>
+<span><span class="co">## ────────────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.338, df = 2401)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <p>In addition to the contrast estimates and confidence intervals, test
 statistics and p-values for the tests that the contrasts are equal to 0
 are displayed. The <code>Null value</code> note below the table
@@ -393,15 +397,15 @@ ADRF is flat. If this hypothesis is rejected, this implies there is some
 effect of the treatment.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
-<span><span class="co">#&gt;     and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   P-value</span></span>
-<span><span class="co">#&gt;  &lt; 0.0001</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
+<span><span class="co">##     and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##   P-value</span></span>
+<span><span class="co">##  &lt; 0.0001</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>This test works in two steps: first, the projection <span class="math inline">\(\hat{P}(a)\)</span> is computed, and second, the
 residuals of the projection are used to compute the test statistic. The
 test statistic <span class="math inline">\(T\)</span> is defined as</p>
@@ -424,13 +428,13 @@ is controlled by the <code>method</code> argument to
 <ol style="list-style-type: decimal">
 <li>Monte Carlo simulation of the distribution of <span class="math inline">\(T\)</span> under the null hypothesis
 (<code>method = "sim"</code>)</li>
-<li>Analytic approximation using functionality in the
-<em>CompQuadForm</em> package (<code>method = "imhof"</code>,
-<code>"davies"</code>, or <code>"liu"</code>)</li>
+<li>Analytic approximation using functionality in the <a href="https://cran.r-project.org/package=CompQuadForm" class="external-link"><em>CompQuadForm</em></a>
+package (<code>method = "imhof"</code>, <code>"davies"</code>, or
+<code>"liu"</code>)</li>
 <li>Satterthwaite’s approximation based on moment matching to a <span class="math inline">\(\chi^2\)</span> distribution
 (<code>method = "satterthwaite"</code>)</li>
-<li>Kuonen’s saddlepoint approximation using functionality in the
-<em>survey</em> package (<code>method = "saddlepoint"</code>)</li>
+<li>Kuonen’s saddlepoint approximation using functionality in the <a href="https://cran.r-project.org/package=survey" class="external-link"><em>survey</em></a>
+package (<code>method = "saddlepoint"</code>)</li>
 </ol>
 <p><code>method = "imhof"</code> and <code>method = "sim"</code> are the
 most reliable. The former is fast and deterministic, and so is used by
@@ -461,15 +465,15 @@ effect of <code>logBLL</code> on <code>Math</code>. We can also test
 whether the ADRF is approximately linear:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll</span>, hypothesis <span class="op">=</span> <span class="st">"linear"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is linear for values of logBLL between</span></span>
-<span><span class="co">#&gt;     -0.3567 and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  P-value</span></span>
-<span><span class="co">#&gt;    0.478</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is linear for values of logBLL between</span></span>
+<span><span class="co">##     -0.3567 and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  P-value</span></span>
+<span><span class="co">##   0.4782</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>In this case, the high p-value indicates that we cannot reject the
 null hypothesis that the ADRF is linear, even though there appears to be
 a curve in the plot. We can interpret this as indicating that a linear
@@ -509,14 +513,15 @@ correctly accounts for the uncertainty in the effect curve estimates for
 estimating the uncertainty of the projection model parameters. The
 projection is formed by minimizing the loss function</p>
 <p><span class="math display">\[
-\int_{a_\text{low}}^{a_\text{high}}{\left(\hat{\theta}(a)-\hat{P}(a)\right)^2
-\,da}
+\int_{a_\text{low}}^{a_\text{high}}{\left(\hat{\theta}(a)-P(a;
+\mathbf{\hat{b}})\right)^2 \,da}
 \]</span></p>
-<p>where <span class="math inline">\(\hat{P}(a)\)</span> is the
-projection model evaluated at treatment value <span class="math inline">\(a\)</span>. When requesting a linear
+<p>where <span class="math inline">\(P(a; \mathbf{\hat{b}})\)</span> is
+the projection model with parameters <span class="math inline">\(\mathbf{\hat{b}}=\{\hat{b}_0,\ \dots,\ \hat{b}_k
+\}\)</span> evaluated at treatment value <span class="math inline">\(a\)</span>. When requesting a linear
 projection,</p>
 <p><span class="math display">\[
-\hat{P}(a)=\hat b_0 + \hat b_1 a
+P(a; \mathbf{\hat{b}})=\hat b_0 + \hat b_1 a
 \]</span></p>
 <p>Below, we fit the linear projection using
 <code><a href="../reference/curve_projection.html">curve_projection()</a></code>:</p>
@@ -524,15 +529,15 @@ projection,</p>
 <code class="sourceCode R"><span><span class="va">proj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/curve_projection.html">curve_projection</a></span><span class="op">(</span><span class="va">adrf_bll</span>, <span class="st">"linear"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">proj</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                  ADRF Projection Coefficients</span></span>
-<span><span class="co">#&gt; ──────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;         Term Estimate Std. Error     t  P-value CI Low CI High</span></span>
-<span><span class="co">#&gt;  (Intercept)    8.486     0.1322 64.18 &lt; 0.0001  8.226   8.745</span></span>
-<span><span class="co">#&gt;       logBLL   -0.613     0.1267 -4.84 &lt; 0.0001 -0.861  -0.364</span></span>
-<span><span class="co">#&gt; ──────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 1.961, df = 2401)</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
+<span><span class="co">##                  ADRF Projection Coefficients</span></span>
+<span><span class="co">## ──────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">##         Term Estimate Std. Error     t  P-value CI Low CI High</span></span>
+<span><span class="co">##  (Intercept)    8.485     0.1322 64.19 &lt; 0.0001  8.226   8.745</span></span>
+<span><span class="co">##       logBLL   -0.612     0.1267 -4.83 &lt; 0.0001 -0.861  -0.364</span></span>
+<span><span class="co">## ──────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 1.961, df = 2401)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <p>The output of <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> is similar to that when applied
 to an <code>&lt;lm&gt;</code> object; we can see the coefficient
 estimates, standard errors, tests, and confidence intervals. As
@@ -575,7 +580,7 @@ steps use the ADRF as a building block.</p>
 between the ADRF and the ADRF at a single level of the treatment. For
 example, one may be interested in characterizing the effect of treatment
 as the difference between the ADRF at nonzero treatment values and the
-ADRF with treatment set to 0, as in <span class="citation">Hill (<a href="#ref-hillBayesianNonparametricModeling2011">2011</a>)</span>.</p>
+ADRF with treatment set to 0.</p>
 <p>To compute a reference effect curve for the ADRF, we can supply the
 ADRF to <code><a href="../reference/reference_curve.html">reference_curve()</a></code>, supplying an argument to
 <code>reference</code> corresponding to the level of the treatment to
@@ -587,14 +592,14 @@ arbitrary in this example because the treatment is on a log scale).</p>
 when printed, displays the reference level.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_ref</span></span>
-<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  - curve type: ADRF reference</span></span>
-<span><span class="co">#&gt;  - response: Math</span></span>
-<span><span class="co">#&gt;  - treatment: logBLL</span></span>
-<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - reference level: 0</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">## An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  - curve type: ADRF reference</span></span>
+<span><span class="co">##  - response: Math</span></span>
+<span><span class="co">##  - treatment: logBLL</span></span>
+<span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##  - reference level: 0</span></span>
+<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
 <p>We can plot the reference curve, which will essentially be the
 original ADRF shifted so that the curve height at the reference level is
 equal to 0.</p>
@@ -609,15 +614,15 @@ is equal to 0 everywhere, which tests whether the ADRF differs from its
 value at the reference level:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_ref</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF difference from reference (logBLL = 0) is 0</span></span>
-<span><span class="co">#&gt;     for values of logBLL between -0.3567 and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   P-value</span></span>
-<span><span class="co">#&gt;  &lt; 0.0001</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF difference from reference (logBLL = 0) is 0</span></span>
+<span><span class="co">##     for values of logBLL between -0.3567 and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##   P-value</span></span>
+<span><span class="co">##  &lt; 0.0001</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>Theoretically, this is equivalent to testing whether the ADRF is flat
 (no matter what the reference level is set to), though there may be
 slight differences between the results of this test and those of the
@@ -630,16 +635,16 @@ treatment levels:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_ref</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.5</span>, <span class="fl">1</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                  ADRF Reference Estimates</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;  logBLL Estimate Std. Error      t  P-value  CI Low CI High</span></span>
-<span><span class="co">#&gt;     0.5  -0.1113     0.1466 -0.760   0.7642 -0.4528  0.2301</span></span>
-<span><span class="co">#&gt;     1.0  -0.3964     0.2127 -1.863   0.1452 -0.8918  0.0990</span></span>
-<span><span class="co">#&gt;     1.5  -0.9598     0.2205 -4.354 &lt; 0.0001 -1.4732 -0.4464</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 2.329, df = 2401)</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Reference: logBLL = 0</span> | <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
+<span><span class="co">##                  ADRF Reference Estimates</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────────</span></span>
+<span><span class="co">##  logBLL Estimate Std. Error      t  P-value  CI Low CI High</span></span>
+<span><span class="co">##     0.5  -0.1113     0.1466 -0.760   0.7642 -0.4528  0.2301</span></span>
+<span><span class="co">##     1.0  -0.3964     0.2127 -1.863   0.1452 -0.8918  0.0990</span></span>
+<span><span class="co">##     1.5  -0.9598     0.2205 -4.354 &lt; 0.0001 -1.4732 -0.4464</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.329, df = 2401)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Reference: logBLL = 0</span> | <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <p>From this output, we can see that the value of the ADRF at
 <code>logBLL = 1.5</code> differs from that at <code>logBLL = 0</code>
 with a tiny p-value. The note below the table indicates the value of the
@@ -658,13 +663,13 @@ by supplying to it an <code>&lt;effect_curve&gt;</code> object.</p>
 <code class="sourceCode R"><span><span class="va">amef_bll</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/amef.html">amef</a></span><span class="op">(</span><span class="va">adrf_bll</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">amef_bll</span></span>
-<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  - curve type: AMEF</span></span>
-<span><span class="co">#&gt;  - response: Math</span></span>
-<span><span class="co">#&gt;  - treatment: logBLL</span></span>
-<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">## An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  - curve type: AMEF</span></span>
+<span><span class="co">##  - response: Math</span></span>
+<span><span class="co">##  - treatment: logBLL</span></span>
+<span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
 <p>The result is an <code>&lt;amef_curve&gt;</code> object, which, like
 all <code>&lt;effect_curve&gt;</code> objects, is a function. We can
 plot the AMEF with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</p>
@@ -681,16 +686,16 @@ those values to the <code>&lt;amef_curve&gt;</code> object and using
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">amef_bll</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                       AMEF Estimates</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;  logBLL Estimate Std. Error       t P-value  CI Low CI High</span></span>
-<span><span class="co">#&gt;       0  -0.0982     0.5166 -0.1902  0.9965 -1.3313  1.1348</span></span>
-<span><span class="co">#&gt;       1  -0.8166     0.6597 -1.2378  0.5133 -2.3911  0.7579</span></span>
-<span><span class="co">#&gt;       2  -0.1605     0.6479 -0.2478  0.9923 -1.7068  1.3858</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 2.387, df = 2401)</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
+<span><span class="co">##                       AMEF Estimates</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────────</span></span>
+<span><span class="co">##  logBLL Estimate Std. Error       t P-value  CI Low CI High</span></span>
+<span><span class="co">##       0  -0.0982     0.5166 -0.1902  0.9965 -1.3313  1.1348</span></span>
+<span><span class="co">##       1  -0.8166     0.6599 -1.2375  0.5136 -2.3914  0.7583</span></span>
+<span><span class="co">##       2  -0.1605     0.6479 -0.2478  0.9923 -1.7068  1.3858</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.387, df = 2401)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <p>Here, a p-value for the test that the AMEF value is equal to 0 is
 displayed along with confidence intervals. The null value for this test
 can be controlled with the <code>null</code> argument to
@@ -702,15 +707,15 @@ object itself. The default value for <code>hypothesis</code> is 0 to
 test whether the AMEF is 0 everywhere.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">amef_bll</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: AMEF is 0 for values of logBLL between -0.3567 and</span></span>
-<span><span class="co">#&gt;     2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  P-value</span></span>
-<span><span class="co">#&gt;   0.3528</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: AMEF is 0 for values of logBLL between -0.3567 and</span></span>
+<span><span class="co">##     2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  P-value</span></span>
+<span><span class="co">##   0.3529</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>Conclusions from the test that the ADRF is flat and that the AMEF is
 0 may differ due to differing sensitivities to local alternatives
 between the tests. More research is needed to understand these
@@ -747,14 +752,14 @@ subgrouping variables on the right side.</p>
 displays which variables were supplied to <code>by</code>:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_by_male</span></span>
-<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  - curve type: ADRF</span></span>
-<span><span class="co">#&gt;  - response: Math</span></span>
-<span><span class="co">#&gt;  - treatment: logBLL</span></span>
-<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - by: Male</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">## An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  - curve type: ADRF</span></span>
+<span><span class="co">##  - response: Math</span></span>
+<span><span class="co">##  - treatment: logBLL</span></span>
+<span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##  - by: Male</span></span>
+<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
 <p>When we plot the ADRF, we can see curves for both groups:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span><span class="op">)</span></span></code></pre></div>
@@ -764,16 +769,16 @@ produce results for all subgroups. Below, we test the null hypotheses
 that the ADRF for each subgroup is flat:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
-<span><span class="co">#&gt;     and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  Male  P-value</span></span>
-<span><span class="co">#&gt;     0   0.0667</span></span>
-<span><span class="co">#&gt;     1 &lt; 0.0001</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
+<span><span class="co">##     and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  Male  P-value</span></span>
+<span><span class="co">##     0   0.0670</span></span>
+<span><span class="co">##     1 &lt; 0.0001</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>We can reject the null hypothesis for the <code>Male = 1</code>
 group, but not for the <code>Male = 0</code> group at the .05 level.</p>
 <p>We can display ADRF estimates for each subgroup by supplying values
@@ -782,18 +787,18 @@ calling <code><a href="https://rdrr.io/r/base/summary.html" class="external-link
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_by_male</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                 ADRF Estimates</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;  Male logBLL Estimate Std. Error CI Low CI High</span></span>
-<span><span class="co">#&gt;     0      0    8.469     0.2351  7.850   9.088</span></span>
-<span><span class="co">#&gt;     0      1    8.460     0.1523  8.059   8.861</span></span>
-<span><span class="co">#&gt;     0      2    7.619     0.3274  6.757   8.480</span></span>
-<span><span class="co">#&gt;     1      0    8.375     0.2392  7.746   9.005</span></span>
-<span><span class="co">#&gt;     1      1    7.605     0.1641  7.173   8.036</span></span>
-<span><span class="co">#&gt;     1      2    6.689     0.2833  5.943   7.434</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 2.631, df = 2401)</span></span></span></code></pre></div>
+<span><span class="co">##                 ADRF Estimates</span></span>
+<span><span class="co">## ───────────────────────────────────────────────</span></span>
+<span><span class="co">##  Male logBLL Estimate Std. Error CI Low CI High</span></span>
+<span><span class="co">##     0      0    8.469     0.2351  7.850   9.088</span></span>
+<span><span class="co">##     0      1    8.460     0.1523  8.059   8.861</span></span>
+<span><span class="co">##     0      2    7.619     0.3274  6.757   8.480</span></span>
+<span><span class="co">##     1      0    8.375     0.2392  7.746   9.005</span></span>
+<span><span class="co">##     1      1    7.605     0.1641  7.173   8.036</span></span>
+<span><span class="co">##     1      2    6.689     0.2833  5.943   7.434</span></span>
+<span><span class="co">## ───────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.631, df = 2401)</span></span></span></code></pre></div>
 <p>Columns for the subgrouping variables are displayed on the left.</p>
 <p>When we project the ADRFs onto a linear model, we also get separate
 projection coefficients for each subgroup:</p>
@@ -802,26 +807,25 @@ projection coefficients for each subgroup:</p>
 <span></span>
 <span><span class="co"># Coefficient estimates</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">proj_by_male</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                    ADRF Projection Coefficients</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;  Male        Term Estimate Std. Error     t  P-value CI Low CI High</span></span>
-<span><span class="co">#&gt;     0 (Intercept)    8.623     0.1867 46.18 &lt; 0.0001  8.256   8.989</span></span>
-<span><span class="co">#&gt;     0      logBLL   -0.441     0.1863 -2.37   0.0180 -0.806  -0.076</span></span>
-<span><span class="co">#&gt;     1 (Intercept)    8.353     0.1871 44.65 &lt; 0.0001  7.986   8.720</span></span>
-<span><span class="co">#&gt;     1      logBLL   -0.779     0.1720 -4.53 &lt; 0.0001 -1.116  -0.441</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 1.961, df = 2401)</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Null value: 0</span></span></span>
-<span></span>
-<span><span class="co"># Projection plot</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_by_male</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<span><span class="co">##                    ADRF Projection Coefficients</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">##  Male        Term Estimate Std. Error     t  P-value CI Low CI High</span></span>
+<span><span class="co">##     0 (Intercept)    8.623     0.1867 46.18 &lt; 0.0001  8.257   8.989</span></span>
+<span><span class="co">##     0      logBLL   -0.441     0.1863 -2.37   0.0180 -0.806  -0.076</span></span>
+<span><span class="co">##     1 (Intercept)    8.353     0.1871 44.65 &lt; 0.0001  7.986   8.720</span></span>
+<span><span class="co">##     1      logBLL   -0.778     0.1720 -4.52 &lt; 0.0001 -1.115  -0.441</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 1.961, df = 2401)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="co"># ADRF plot with projection</span></span>
+<code class="sourceCode R"><span><span class="co"># Projection plot</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_by_male</span><span class="op">)</span></span></code></pre></div>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-33-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># ADRF plot with projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, proj <span class="op">=</span> <span class="va">proj_by_male</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-32-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-34-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Note that any corrections for multiple comparisons when
 <code>simultaneous = TRUE</code> in <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> and
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> will be made accounting for all subgroups, which
@@ -845,15 +849,15 @@ subgroups separately, we can use the following:</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="male-0" role="tabpanel" aria-labelledby="male-0-tab">
 
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-34-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-36-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="tab-pane" id="male-1" role="tabpanel" aria-labelledby="male-1-tab">
 
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-36-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -874,59 +878,59 @@ arguments. We can do the same with other functions as well:</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="male-0-1" role="tabpanel" aria-labelledby="male-0-1-tab">
 
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Testing whether the ADRF is flat</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
-<span><span class="co">#&gt;     and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  Male P-value</span></span>
-<span><span class="co">#&gt;     0  0.0667</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
+<span><span class="co">##     and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  Male P-value</span></span>
+<span><span class="co">##     0   0.067</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Estimates along the ADRF</span></span>
 <span><span class="fu">adrf_bll_by_male</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                 ADRF Estimates</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;  Male logBLL Estimate Std. Error CI Low CI High</span></span>
-<span><span class="co">#&gt;     0      0    8.469     0.2351  7.908   9.030</span></span>
-<span><span class="co">#&gt;     0      1    8.460     0.1523  8.096   8.823</span></span>
-<span><span class="co">#&gt;     0      2    7.619     0.3274  6.837   8.400</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span></code></pre></div>
+<span><span class="co">##                 ADRF Estimates</span></span>
+<span><span class="co">## ───────────────────────────────────────────────</span></span>
+<span><span class="co">##  Male logBLL Estimate Std. Error CI Low CI High</span></span>
+<span><span class="co">##     0      0    8.469     0.2351  7.908   9.030</span></span>
+<span><span class="co">##     0      1    8.460     0.1523  8.096   8.823</span></span>
+<span><span class="co">##     0      2    7.619     0.3274  6.837   8.400</span></span>
+<span><span class="co">## ───────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span></code></pre></div>
 </div>
 <div class="tab-pane" id="male-1-1" role="tabpanel" aria-labelledby="male-1-1-tab">
 
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Testing whether the ADRF is flat</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
-<span><span class="co">#&gt;     and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  Male  P-value</span></span>
-<span><span class="co">#&gt;     1 &lt; 0.0001</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
+<span><span class="co">##     and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  Male  P-value</span></span>
+<span><span class="co">##     1 &lt; 0.0001</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Estimates along the ADRF</span></span>
 <span><span class="fu">adrf_bll_by_male</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                 ADRF Estimates</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;  Male logBLL Estimate Std. Error CI Low CI High</span></span>
-<span><span class="co">#&gt;     1      0    8.375     0.2392  7.804   8.946</span></span>
-<span><span class="co">#&gt;     1      1    7.605     0.1640  7.213   7.996</span></span>
-<span><span class="co">#&gt;     1      2    6.689     0.2833  6.012   7.365</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span></code></pre></div>
+<span><span class="co">##                 ADRF Estimates</span></span>
+<span><span class="co">## ───────────────────────────────────────────────</span></span>
+<span><span class="co">##  Male logBLL Estimate Std. Error CI Low CI High</span></span>
+<span><span class="co">##     1      0    8.375     0.2392  7.804   8.946</span></span>
+<span><span class="co">##     1      1    7.605     0.1640  7.213   7.996</span></span>
+<span><span class="co">##     1      2    6.689     0.2833  6.013   7.365</span></span>
+<span><span class="co">## ───────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -946,60 +950,60 @@ compute a new effect curve corresponding to the contrast between
 subgroup ADRFs. Using <code><a href="../reference/curve_contrast.html">curve_contrast()</a></code> produces a
 <code>&lt;contrast_curve&gt;</code> object, which is an
 <code>&lt;effect_curve&gt;</code> object.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_male_contrast</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/curve_contrast.html">curve_contrast</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span><span class="op">)</span></span></code></pre></div>
 <p>Printing the object displays the contrast(s) computed. With more than
 two subgroups, all pairs of subgroups are compared.</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_male_contrast</span></span>
-<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  - curve type: ADRF contrast</span></span>
-<span><span class="co">#&gt;  - response: Math</span></span>
-<span><span class="co">#&gt;  - treatment: logBLL</span></span>
-<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - contrast: [Male = 1] - [Male = 0]</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">## An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  - curve type: ADRF contrast</span></span>
+<span><span class="co">##  - response: Math</span></span>
+<span><span class="co">##  - treatment: logBLL</span></span>
+<span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##  - contrast: [Male = 1] - [Male = 0]</span></span>
+<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
 <p>We can plot the difference between the two ADRFs using
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_male_contrast</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-41-1.png" class="r-plt" alt="" width="691.2" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-43-1.png" class="r-plt" alt="" width="691.2" style="display: block; margin: auto;"></p>
 <p>Here, the y-axis corresponds to the difference between the subgroup
 ADRF estimates, and a horizontal line at 0 is displayed. We can use
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> to test whether the ADRF contrast curve is equal
 to 0 everywhere, which would indicate that the ADRF does not differ
 across subgroups:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_male_contrast</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF contrast is 0 for values of logBLL between</span></span>
-<span><span class="co">#&gt;     -0.3567 and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;                 Contrast P-value</span></span>
-<span><span class="co">#&gt;  [Male = 1] - [Male = 0]    0.01</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF contrast is 0 for values of logBLL between</span></span>
+<span><span class="co">##     -0.3567 and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##                 Contrast P-value</span></span>
+<span><span class="co">##  [Male = 1] - [Male = 0]    0.01</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>Given the small p-value, we can reject the null hypothesis that the
 ADRF contrast is 0, implying the subgroup ADRFs differ from each
 other.</p>
 <p>We can use <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on the output of the
 <code>&lt;contrast_curve&gt;</code> object to test for differences
 between the subgroup ADRFs at specific points:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_male_contrast</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                          ADRF Contrast Estimates</span></span>
-<span><span class="co">#&gt; ──────────────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;                 Contrast logBLL Estimate Std. Error      t P-value  CI Low</span></span>
-<span><span class="co">#&gt;  [Male = 1] - [Male = 0]      0  -0.0938     0.3354 -0.280  0.9890 -0.8942</span></span>
-<span><span class="co">#&gt;  [Male = 1] - [Male = 0]      1  -0.8551     0.2239 -3.820  0.0004 -1.3892</span></span>
-<span><span class="co">#&gt;  [Male = 1] - [Male = 0]      2  -0.9300     0.4329 -2.148  0.0914 -1.9631</span></span>
-<span><span class="co">#&gt; ──────────────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
+<span><span class="co">##                          ADRF Contrast Estimates</span></span>
+<span><span class="co">## ──────────────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">##                 Contrast logBLL Estimate Std. Error      t P-value  CI Low</span></span>
+<span><span class="co">##  [Male = 1] - [Male = 0]      0  -0.0938     0.3354 -0.280  0.9890 -0.8942</span></span>
+<span><span class="co">##  [Male = 1] - [Male = 0]      1  -0.8551     0.2239 -3.820  0.0004 -1.3892</span></span>
+<span><span class="co">##  [Male = 1] - [Male = 0]      2  -0.9300     0.4329 -2.148  0.0914 -1.9631</span></span>
+<span><span class="co">## ──────────────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <p>Here we see evidence that the ADRF values at <code>logBLL = 1</code>
 differ between the <code>Male = 1</code> and <code>Male = 0</code>
 subgroups.</p>
@@ -1028,13 +1032,13 @@ when dealing with such models.</p>
 <code>Block</code>, <code>Block_bin</code>, which is 1 if
 <code>Block</code> is 12 or greater and 0 otherwise. We’ll create that
 variable below and use it as the outcome of our outcome model:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nhanes3lead</span><span class="op">$</span><span class="va">Block_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">nhanes3lead</span><span class="op">$</span><span class="va">Block</span> <span class="op">&gt;=</span> <span class="fl">12</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">nhanes3lead</span><span class="op">$</span><span class="va">Block_bin</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;    0    1 </span></span>
-<span><span class="co">#&gt; 2049  472</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##    0    1 </span></span>
+<span><span class="co">## 2049  472</span></span>
 <span></span>
 <span><span class="va">fit_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Block_bin</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>                 <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
@@ -1046,21 +1050,21 @@ supply the <code>type</code> argument, which specifies the type of
 prediction to use. The default, <code>type = "response"</code>, computes
 the ADRF on the probability scale, which is the most natural for a
 binary outcome.</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_bin</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">adrf_bll_bin</span></span>
-<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  - curve type: ADRF</span></span>
-<span><span class="co">#&gt;  - response: Block_bin</span></span>
-<span><span class="co">#&gt;  - treatment: logBLL</span></span>
-<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">## An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  - curve type: ADRF</span></span>
+<span><span class="co">##  - response: Block_bin</span></span>
+<span><span class="co">##  - treatment: logBLL</span></span>
+<span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
 <p>We can plot the ADRF with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-46-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-48-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>An important thing to notice is that the confidence bands are
 asymmetrical. This is because symmetrical Wald confidence bands are
 first computed on transformed versions of the ADRF estimates before
@@ -1094,15 +1098,15 @@ below:</p>
 <div class="tab-content">
 <div class="tab-pane" id="transformed" role="tabpanel" aria-labelledby="transformed-tab">
 
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-48-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-50-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="active tab-pane" id="untransformed" role="tabpanel" aria-labelledby="untransformed-tab">
 
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-50-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-52-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -1126,33 +1130,33 @@ computes transformed confidence intervals.</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="transformed-1" role="tabpanel" aria-labelledby="transformed-1-tab">
 
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_bin</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         ADRF Estimates</span></span>
-<span><span class="co">#&gt; ───────────────────────────────</span></span>
-<span><span class="co">#&gt;  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">#&gt;       0   0.2420 0.1930  0.2988</span></span>
-<span><span class="co">#&gt;       1   0.1925 0.1602  0.2296</span></span>
-<span><span class="co">#&gt;       2   0.0752 0.0396  0.1383</span></span>
-<span><span class="co">#&gt; ───────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (z* = 2.386)</span></span></span></code></pre></div>
+<span><span class="co">##         ADRF Estimates</span></span>
+<span><span class="co">## ───────────────────────────────</span></span>
+<span><span class="co">##  logBLL Estimate CI Low CI High</span></span>
+<span><span class="co">##       0   0.2420 0.1930  0.2988</span></span>
+<span><span class="co">##       1   0.1926 0.1602  0.2296</span></span>
+<span><span class="co">##       2   0.0752 0.0396  0.1383</span></span>
+<span><span class="co">## ───────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (z* = 2.386)</span></span></span></code></pre></div>
 </div>
 <div class="tab-pane" id="untransformed-1" role="tabpanel" aria-labelledby="untransformed-1-tab">
 
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">adrf_bll_bin</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt;               ADRF Estimates</span></span>
-<span><span class="co">#&gt; ──────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;  logBLL Estimate Std. Error CI Low CI High</span></span>
-<span><span class="co">#&gt;       0   0.2420     0.0222 0.1890  0.2949</span></span>
-<span><span class="co">#&gt;       1   0.1925     0.0145 0.1579  0.2272</span></span>
-<span><span class="co">#&gt;       2   0.0752     0.0198 0.0279  0.1225</span></span>
-<span><span class="co">#&gt; ──────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (z* = 2.386)</span></span></span></code></pre></div>
+<span><span class="co">##               ADRF Estimates</span></span>
+<span><span class="co">## ──────────────────────────────────────────</span></span>
+<span><span class="co">##  logBLL Estimate Std. Error CI Low CI High</span></span>
+<span><span class="co">##       0   0.2420     0.0222 0.1890  0.2949</span></span>
+<span><span class="co">##       1   0.1926     0.0145 0.1579  0.2272</span></span>
+<span><span class="co">##       2   0.0752     0.0198 0.0279  0.1225</span></span>
+<span><span class="co">## ──────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (z* = 2.386)</span></span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -1188,14 +1192,15 @@ yield a straight line. For a transformation <span class="math inline">\(g(\mu)\)
 \exp(-\eta)}\)</span>), the transformed projection is estimated by
 minimizing</p>
 <p><span class="math display">\[
-\int_{a_\text{low}}^{a_\text{high}}{\left(\hat{\theta}(a)-g^{-1}\left(\hat{P}(a)\right)\right)^2
-\,da}
+\int_{a_\text{low}}^{a_\text{high}}{\left(\hat{\theta}(a)-g^{-1}\left(P(a;
+\mathbf{\hat{b}})\right)\right)^2 \,da}
 \]</span></p>
-<p>where <span class="math inline">\(\hat{P}(a)\)</span> is the linear
-predictor of the projection model evaluated at treatment value <span class="math inline">\(a\)</span> (e.g., <span class="math inline">\(\hat{P}(a)=\hat{b}_0 + \hat{b}_1 a\)</span> for a
-simple linear projection model). The projection is estimated using
-nonlinear least-squares, with propagation of the uncertainty in the ADRF
-carried through using the delta method.</p>
+<p>where <span class="math inline">\(P(a; \mathbf{\hat{b}})\)</span> is
+the linear predictor of the projection model evaluated at treatment
+value <span class="math inline">\(a\)</span> (e.g., <span class="math inline">\(P(a; \mathbf{\hat{b}})=\hat{b}_0 + \hat{b}_1
+a\)</span> for a simple linear projection model). The projection is
+estimated using nonlinear least-squares, with propagation of the
+uncertainty in the ADRF carried through using the delta method.</p>
 <p>The choice of whether to use a transformed projection or an
 untransformed projection affects the output of <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>
 and <code><a href="../reference/curve_projection.html">curve_projection()</a></code>, both of which involve a projection
@@ -1234,85 +1239,85 @@ the test statistic.</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="transformed-2" role="tabpanel" aria-labelledby="transformed-2-tab">
 
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Test for flatness</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is flat (transformed) for values of logBLL</span></span>
-<span><span class="co">#&gt;     between -0.3567 and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   P-value</span></span>
-<span><span class="co">#&gt;  &lt; 0.0001</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is flat (transformed) for values of logBLL</span></span>
+<span><span class="co">##     between -0.3567 and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##   P-value</span></span>
+<span><span class="co">##  &lt; 0.0001</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Test for linearity</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, <span class="st">"linear"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is linear (transformed) for values of logBLL</span></span>
-<span><span class="co">#&gt;     between -0.3567 and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  P-value</span></span>
-<span><span class="co">#&gt;    0.144</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is linear (transformed) for values of logBLL</span></span>
+<span><span class="co">##     between -0.3567 and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  P-value</span></span>
+<span><span class="co">##   0.1447</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Estimate projection on transformed ADRF</span></span>
 <span><span class="va">proj_t</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/curve_projection.html">curve_projection</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, <span class="st">"linear"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">proj_t</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   ADRF Projection Coefficients</span></span>
-<span><span class="co">#&gt; ─────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;         Term Estimate Std. Error       z  P-value  CI Low CI High</span></span>
-<span><span class="co">#&gt;  (Intercept)  -1.0964     0.0941 -11.653 &lt; 0.0001 -1.2808  -0.912</span></span>
-<span><span class="co">#&gt;       logBLL  -0.5373     0.0996  -5.392 &lt; 0.0001 -0.7325  -0.342</span></span>
-<span><span class="co">#&gt; ─────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (z* = 1.96)</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
+<span><span class="co">##                   ADRF Projection Coefficients</span></span>
+<span><span class="co">## ─────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">##         Term Estimate Std. Error       z  P-value  CI Low CI High</span></span>
+<span><span class="co">##  (Intercept)  -1.0964     0.0941 -11.657 &lt; 0.0001 -1.2808 -0.9121</span></span>
+<span><span class="co">##       logBLL  -0.5372     0.0996  -5.392 &lt; 0.0001 -0.7324 -0.3419</span></span>
+<span><span class="co">## ─────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (z* = 1.96)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 </div>
 <div class="tab-pane" id="untransformed-2" role="tabpanel" aria-labelledby="untransformed-2-tab">
 
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Test for flatness</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
-<span><span class="co">#&gt;     and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   P-value</span></span>
-<span><span class="co">#&gt;  &lt; 0.0001</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is flat for values of logBLL between -0.3567</span></span>
+<span><span class="co">##     and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##   P-value</span></span>
+<span><span class="co">##  &lt; 0.0001</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Test for linearity</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, <span class="st">"linear"</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   Omnibus Curve Test</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; H₀: ADRF is linear for values of logBLL between</span></span>
-<span><span class="co">#&gt;     -0.3567 and 2.4248</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  P-value</span></span>
-<span><span class="co">#&gt;   0.5193</span></span>
-<span><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##                   Omnibus Curve Test</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## H₀: ADRF is linear for values of logBLL between</span></span>
+<span><span class="co">##     -0.3567 and 2.4248</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  P-value</span></span>
+<span><span class="co">##   0.5202</span></span>
+<span><span class="co">## ───────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Estimate projection on untransformed ADRF</span></span>
 <span><span class="va">proj_u</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/curve_projection.html">curve_projection</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, <span class="st">"linear"</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">proj_u</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   ADRF Projection Coefficients</span></span>
-<span><span class="co">#&gt; ────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt;         Term Estimate Std. Error      z  P-value  CI Low CI High</span></span>
-<span><span class="co">#&gt;  (Intercept)   0.2497     0.0162 15.396 &lt; 0.0001  0.2179  0.2815</span></span>
-<span><span class="co">#&gt;       logBLL  -0.0788     0.0133 -5.936 &lt; 0.0001 -0.1048 -0.0528</span></span>
-<span><span class="co">#&gt; ────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: unconditional</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95% (z* = 1.96)</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
+<span><span class="co">##                   ADRF Projection Coefficients</span></span>
+<span><span class="co">## ────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">##         Term Estimate Std. Error      z  P-value  CI Low CI High</span></span>
+<span><span class="co">##  (Intercept)   0.2497     0.0162 15.399 &lt; 0.0001  0.2179  0.2815</span></span>
+<span><span class="co">##       logBLL  -0.0788     0.0133 -5.936 &lt; 0.0001 -0.1048 -0.0528</span></span>
+<span><span class="co">## ────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: unconditional</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (z* = 1.96)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -1330,21 +1335,21 @@ the test statistic.</p>
 <div class="tab-content">
 <div class="active  tab-pane" id="transformed-3" role="tabpanel" aria-labelledby="transformed-3-tab">
 
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Plot transformed projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_t</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, proj <span class="op">=</span> <span class="va">proj_t</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"><img src="adrftools_files/figure-html/unnamed-chunk-56-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-58-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"><img src="adrftools_files/figure-html/unnamed-chunk-58-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="tab-pane" id="untransformed-3" role="tabpanel" aria-labelledby="untransformed-3-tab">
 
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Plot untransformed projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">proj_u</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, proj <span class="op">=</span> <span class="va">proj_u</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-58-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"><img src="adrftools_files/figure-html/unnamed-chunk-58-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-60-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"><img src="adrftools_files/figure-html/unnamed-chunk-60-2.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -1389,7 +1394,7 @@ to estimate weights, one can use one of <em>WeightIt</em>’s built-in
 outcome modeling functions like <code><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit()</a></code> to fit the
 outcome model. See an example below, in which we first estimate
 balancing weights using generalized propensity score weighting.</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ngreifer.github.io/WeightIt/" class="external-link">WeightIt</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">w_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/weightit.html" class="external-link">weightit</a></span><span class="op">(</span><span class="va">logBLL</span> <span class="op">~</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
@@ -1398,18 +1403,18 @@ balancing weights using generalized propensity score weighting.</p>
 <span>                  method <span class="op">=</span> <span class="st">"glm"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">w_fit</span></span>
-<span><span class="co">#&gt; A <span style="font-style: italic;">weightit</span> object</span></span>
-<span><span class="co">#&gt;  - method: "glm" (propensity score weighting with GLM)</span></span>
-<span><span class="co">#&gt;  - number of obs.: 2521</span></span>
-<span><span class="co">#&gt;  - sampling weights: none</span></span>
-<span><span class="co">#&gt;  - treatment: continuous</span></span>
-<span><span class="co">#&gt;  - covariates: Male, Age, Race, PIR, Enough_Food, Smoke_in_Home, Smoke_Pregnant, NICU</span></span></code></pre></div>
+<span><span class="co">## A <span style="font-style: italic;">weightit</span> object</span></span>
+<span><span class="co">##  - method: "glm" (propensity score weighting with GLM)</span></span>
+<span><span class="co">##  - number of obs.: 2521</span></span>
+<span><span class="co">##  - sampling weights: none</span></span>
+<span><span class="co">##  - treatment: continuous</span></span>
+<span><span class="co">##  - covariates: Male, Age, Race, PIR, Enough_Food, Smoke_in_Home, Smoke_Pregnant, NICU</span></span></code></pre></div>
 <p>Normally, we would assess balance on the weights, but we’ll skip that
 here (see <code><a href="https://ngreifer.github.io/cobalt/articles/cobalt.html" class="external-link">vignette("cobalt", package = "cobalt")</a></code> for
 details on how to do this). We’ll use <code><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit()</a></code> to fit
 a linear model for <code>Math</code>, incorporating the estimation of
 the weights into the variance of the outcome model parameters.</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>                      <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                         <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
@@ -1417,11 +1422,11 @@ the weights into the variance of the outcome model parameters.</p>
 <span>                    weightit <span class="op">=</span> <span class="va">w_fit</span><span class="op">)</span></span></code></pre></div>
 <p>Finally, we can use <code><a href="../reference/adrf.html">adrf()</a></code> to compute the ADRF, just as
 we did with the output of <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>.</p>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_bll_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_w</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-61-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-63-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="sampling-weights">Sampling weights<a class="anchor" aria-label="anchor" href="#sampling-weights"></a>
@@ -1443,32 +1448,41 @@ automatically incorporates the sampling weights; <code>wts</code> should
 typically not be specified.</p>
 <p>In the <code>nhanes3lead</code> dataset, the <code>MEC_wt</code>
 variable contains sampling weights. Below, we’ll demonstrate three
-common approaches to incorporating sampling weights: 1) using
-<code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code>, 2) using the <code>s.weights</code>
-argument in <code><a href="https://ngreifer.github.io/WeightIt/reference/weightit.html" class="external-link">WeightIt::weightit()</a></code>, and 3) using the
-<code>weights</code> argument in <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>; only the last of
-these three requires using the the <code>wts</code> argument.</p>
+common approaches to incorporating sampling weights:</p>
+<ol style="list-style-type: decimal">
+<li>Using <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code>
+</li>
+<li>Using the <code>s.weights</code> argument in
+<code><a href="https://ngreifer.github.io/WeightIt/reference/weightit.html" class="external-link">WeightIt::weightit()</a></code>
+</li>
+<li>Using the <code>weights</code> argument in <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>
+</li>
+</ol>
+<p>Only the last of these three requires using the the <code>wts</code>
+argument.</p>
 <div class="section level4">
 <h4 id="using-survey">Using <em>survey</em><a class="anchor" aria-label="anchor" href="#using-survey"></a>
 </h4>
 <p>First, we’ll use <em>survey</em> functionality to incorporate
 sampling weights.</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://r-survey.r-forge.r-project.org/survey/" class="external-link">survey</a></span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Incorporate weights into surveydesign object</span></span>
 <span><span class="va">des</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span><span class="op">~</span><span class="fl">1</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">MEC_wt</span>, data <span class="op">=</span> <span class="va">nhanes3lead</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Fit weighted outcome model</span></span>
 <span><span class="va">fit_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>                   <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                      <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>                 design <span class="op">=</span> <span class="va">des</span><span class="op">)</span></span></code></pre></div>
 <p>Simply calling <code><a href="../reference/adrf.html">adrf()</a></code> automatically incorporates
 sampling weights.</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_sv</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_sv</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-63-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-65-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level4">
 <h4 id="using-glm">Using <code>glm()</code><a class="anchor" aria-label="anchor" href="#using-glm"></a>
@@ -1480,8 +1494,9 @@ with the <code>weights</code> argument can be used instead of
 estimates to be valid, but <code><a href="../reference/adrf.html">adrf()</a></code> calculates that standard
 error automatically when <code>vcov = "unconditional"</code> (the
 default).</p>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Fit weighted outcome model</span></span>
+<span><span class="va">fit_gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>               <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                  <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>             data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
@@ -1493,12 +1508,12 @@ in fitting the outcome mode, but the ADRF will generalize to the
 unweighted population. This is okay if the weights are balancing
 weights, but if they are sampling weights, it is critical for them to be
 incorporated into the ADRF as well.</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_gs</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span>,</span>
 <span>                wts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_gs</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-65-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-67-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <p>Using <code>wts = "MEC_wts"</code> would yield the same results and
 can be used if the weights used to fit the outcome model are different
 from those used to generalized the ADRF (as we will see below when
@@ -1519,18 +1534,21 @@ automatically included in the outcome model when fit with
 estimating balancing weights by setting &lt;code&gt;method = NULL&lt;/code&gt; in
 the call to &lt;code&gt;&lt;a href="https://ngreifer.github.io/WeightIt/reference/weightit.html" class="external-link"&gt;weightit()&lt;/a&gt;&lt;/code&gt;. This yields the same results as the
 previous two methods.&lt;/p&gt;'><sup>2</sup></a>.</p>
-<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ngreifer.github.io/WeightIt/" class="external-link">WeightIt</a></span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Estimate balancing weights incorporating</span></span>
+<span><span class="co"># sampling weights</span></span>
 <span><span class="va">w_sw_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/weightit.html" class="external-link">weightit</a></span><span class="op">(</span><span class="va">logBLL</span> <span class="op">~</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
 <span>                       <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span>,</span>
 <span>                     data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
 <span>                     method <span class="op">=</span> <span class="st">"glm"</span>,</span>
 <span>                     s.weights <span class="op">=</span> <span class="st">"MEC_wt"</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Fit weighted outcome model</span></span>
 <span><span class="va">fit_sw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>                         <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                            <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
+<span>                         <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
+<span>                            <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>                       data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
 <span>                       weightit <span class="op">=</span> <span class="va">w_sw_fit</span><span class="op">)</span></span></code></pre></div>
 <p>By default, <code><a href="../reference/adrf.html">adrf()</a></code> uses the sampling weights, but not
@@ -1538,11 +1556,11 @@ the balancing weights, in standardizing the ADRF estimate. This ensures
 the estimates generalize to the sampling-weighted sample<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content="&lt;p&gt;If, for some reason, you want to include the product of
 the sampling weights and balancing weights in the estimation of the
 ADRF, set &lt;code&gt;wts = TRUE&lt;/code&gt; instead of leaving it unspecified.&lt;/p&gt;"><sup>3</sup></a>.</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_sw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_sw</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_sw</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-67-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-69-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level4">
 <h4 id="other-scenarios">Other scenarios<a class="anchor" aria-label="anchor" href="#other-scenarios"></a>
@@ -1574,62 +1592,64 @@ compute the ADRF. <code><a href="../reference/adrf.html">adrf()</a></code> compu
 dataset and pools the results, yielding a single object similar to one
 had <code><a href="../reference/adrf.html">adrf()</a></code> been called on a single model. Rubin’s rules are
 used to pool the ADRF estimates and covariance matrix.</p>
-<p><em>adrftools</em> requires <code>&lt;mira&gt;</code> objects from
-<em>mice</em> (including <code>&lt;mimira&gt;</code> objects from
-<em>MatchThem</em>); other forms of model fit to imputed data need to be
-converted to this form, e.g., using <code><a href="https://amices.org/mice/reference/as.mira.html" class="external-link">mice::as.mira()</a></code>. Below,
-we’ll demonstrate using multiply imputed data generated by <em>mice</em>
-with <em>adrftools</em>. First, we’ll generate some missing data
-artificially using <code><a href="https://amices.org/mice/reference/ampute.html" class="external-link">mice::ampute()</a></code>.</p>
-<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<p><em>adrftools</em> requires <code>&lt;mira&gt;</code> objects from <a href="https://cran.r-project.org/package=mice" class="external-link"><em>mice</em></a>
+(including <code>&lt;mimira&gt;</code> objects from <a href="https://cran.r-project.org/package=MatchThem" class="external-link"><em>MatchThem</em></a>);
+other forms of model fit to imputed data need to be converted to this
+form, e.g., using <code><a href="https://amices.org/mice/reference/as.mira.html" class="external-link">mice::as.mira()</a></code>. Below, we’ll demonstrate
+using multiply imputed data generated by <em>mice</em> with
+<em>adrftools</em>. First, we’ll generate some missing data artificially
+using <code><a href="https://amices.org/mice/reference/ampute.html" class="external-link">mice::ampute()</a></code>.</p>
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amices/mice" class="external-link">mice</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Create MCAR missing values</span></span>
 <span><span class="va">nhanes3lead_mis</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/ampute.html" class="external-link">ampute</a></span><span class="op">(</span><span class="va">nhanes3lead</span>, mech <span class="op">=</span> <span class="st">"MCAR"</span><span class="op">)</span><span class="op">$</span><span class="va">amp</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">nhanes3lead_mis</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       Age              Male              Race          PIR       </span></span>
-<span><span class="co">#&gt;  Min.   : 5.833   Min.   :0.0000   Black   :806   Min.   :0.000  </span></span>
-<span><span class="co">#&gt;  1st Qu.: 7.500   1st Qu.:0.0000   Hispanic:843   1st Qu.:0.671  </span></span>
-<span><span class="co">#&gt;  Median : 9.083   Median :1.0000   Other   :108   Median :1.287  </span></span>
-<span><span class="co">#&gt;  Mean   : 9.017   Mean   :0.5078   White   :684   Mean   :1.627  </span></span>
-<span><span class="co">#&gt;  3rd Qu.:10.500   3rd Qu.:1.0000   NA's    : 80   3rd Qu.:2.375  </span></span>
-<span><span class="co">#&gt;  Max.   :11.917   Max.   :1.0000                  Max.   :6.943  </span></span>
-<span><span class="co">#&gt;  NA's   :88       NA's   :89                      NA's   :79     </span></span>
-<span><span class="co">#&gt;   Enough_Food     Smoke_in_Home    Smoke_Pregnant        NICU       </span></span>
-<span><span class="co">#&gt;  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  </span></span>
-<span><span class="co">#&gt;  1st Qu.:1.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  </span></span>
-<span><span class="co">#&gt;  Median :1.0000   Median :0.0000   Median :0.0000   Median :0.0000  </span></span>
-<span><span class="co">#&gt;  Mean   :0.8887   Mean   :0.3899   Mean   :0.1995   Mean   :0.1121  </span></span>
-<span><span class="co">#&gt;  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  </span></span>
-<span><span class="co">#&gt;  Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000  </span></span>
-<span><span class="co">#&gt;  NA's   :86       NA's   :77       NA's   :80       NA's   :85      </span></span>
-<span><span class="co">#&gt;      logBLL             Math           Reading           Block       </span></span>
-<span><span class="co">#&gt;  Min.   :-0.3567   Min.   : 0.000   Min.   : 0.000   Min.   : 1.000  </span></span>
-<span><span class="co">#&gt;  1st Qu.: 0.4700   1st Qu.: 6.000   1st Qu.: 4.000   1st Qu.: 7.000  </span></span>
-<span><span class="co">#&gt;  Median : 0.9933   Median : 8.000   Median : 7.000   Median : 9.000  </span></span>
-<span><span class="co">#&gt;  Mean   : 0.9730   Mean   : 7.947   Mean   : 6.977   Mean   : 8.666  </span></span>
-<span><span class="co">#&gt;  3rd Qu.: 1.4586   3rd Qu.:10.000   3rd Qu.:10.000   3rd Qu.:11.000  </span></span>
-<span><span class="co">#&gt;  Max.   : 3.3810   Max.   :20.000   Max.   :18.000   Max.   :19.000  </span></span>
-<span><span class="co">#&gt;  NA's   :86        NA's   :97       NA's   :90       NA's   :84      </span></span>
-<span><span class="co">#&gt;      Digit            MEC_wt          Block_bin     </span></span>
-<span><span class="co">#&gt;  Min.   : 1.000   Min.   :  213.4   Min.   :0.0000  </span></span>
-<span><span class="co">#&gt;  1st Qu.: 6.000   1st Qu.: 1660.2   1st Qu.:0.0000  </span></span>
-<span><span class="co">#&gt;  Median : 8.000   Median : 3117.1   Median :0.0000  </span></span>
-<span><span class="co">#&gt;  Mean   : 8.192   Mean   : 7190.2   Mean   :0.1861  </span></span>
-<span><span class="co">#&gt;  3rd Qu.:10.000   3rd Qu.: 9090.0   3rd Qu.:0.0000  </span></span>
-<span><span class="co">#&gt;  Max.   :19.000   Max.   :70105.7   Max.   :1.0000  </span></span>
-<span><span class="co">#&gt;  NA's   :78       NA's   :81        NA's   :76</span></span></code></pre></div>
+<span><span class="co">##       Age              Male              Race          PIR       </span></span>
+<span><span class="co">##  Min.   : 5.833   Min.   :0.0000   Black   :806   Min.   :0.000  </span></span>
+<span><span class="co">##  1st Qu.: 7.500   1st Qu.:0.0000   Hispanic:843   1st Qu.:0.671  </span></span>
+<span><span class="co">##  Median : 9.083   Median :1.0000   Other   :108   Median :1.287  </span></span>
+<span><span class="co">##  Mean   : 9.017   Mean   :0.5078   White   :684   Mean   :1.627  </span></span>
+<span><span class="co">##  3rd Qu.:10.500   3rd Qu.:1.0000   NA's    : 80   3rd Qu.:2.375  </span></span>
+<span><span class="co">##  Max.   :11.917   Max.   :1.0000                  Max.   :6.943  </span></span>
+<span><span class="co">##  NA's   :88       NA's   :89                      NA's   :79     </span></span>
+<span><span class="co">##   Enough_Food     Smoke_in_Home    Smoke_Pregnant        NICU       </span></span>
+<span><span class="co">##  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  </span></span>
+<span><span class="co">##  1st Qu.:1.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  </span></span>
+<span><span class="co">##  Median :1.0000   Median :0.0000   Median :0.0000   Median :0.0000  </span></span>
+<span><span class="co">##  Mean   :0.8887   Mean   :0.3899   Mean   :0.1995   Mean   :0.1121  </span></span>
+<span><span class="co">##  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  </span></span>
+<span><span class="co">##  Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000  </span></span>
+<span><span class="co">##  NA's   :86       NA's   :77       NA's   :80       NA's   :85      </span></span>
+<span><span class="co">##      logBLL             Math           Reading           Block       </span></span>
+<span><span class="co">##  Min.   :-0.3567   Min.   : 0.000   Min.   : 0.000   Min.   : 1.000  </span></span>
+<span><span class="co">##  1st Qu.: 0.4700   1st Qu.: 6.000   1st Qu.: 4.000   1st Qu.: 7.000  </span></span>
+<span><span class="co">##  Median : 0.9933   Median : 8.000   Median : 7.000   Median : 9.000  </span></span>
+<span><span class="co">##  Mean   : 0.9730   Mean   : 7.947   Mean   : 6.977   Mean   : 8.666  </span></span>
+<span><span class="co">##  3rd Qu.: 1.4586   3rd Qu.:10.000   3rd Qu.:10.000   3rd Qu.:11.000  </span></span>
+<span><span class="co">##  Max.   : 3.3810   Max.   :20.000   Max.   :18.000   Max.   :19.000  </span></span>
+<span><span class="co">##  NA's   :86        NA's   :97       NA's   :90       NA's   :84      </span></span>
+<span><span class="co">##      Digit            MEC_wt          Block_bin     </span></span>
+<span><span class="co">##  Min.   : 1.000   Min.   :  213.4   Min.   :0.0000  </span></span>
+<span><span class="co">##  1st Qu.: 6.000   1st Qu.: 1660.2   1st Qu.:0.0000  </span></span>
+<span><span class="co">##  Median : 8.000   Median : 3117.1   Median :0.0000  </span></span>
+<span><span class="co">##  Mean   : 8.192   Mean   : 7190.2   Mean   :0.1861  </span></span>
+<span><span class="co">##  3rd Qu.:10.000   3rd Qu.: 9090.0   3rd Qu.:0.0000  </span></span>
+<span><span class="co">##  Max.   :19.000   Max.   :70105.7   Max.   :1.0000  </span></span>
+<span><span class="co">##  NA's   :78       NA's   :81        NA's   :76</span></span></code></pre></div>
 <p>Next, we’ll use <code><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice::mice()</a></code> to impute the missing data
 into 5 imputed datasets. Note that in practice, many more imputations
 should be used and the usual methods for assessing convergence and
 imputation quality should be implemented; we skip those here.</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice</a></span><span class="op">(</span><span class="va">nhanes3lead_mis</span>, m <span class="op">=</span> <span class="fl">5</span>, print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Multiple imputation</span></span>
+<span><span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice</a></span><span class="op">(</span><span class="va">nhanes3lead_mis</span>, m <span class="op">=</span> <span class="fl">5</span>, print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>Next, we can fit an outcome model using <code><a href="https://rdrr.io/r/base/with.html" class="external-link">with()</a></code> to create
 a <code>&lt;mira&gt;</code> object containing a list of the model
 fits.</p>
-<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span></span>
 <span>  <span class="va">imp</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
@@ -1639,12 +1659,12 @@ fits.</p>
 <p>We can supply the <code>&lt;mira&gt;</code> object to
 <code><a href="../reference/adrf.html">adrf()</a></code>, which automatically estimates the ADRF in each
 imputed dataset and pools the results.</p>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_mi</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_mi</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-71-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
-<p>The only option not supported with multiply imputed data is
+<p><img src="adrftools_files/figure-html/unnamed-chunk-73-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p>The only capability not supported with multiply imputed data is
 bootstrapping. Setting <code>vcov = "boot"</code> or
 <code>vcov = "fwb"</code> in <code><a href="../reference/adrf.html">adrf()</a></code> will yield an
 error.</p>
@@ -1654,9 +1674,10 @@ error.</p>
 <p>To estimate balancing weights in multiply imputed data, we can use
 <code><a href="https://rdrr.io/pkg/MatchThem/man/weightthem.html" class="external-link">MatchThem::weightthem()</a></code>. All analyses work similarly to
 when using <em>mice</em> alone.</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/FarhadPishgar/MatchThem" class="external-link">MatchThem</a></span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Estimate balancing weights</span></span>
 <span><span class="va">w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/MatchThem/man/weightthem.html" class="external-link">weightthem</a></span><span class="op">(</span><span class="va">logBLL</span> <span class="op">~</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
 <span>                     <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span>,</span>
 <span>                   datasets <span class="op">=</span> <span class="va">imp</span>,</span>
@@ -1664,7 +1685,7 @@ when using <em>mice</em> alone.</p>
 <span></span>
 <span><span class="va">fit_w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span></span>
 <span>  <span class="va">w_mi</span>,</span>
-<span>  <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
+<span>  <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">lm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
 <span>                 <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
 <span>                    <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -1672,7 +1693,7 @@ when using <em>mice</em> alone.</p>
 <span><span class="va">adrf_w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_w_mi</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_w_mi</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-72-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-74-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level3">
@@ -1693,27 +1714,27 @@ basis for inference on the ADRF. All reported estimates are expected
 posterior and just use the EAP estimates or to <code>"posterior"</code>
 to retain the posterior for inference. Leaving <code>vcov</code>
 unspecified uses <code>"posterior"</code>. Below, we fit a Bayesian
-additive regression trees (BART) model using <em>dbarts</em>.</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+additive regression trees (BART) model using <a href="https://cran.r-project.org/package=dbarts" class="external-link"><em>dbarts</em></a>.</p>
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/vdorie/dbarts" class="external-link">dbarts</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">bfit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/dbarts/man/bart.html" class="external-link">bart2</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="va">logBLL</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span></span>
 <span>                <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                 <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span>,</span>
-<span>            data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
-<span>            keepTrees <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#needed for adrf()</span></span>
-<span>            verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>                <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span>,</span>
+<span>              data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
+<span>              keepTrees <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#needed for adrf()</span></span>
+<span>              verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">adrf_bll_bayes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">bfit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">adrf_bll_bayes</span></span>
-<span><span class="co">#&gt; An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  - curve type: ADRF</span></span>
-<span><span class="co">#&gt;  - response: Math</span></span>
-<span><span class="co">#&gt;  - treatment: logBLL</span></span>
-<span><span class="co">#&gt;    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">#&gt;  - inference: posterior</span></span></code></pre></div>
+<span><span class="co">## An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  - curve type: ADRF</span></span>
+<span><span class="co">##  - response: Math</span></span>
+<span><span class="co">##  - treatment: logBLL</span></span>
+<span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##  - inference: posterior</span></span></code></pre></div>
 <p>All credible intervals and bands use the confidence interval
 interface (e.g., using <code>conf_level</code> in <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>
 and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> to request the credibility level). The posterior
@@ -1726,22 +1747,22 @@ described by <span class="citation">Montiel Olea and Plagborg-Møller (<a href="
 credibility across the whole effect curve. P-values for estimates along
 the effect curve are computed as the complement of the smallest
 credibility level that excludes the null value.</p>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bayes</span><span class="op">)</span></span></code></pre></div>
-<p><img src="adrftools_files/figure-html/unnamed-chunk-74-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bayes</span><span class="op">)</span></span></code></pre></div>
+<p><img src="adrftools_files/figure-html/unnamed-chunk-76-1.png" class="r-plt" alt="" width="528" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu">adrf_bll_bayes</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         ADRF Estimates</span></span>
-<span><span class="co">#&gt; ───────────────────────────────</span></span>
-<span><span class="co">#&gt;  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">#&gt;       0    8.451  8.015   9.311</span></span>
-<span><span class="co">#&gt;       1    7.971  7.604   8.398</span></span>
-<span><span class="co">#&gt;       2    7.185  6.610   7.798</span></span>
-<span><span class="co">#&gt; ───────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>
+<span><span class="co">##         ADRF Estimates</span></span>
+<span><span class="co">## ───────────────────────────────</span></span>
+<span><span class="co">##  logBLL Estimate CI Low CI High</span></span>
+<span><span class="co">##       0    8.427  8.020   9.093</span></span>
+<span><span class="co">##       1    7.958  7.593   8.355</span></span>
+<span><span class="co">##       2    7.081  6.528   7.838</span></span>
+<span><span class="co">## ───────────────────────────────</span></span>
+<span><span class="co">## <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>
 <p>Omnibus tests for the shape of the line (i.e., by using
 <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> on an <code>&lt;effect_curve&gt;</code> object)
 are strictly frequentist and use a shifted version of the posterior as
@@ -1760,11 +1781,6 @@ posterior as described by <span class="citation">Zhou and Reiter (<a href="#ref-
 Hansen, Stefan Nygaard, and Morten Overgaard. 2024. <span>“Variance
 Estimation for Average Treatment Effects Estimated by
 g-Computation.”</span> <em>Metrika</em>, April. <a href="https://doi.org/10.1007/s00184-024-00962-4" class="external-link">https://doi.org/10.1007/s00184-024-00962-4</a>.
-</div>
-<div id="ref-hillBayesianNonparametricModeling2011" class="csl-entry">
-Hill, Jennifer L. 2011. <span>“Bayesian Nonparametric Modeling for
-Causal Inference.”</span> <em>Journal of Computational and Graphical
-Statistics</em> 20 (1): 217–40. <a href="https://doi.org/10.1198/jcgs.2010.08162" class="external-link">https://doi.org/10.1198/jcgs.2010.08162</a>.
 </div>
 <div id="ref-montielolea2019" class="csl-entry">
 Montiel Olea, José Luis, and Mikkel Plagborg-Møller. 2019.

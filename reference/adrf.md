@@ -20,7 +20,7 @@ adrf(
   by = NULL,
   wts = NULL,
   range = 0.95,
-  n = 71,
+  n = 51,
   fwb.args = list(),
   ...
 )
@@ -106,7 +106,7 @@ adrf(
 - n:
 
   integer specifying the number of equally spaced grid points on which
-  to compute the effect curve anchor points. Default is 70; higher
+  to compute the effect curve anchor points. Default is 51; higher
   numbers increase computation time and size of the resulting object but
   improve accuracy.
 

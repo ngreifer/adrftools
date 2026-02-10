@@ -123,15 +123,15 @@
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The projection model can be thought of as a linear regression of the effect curve estimates on the treatment. Whereas the original effect curve may be complicated and nonlinear, the projection model can be simple and easily interpretable, though it must be understood as a summary of the original effect curve. For example, the original ADRF might have been computed from an outcome model that involves treatment splines, covariates, and treatment-covariate interactions. Though the ADRF is a univariable function (i.e., of only the treatment), it isn't described by a single set of parameters. The linear projection of the ADRF, though, could be a simple linear model, described by an intercept and the slope on treatment. Though only a rough approximation to the ADRF, the linear projection may be more easily interpreted. This concept is described in Neugebauer and van der Laan (2007).</p>
 <p><code>curve_projection()</code> fits this projection model and accounts for the uncertainty in the estimates of the effect curve in computing uncertainty estimates for the projection model parameters. Because the true effect curve is continuous, the model is fit minimizing
-$$\int_{a_\text{lower}}^{a_\text{upper}}{\left(\hat{\theta}(a)-\hat{\mathbf{\beta}} B(a) \right)^2 da}$$
+$$\int_{a_\text{lower}}^{a_\text{upper}}{\left(\hat{\theta}(a)- B(a)\hat{\mathbf{\beta}} \right)^2 da}$$
 where \(\hat{\theta}(a)\) is the effect curve estimate at treatment value \(a\), \(B(a)\) is the basis function representation of \(a\) (i.e., as specified in <code>model</code>), and \(\hat{\mathbf{\beta}}\) is the vector of projection parameters to be estimated. This integral is approximated using a trapezoidal Riemann sum over the effect curve grid points.</p>
 <p>The covariance of the projection parameters can be computed using the delta method applied to the estimated covariance of the original effect curve estimates. When bootstrapping or posterior inference are used, the projection is applied to each bootstrap or posterior draw, respectively.</p><div class="section">
 <h3 id="transform">Transform<a class="anchor" aria-label="anchor" href="#transform"></a></h3>
 
 
 <p>When <code>transform</code> is specified, the projection minimizes the distance between the original effect curve and the transformed linear predictor; that is, it minimizes</p>
-<p>$$\int_{a_\text{lower}}^{a_\text{upper}}{\left(\hat{\theta}(a)-f^{-1}\left(\hat{\mathbf{\beta}} B(a) \right) \right)^2 da}$$</p>
-<p>where \(f^{-1}(y)\) is the inverse of the transformation supplied to <code>transform</code> (i.e., corresponding to the inverse link function of a generalized linear model), essentially using nonlinear least squares (NLS) to estimate the effect curve projection. This make the coefficients in the projection model correspond to the coefficients on the linear predictor \(\hat{\mathbf{\beta}} B(a)\). In this case, the projection is not simply a linear projection, but it may still be more interpretable than the original ADRF. For example, if the outcome model was originally fit using logistic regression and <code>transform = TRUE</code> in the call to <code>curve_projection()</code> with <code>model = "linear"</code>, the resulting projection would be a logistic curve governed by the intercept and slope of the linear predictor. See Examples for an example of this.</p>
+<p>$$\int_{a_\text{lower}}^{a_\text{upper}}{\left(\hat{\theta}(a)-f^{-1}\left( B(a) \hat{\mathbf{\beta}} \right) \right)^2 da}$$</p>
+<p>where \(f^{-1}(y)\) is the inverse of the transformation supplied to <code>transform</code> (i.e., corresponding to the inverse link function of a generalized linear model), essentially using nonlinear least squares (NLS) to estimate the effect curve projection. This make the coefficients in the projection model correspond to the coefficients on the linear predictor \(B(a)\hat{\mathbf{\beta}}\). In this case, the projection is not simply a linear projection, but it may still be more interpretable than the original ADRF. For example, if the outcome model was originally fit using logistic regression and <code>transform = TRUE</code> in the call to <code>curve_projection()</code> with <code>model = "linear"</code>, the resulting projection would be a logistic curve governed by the intercept and slope of the linear predictor. See Examples for an example of this.</p>
 <p>By default, <code>transform</code> is <code>TRUE</code>, which means that when the original outcome model had a <code>family</code> component (e.g., a generalized linear model) and an ADRF is supplied to <code>curve_projection()</code>, the link is automatically supplied to <code>transform</code> and the projection model will be a nonlinear function of the linear predictor. Set <code>transform</code> to <code>FALSE</code> to require that the projection curve be simply the linear predictor with no transformation. Note this can lead to invalid estimates when the outcome is bounded.</p>
 </div>
 
@@ -179,7 +179,7 @@ where \(\hat{\theta}(a)\) is the effect curve estimate at treatment value \(a\),
 <span class="r-out co"><span class="r-pr">#&gt;</span>     -0.3567 and 2.4248</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  P-value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    0.375</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   0.3764</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ───────────────────────────────────────────────────────</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation</span></span>
 <span class="r-in"><span></span></span>
@@ -201,13 +201,13 @@ where \(\hat{\theta}(a)\) is the effect curve estimate at treatment value \(a\),
 <span class="r-in"><span><span class="co"># Coefficients of the projection model</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">proj1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)      logBLL </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   8.5703241  -0.7198424 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   8.5702157  -0.7197566 </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">proj1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  ADRF Projection Coefficients</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ──────────────────────────────────────────────────────────────</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         Term Estimate Std. Error     t  P-value CI Low CI High</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  (Intercept)     8.57     0.1494 57.37 &lt; 0.0001  8.277   8.863</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       logBLL    -0.72     0.1424 -5.06 &lt; 0.0001 -0.999  -0.441</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  (Intercept)     8.57     0.1493 57.42 &lt; 0.0001  8.278   8.863</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       logBLL    -0.72     0.1423 -5.06 &lt; 0.0001 -0.999  -0.441</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ──────────────────────────────────────────────────────────────</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Inference: unconditional</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Confidence level: 95% (t* = 1.961, df = 2473)</span></span>
@@ -236,7 +236,7 @@ where \(\hat{\theta}(a)\) is the effect curve estimate at treatment value \(a\),
 <span class="r-out co"><span class="r-pr">#&gt;</span>     0 (i.e., Model 2 is sufficient)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  df      F P-value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   2 1.3587  0.2572</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   2 1.3605  0.2567</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ───────────────────────────────────────────────────────</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Inference: unconditional (df = 2473)</span></span>
 </code></pre></div>

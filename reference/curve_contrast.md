@@ -104,12 +104,12 @@ adrf_contrast(logBLL = c(0, 2)) |>
 #>                          ADRF Contrast Estimates
 #> ─────────────────────────────────────────────────────────────────────────
 #>                                Contrast logBLL Estimate Std. Error      t
-#>  [Race = "Hispanic"] - [Race = "Black"]      0  -0.3925     0.4885 -0.804
+#>  [Race = "Hispanic"] - [Race = "Black"]      0  -0.3926     0.4885 -0.804
 #>  [Race = "Hispanic"] - [Race = "Black"]      2   0.2837     0.3625  0.783
 #>     [Race = "White"] - [Race = "Black"]      0   1.7703     0.5265  3.362
 #>     [Race = "White"] - [Race = "Black"]      2  -0.3083     0.6162 -0.500
-#>  [Race = "White"] - [Race = "Hispanic"]      0   2.1628     0.5120  4.225
-#>  [Race = "White"] - [Race = "Hispanic"]      2  -0.5920     0.6297 -0.940
+#>  [Race = "White"] - [Race = "Hispanic"]      0   2.1629     0.5120  4.225
+#>  [Race = "White"] - [Race = "Hispanic"]      2  -0.5921     0.6297 -0.940
 #> ─────────────────────────────────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
 #> Confidence level: 95% (t* = 2.59, df = 2377)
@@ -123,7 +123,7 @@ summary(adrf_contrast)
 #>     -0.3567 and 2.4248
 #> 
 #>                                Contrast P-value
-#>  [Race = "Hispanic"] - [Race = "Black"]  0.8651
+#>  [Race = "Hispanic"] - [Race = "Black"]  0.8620
 #>     [Race = "White"] - [Race = "Black"]  0.0006
 #>  [Race = "White"] - [Race = "Hispanic"]  0.0002
 #> ───────────────────────────────────────────────────────
