@@ -24,11 +24,9 @@ A call to an \code{effect_curve} object returns a \code{curve_est} object, which
 An \code{effect_curve} object is a function that takes in values of the treatment and produces estimates of the effect curve at those values. \code{effect_curve} objects are produces by \code{\link[=adrf]{adrf()}} and functions that modify effect curves, such as \code{\link[=amef]{amef()}}, \code{\link[=curve_contrast]{curve_contrast()}}, \code{\link[=reference_curve]{reference_curve()}}, and \code{\link[=curve_projection]{curve_projection()}}. The output of an \code{effect_curve} object is a \code{curve_est} object containing the effect curve estimates. This page describes \code{effect_curve} and \code{curve_est} objects.
 \subsection{Usage}{
 
-\preformatted{
-f <- adrf(x, ...)
+\preformatted{f <- adrf(x, ...)
 
-f({treat}, subset = NULL)
-}
+f({treat}, subset = NULL)}
 }
 }
 \details{

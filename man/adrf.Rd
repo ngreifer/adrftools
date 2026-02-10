@@ -48,7 +48,7 @@ adrf(x, ...)
 
 \item{n}{integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.}
 
-\item{fwb.args}{an option list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}.}
+\item{fwb.args}{an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}.}
 }
 \value{
 An object of class \code{effect_curve}. This object is a function with attributes. See \code{\linkS4class{effect_curve}} for details on this function and its outputs.

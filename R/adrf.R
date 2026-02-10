@@ -14,7 +14,7 @@
 #' @param subset an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function.
 #' @param by optional variable(s) over which to group the estimation. Can be a character vector or one-sided formula.
 #' @param wts optional numeric vector of weights to generalize the effect curve to a weighted population.
-#' @param fwb.args an option list of arguments to be passed to \pkgfun{fwb}{fwb} when `vcov` is `"boot"` or `"fwb"`.
+#' @param fwb.args an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when `vcov` is `"boot"` or `"fwb"`.
 #' @param ... further arguments passed to [marginaleffects::get_predict()].
 #'
 #' @returns

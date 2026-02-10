@@ -6,11 +6,9 @@
 #' An `effect_curve` object is a function that takes in values of the treatment and produces estimates of the effect curve at those values. `effect_curve` objects are produces by [adrf()] and functions that modify effect curves, such as [amef()], [curve_contrast()], [reference_curve()], and [curve_projection()]. The output of an `effect_curve` object is a `curve_est` object containing the effect curve estimates. This page describes `effect_curve` and `curve_est` objects.
 #'
 #' ## Usage
-#' \preformatted{
-#' f <- adrf(x, ...)
+#' \preformatted{f <- adrf(x, ...)
 #'
-#' f({treat}, subset = NULL)
-#' }
+#' f({treat}, subset = NULL)}
 #'
 #' @param \{treat\} the values of the treatment at which to evaluate the effect curve.
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to compute estimates. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.

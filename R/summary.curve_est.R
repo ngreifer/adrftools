@@ -165,10 +165,8 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
   # Compute p-values
   if (!anyNA(null)) {
     if (ci.type == "wald") {
-      null <- transform(null)
-
-      # Compute test statistic on transformed estimates if null is specified
-      res[[stat]][!zeros] <- (est[!zeros] - null) / se[!zeros]
+      # Compute test statistic on transformed estimates and null
+      res[[stat]][!zeros] <- (est[!zeros] - transform(null)) / se[!zeros]
 
       if (simultaneous) {
         if (is_null(vp)) {
@@ -413,7 +411,8 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
 
   null_ref <- c(if (is_not_null(.reference)) sprintf("Reference: %s = %s",
                                                      .treat, .reference),
-                if (is_not_null(null)) sprintf("Null value: %s", null))
+                if (is_not_null(null)) sprintf("Null value: %s",
+                                               format(null, digits = 4L, drop0trailing = TRUE)))
 
   if (is_not_null(null_ref)) {
     out <- c(out, paste(.it(null_ref), collapse = " | "))

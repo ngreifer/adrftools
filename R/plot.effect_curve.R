@@ -25,7 +25,7 @@
 #' \preformatted{theme(legend.position = "none")}
 #' }
 #' \item{Change the color of the plotted line:
-#' \preformatted{theme(geom = element_geom(ink = "{COLOR}")}
+#' \preformatted{theme(geom = element_geom(ink = "{COLOR}"))}
 #' }
 #' \item{Change the color scheme of the plotted lines:
 #' \preformatted{scale_color_brewer(aesthetics = c("color", "fill"),
@@ -41,7 +41,7 @@
 #' }
 #' }
 #'
-#' Strings in brackets are to be changed by the user. Refer to the \CRANpkg{ggplot2} documentation for other options.
+#' Values in brackets are to be changed by the user. Refer to the \CRANpkg{ggplot2} documentation for other options.
 #'
 #' @details
 #' `plot()` displays the effect curve in a plot. The solid line corresponds to the effect curve and the ribbon around it corresponds to its confidence band. When `null` is not `NA`, an additional flat line at `null` is displayed. When `proj` is supplied, a dashed line corresponding to the projection is added.
