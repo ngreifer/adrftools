@@ -245,8 +245,8 @@ vary across levels of <code>Male</code> to allow us to examine sex
 differences later.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span> <span class="va">Male</span> <span class="op">*</span></span>
-<span>            <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>               <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
+<span>            <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
+<span>               <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>          data <span class="op">=</span> <span class="va">nhanes3lead</span><span class="op">)</span></span></code></pre></div>
 <p>We won’t even look at this model; none of its coefficients are
 interpretable. Instead, we’ll use functions in <em>adrftools</em> to
@@ -1034,8 +1034,8 @@ variable below and use it as the outcome of our outcome model:</p>
 <span><span class="co">## 2049  472</span></span>
 <span></span>
 <span><span class="va">fit_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Block_bin</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>                 <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                    <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
+<span>                 <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
+<span>                    <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>               data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
 <span>               family <span class="op">=</span> <span class="va">binomial</span><span class="op">)</span></span></code></pre></div>
 <p>To compute the ADRF, we simply call <code><a href="../reference/adrf.html">adrf()</a></code>. We can
@@ -1409,8 +1409,8 @@ a linear model for <code>Math</code>, incorporating the estimation of
 the weights into the variance of the outcome model parameters.</p>
 <div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">glm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>                      <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                         <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
+<span>                      <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
+<span>                         <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>                    data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
 <span>                    weightit <span class="op">=</span> <span class="va">w_fit</span><span class="op">)</span></span></code></pre></div>
 <p>Finally, we can use <code><a href="../reference/adrf.html">adrf()</a></code> to compute the ADRF, just as
@@ -1462,12 +1462,13 @@ sampling weights.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://r-survey.r-forge.r-project.org/survey/" class="external-link">survey</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Incorporate weights into surveydesign object</span></span>
-<span><span class="va">des</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span><span class="op">~</span><span class="fl">1</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">MEC_wt</span>, data <span class="op">=</span> <span class="va">nhanes3lead</span><span class="op">)</span></span>
+<span><span class="va">des</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span><span class="op">~</span><span class="fl">1</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">MEC_wt</span>,</span>
+<span>                 data <span class="op">=</span> <span class="va">nhanes3lead</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Fit weighted outcome model</span></span>
 <span><span class="va">fit_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>                   <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                      <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
+<span>                   <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
+<span>                      <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>                 design <span class="op">=</span> <span class="va">des</span><span class="op">)</span></span></code></pre></div>
 <p>Simply calling <code><a href="../reference/adrf.html">adrf()</a></code> automatically incorporates
 sampling weights.</p>
@@ -1482,18 +1483,18 @@ sampling weights.</p>
 </h4>
 <p>If the survey design is simple and can be captured using weights
 alone (i.e., without stratification or clustering), <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>
-with the <code>weights</code> argument can be used instead of
-<code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm()</a></code>. A special standard error is required for the
-estimates to be valid, but <code><a href="../reference/adrf.html">adrf()</a></code> calculates that standard
-error automatically when <code>vcov = "unconditional"</code> (the
-default).</p>
+(or <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>) with the <code>weights</code> argument can be
+used instead of <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm()</a></code>. A special standard error is
+required for the estimates to be valid, but <code><a href="../reference/adrf.html">adrf()</a></code>
+calculates that standard error automatically when
+<code>vcov = "unconditional"</code> (the default).</p>
 <div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Fit weighted outcome model</span></span>
 <span><span class="va">fit_gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>               <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                  <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
-<span>             data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
-<span>             weights <span class="op">=</span> <span class="va">MEC_wt</span><span class="op">)</span></span></code></pre></div>
+<span>                <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
+<span>                   <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
+<span>              data <span class="op">=</span> <span class="va">nhanes3lead</span>,</span>
+<span>              weights <span class="op">=</span> <span class="va">MEC_wt</span><span class="op">)</span></span></code></pre></div>
 <p>With <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>, we need to set <code>wts = TRUE</code> in
 the call to <code><a href="../reference/adrf.html">adrf()</a></code> to ensure the weights are properly
 included in the ADRF estimation. If not, the weights will be used only
@@ -1630,8 +1631,8 @@ fits.</p>
 <code class="sourceCode R"><span><span class="va">fit_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span></span>
 <span>  <span class="va">imp</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>       <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>          <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span></span>
+<span>       <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
+<span>          <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>We can supply the <code>&lt;mira&gt;</code> object to
 <code><a href="../reference/adrf.html">adrf()</a></code>, which automatically estimates the ADRF in each
@@ -1663,8 +1664,8 @@ when using <em>mice</em> alone.</p>
 <span><span class="va">fit_w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span></span>
 <span>  <span class="va">w_mi</span>,</span>
 <span>  <span class="fu"><a href="https://ngreifer.github.io/WeightIt/reference/glm_weightit.html" class="external-link">lm_weightit</a></span><span class="op">(</span><span class="va">Math</span> <span class="op">~</span> <span class="fu">splines</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/splines/ns.html" class="external-link">ns</a></span><span class="op">(</span><span class="va">logBLL</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">*</span></span>
-<span>                 <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span> <span class="va">Smoke_in_Home</span> <span class="op">+</span></span>
-<span>                    <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span></span>
+<span>                <span class="op">(</span><span class="va">Age</span> <span class="op">+</span> <span class="va">Male</span> <span class="op">+</span> <span class="va">Race</span> <span class="op">+</span> <span class="va">PIR</span> <span class="op">+</span> <span class="va">Enough_Food</span> <span class="op">+</span></span>
+<span>                   <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">adrf_w_mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_w_mi</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
@@ -1734,9 +1735,9 @@ credibility level that excludes the null value.</p>
 <span><span class="co">##         ADRF Estimates</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">##  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">##       0    8.425  8.021   9.319</span></span>
-<span><span class="co">##       1    7.965  7.610   8.343</span></span>
-<span><span class="co">##       2    7.214  6.567   7.955</span></span>
+<span><span class="co">##       0    8.431  8.041   9.350</span></span>
+<span><span class="co">##       1    7.974  7.607   8.396</span></span>
+<span><span class="co">##       2    7.195  6.597   7.913</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>

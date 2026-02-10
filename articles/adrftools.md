@@ -159,8 +159,8 @@ differences later.
 
 ``` r
 fit <- lm(Math ~ splines::ns(logBLL, df = 5) * Male *
-            (Age + Race + PIR + Enough_Food + Smoke_in_Home +
-               Smoke_Pregnant + NICU),
+            (Age + Race + PIR + Enough_Food +
+               Smoke_in_Home + Smoke_Pregnant + NICU),
           data = nhanes3lead)
 ```
 
@@ -1086,8 +1086,8 @@ table(nhanes3lead$Block_bin)
 ## 2049  472
 
 fit_bin <- glm(Block_bin ~ splines::ns(logBLL, df = 5) *
-                 (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                    Smoke_Pregnant + NICU),
+                 (Age + Male + Race + PIR + Enough_Food +
+                    Smoke_in_Home + Smoke_Pregnant + NICU),
                data = nhanes3lead,
                family = binomial)
 ```
@@ -1454,8 +1454,8 @@ weights into the variance of the outcome model parameters.
 
 ``` r
 fit <- glm_weightit(Math ~ splines::ns(logBLL, df = 5) *
-                      (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                         Smoke_Pregnant + NICU),
+                      (Age + Male + Race + PIR + Enough_Food +
+                         Smoke_in_Home + Smoke_Pregnant + NICU),
                     data = nhanes3lead,
                     weightit = w_fit)
 ```
@@ -1514,12 +1514,13 @@ First, we’ll use *survey* functionality to incorporate sampling weights.
 library(survey)
 
 # Incorporate weights into surveydesign object
-des <- svydesign(~1, weights = ~MEC_wt, data = nhanes3lead)
+des <- svydesign(~1, weights = ~MEC_wt,
+                 data = nhanes3lead)
 
 # Fit weighted outcome model
 fit_sv <- svyglm(Math ~ splines::ns(logBLL, df = 5) *
-                   (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                      Smoke_Pregnant + NICU),
+                   (Age + Male + Race + PIR + Enough_Food +
+                      Smoke_in_Home + Smoke_Pregnant + NICU),
                  design = des)
 ```
 
@@ -1539,7 +1540,8 @@ plot(adrf_sv)
 
 If the survey design is simple and can be captured using weights alone
 (i.e., without stratification or clustering),
-[`glm()`](https://rdrr.io/r/stats/glm.html) with the `weights` argument
+[`glm()`](https://rdrr.io/r/stats/glm.html) (or
+[`lm()`](https://rdrr.io/r/stats/lm.html)) with the `weights` argument
 can be used instead of
 [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html). A special
 standard error is required for the estimates to be valid, but
@@ -1550,10 +1552,10 @@ calculates that standard error automatically when
 ``` r
 # Fit weighted outcome model
 fit_gs <- glm(Math ~ splines::ns(logBLL, df = 5) *
-               (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                  Smoke_Pregnant + NICU),
-             data = nhanes3lead,
-             weights = MEC_wt)
+                (Age + Male + Race + PIR + Enough_Food +
+                   Smoke_in_Home + Smoke_Pregnant + NICU),
+              data = nhanes3lead,
+              weights = MEC_wt)
 ```
 
 With [`glm()`](https://rdrr.io/r/stats/glm.html), we need to set
@@ -1715,8 +1717,8 @@ containing a list of the model fits.
 fit_mi <- with(
   imp,
   lm(Math ~ splines::ns(logBLL, df = 5) *
-       (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-          Smoke_Pregnant + NICU))
+       (Age + Male + Race + PIR + Enough_Food +
+          Smoke_in_Home + Smoke_Pregnant + NICU))
 )
 ```
 
@@ -1756,8 +1758,8 @@ w_mi <- weightthem(logBLL ~ Male + Age + Race + PIR + Enough_Food +
 fit_w_mi <- with(
   w_mi,
   lm_weightit(Math ~ splines::ns(logBLL, df = 5) *
-                 (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                    Smoke_Pregnant + NICU))
+                (Age + Male + Race + PIR + Enough_Food +
+                   Smoke_in_Home + Smoke_Pregnant + NICU))
 )
 
 adrf_w_mi <- adrf(fit_w_mi, treat = "logBLL")
@@ -1840,9 +1842,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.425  8.021   9.319
-##       1    7.965  7.610   8.343
-##       2    7.214  6.567   7.955
+##       0    8.431  8.041   9.350
+##       1    7.974  7.607   8.396
+##       2    7.195  6.597   7.913
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%
