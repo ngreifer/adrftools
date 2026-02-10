@@ -14,7 +14,7 @@ add_quotes <- function(x, quotes = 2L) {
     return(paste0(quotes, x, str_rev(quotes)))
   }
 
-  if (length(quotes) != 1L || !is.numeric(quotes) || !(quotes %in% c(1, 2))) {
+  if (length(quotes) != 1L || !is.numeric(quotes) || (quotes %!in% c(1, 2))) {
     stop("`quotes` must be boolean, 1, 2, or a string.")
   }
 

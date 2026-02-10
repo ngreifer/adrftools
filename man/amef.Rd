@@ -20,7 +20,7 @@ An object of class \code{amef_curve}, which inherits from \code{\link{effect_cur
 \details{
 The AMEF is calculated numerically using the central finite derivative formula:
 
-\deqn{\frac{df(x)}\frac{dx} \approx \frac{f(x + e) - f(x - e)}{2e}}
+\deqn{\frac{df(x)}{dx} \approx \frac{f(x + e) - f(x - e)}{2e}}
 
 The values of the ADRF at the evaluation points are computed using a local polynomial regression as described at \code{\link{effect_curve}}. At the boundaries of the ADRF, one-sided derivatives are used.
 }

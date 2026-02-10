@@ -119,7 +119,7 @@ proj2 <- curve_projection(adrf1, "cubic")
 anova(proj2, proj1)
 }
 \references{
-Neugebauer, R., & van der Laan, M. (2007). Nonparametric causal effects based on marginal structural models. \emph{Journal of Statistical Planning and Inference}, 137(2), 419–434. \doi{/10.1016/j.jspi.2005.12.008}
+Neugebauer, R., & van der Laan, M. (2007). Nonparametric causal effects based on marginal structural models. \emph{Journal of Statistical Planning and Inference}, 137(2), 419–434. \doi{10.1016/j.jspi.2005.12.008}
 }
 \seealso{
 \itemize{

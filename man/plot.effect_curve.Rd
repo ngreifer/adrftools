@@ -43,30 +43,24 @@ A \code{ggplot} object that can modified using functions in \pkg{ggplot2}. Below
 
 \itemize{
 \item{Change the position of the legend:
-\preformatted{
-theme(legend.position = "{POSITION}")}
+\preformatted{theme(legend.position = "{POSITION}")}
 }
 \item{Remove the legend:
-\preformatted{
-theme(legend.position = "none")}
+\preformatted{theme(legend.position = "none")}
 }
 \item{Change the color of the plotted line:
-\preformatted{
-theme(geom = element_geom(ink = "{COLOR}")}
+\preformatted{theme(geom = element_geom(ink = "{COLOR}")}
 }
 \item{Change the color scheme of the plotted lines:
-\preformatted{
-scale_color_brewer(aesthetics = c("color", "fill"),
+\preformatted{scale_color_brewer(aesthetics = c("color", "fill"),
                    palette = "{PALETTE}")}
 }
 \item{Change the title, subtitle, or axis labels:
-\preformatted{
-labs(title = "{TITLE}", subtitle = "{SUBTITLE}",
+\preformatted{labs(title = "{TITLE}", subtitle = "{SUBTITLE}",
      x = "{X-AXIS}", y = "{Y-AXIS}")}
 }
 \item{Change the y-axis range:
-\preformatted{
-coord_cartesian(ylim = c({LOWER}, {UPPER}),
+\preformatted{coord_cartesian(ylim = c({LOWER}, {UPPER}),
                 expand = FALSE)}
 }
 }
@@ -114,6 +108,7 @@ plot(adrf1, transform = FALSE)
 # Plot the ADRF; pointwise inference
 plot(adrf1, simultaneous = FALSE)
 
+\donttest{
 # ADRF within subgroups
 adrf2 <- adrf(fit, treat = "logBLL",
               by = ~Male, n = 50)
@@ -128,6 +123,7 @@ plot(adrf2, subset = Male == 1)
 adrf_contrast <- curve_contrast(adrf2)
 
 plot(adrf_contrast)
+}
 }
 \seealso{
 \itemize{

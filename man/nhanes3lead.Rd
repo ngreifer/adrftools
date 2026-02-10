@@ -14,6 +14,6 @@ nhanes3lead
 This is a subsample of the data from NHANES III containing observations of 2521 adolescents that participated in survey, and in particular the portions of survey that included assessing participants' blood lead levels and  scores on several cognitive tests.
 }
 \details{
-The treatment is \code{logBLL}, the natural log of blood levels measured in μg/dL. The covariates are \code{Age}, \code{Male}, \code{Race}, \code{PIR}, \code{Enough_Food}, \code{Smoke_in_Home}, \code{Smoke_Pregnant}, and \code{NICU}. The outcomes are \code{Math}, \code{Reading}, \code{Block}, and \code{Digit}. \code{MEC_wt} are sampling weights.
+The treatment is \code{logBLL}, the natural log of blood levels measured in \eqn{\mu}g/dL. The covariates are \code{Age}, \code{Male}, \code{Race}, \code{PIR}, \code{Enough_Food}, \code{Smoke_in_Home}, \code{Smoke_Pregnant}, and \code{NICU}. The outcomes are \code{Math}, \code{Reading}, \code{Block}, and \code{Digit}. \code{MEC_wt} are sampling weights.
 }
 \keyword{data}

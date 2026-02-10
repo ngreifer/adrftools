@@ -3,8 +3,8 @@ Type: Package
 Title: Tools for Estimating Average Dose-Response Functions
 Version: 0.1.0
 Authors@R: person("Noah", "Greifer", role = c("aut", "cre"),
-         email = "noah.greifer@gmail.com",
-	       comment = c(ORCID="0000-0003-3067-7154"))
+                  email = "noah.greifer@gmail.com",
+	                comment = c(ORCID = "0000-0003-3067-7154"))
 Description: Provides tools for estimating, visualizing, and testing average dose-response functions for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure.
 Depends:
     R (>= 4.1.0)
