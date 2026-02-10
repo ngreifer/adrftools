@@ -123,8 +123,8 @@ Below, we use `lm()` to fit a linear regression of `Math` on `logBLL`, the covar
 
 ```{r}
 fit <- lm(Math ~ splines::ns(logBLL, df = 5) * Male *
-            (Age + Race + PIR + Enough_Food + Smoke_in_Home +
-               Smoke_Pregnant + NICU),
+            (Age + Race + PIR + Enough_Food +
+               Smoke_in_Home + Smoke_Pregnant + NICU),
           data = nhanes3lead)
 ```
 
@@ -531,8 +531,8 @@ nhanes3lead$Block_bin <- as.integer(nhanes3lead$Block >= 12)
 table(nhanes3lead$Block_bin)
 
 fit_bin <- glm(Block_bin ~ splines::ns(logBLL, df = 5) *
-                 (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                    Smoke_Pregnant + NICU),
+                 (Age + Male + Race + PIR + Enough_Food +
+                    Smoke_in_Home + Smoke_Pregnant + NICU),
                data = nhanes3lead,
                family = binomial)
 ```
@@ -722,8 +722,8 @@ Normally, we would assess balance on the weights, but we'll skip that here (see 
 
 ```{r, eval = weightit_ok}
 fit <- glm_weightit(Math ~ splines::ns(logBLL, df = 5) *
-                      (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                         Smoke_Pregnant + NICU),
+                      (Age + Male + Race + PIR + Enough_Food +
+                         Smoke_in_Home + Smoke_Pregnant + NICU),
                     data = nhanes3lead,
                     weightit = w_fit)
 ```
@@ -758,12 +758,13 @@ First, we'll use *survey* functionality to incorporate sampling weights.
 library(survey)
 
 # Incorporate weights into surveydesign object
-des <- svydesign(~1, weights = ~MEC_wt, data = nhanes3lead)
+des <- svydesign(~1, weights = ~MEC_wt,
+                 data = nhanes3lead)
 
 # Fit weighted outcome model
 fit_sv <- svyglm(Math ~ splines::ns(logBLL, df = 5) *
-                   (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                      Smoke_Pregnant + NICU),
+                   (Age + Male + Race + PIR + Enough_Food +
+                      Smoke_in_Home + Smoke_Pregnant + NICU),
                  design = des)
 ```
 
@@ -777,15 +778,15 @@ plot(adrf_sv)
 
 #### Using `glm()`
 
-If the survey design is simple and can be captured using weights alone (i.e., without stratification or clustering), `glm()` with the `weights` argument can be used instead of `svyglm()`. A special standard error is required for the estimates to be valid, but `adrf()` calculates that standard error automatically when `vcov = "unconditional"` (the default).
+If the survey design is simple and can be captured using weights alone (i.e., without stratification or clustering), `glm()` (or `lm()`) with the `weights` argument can be used instead of `svyglm()`. A special standard error is required for the estimates to be valid, but `adrf()` calculates that standard error automatically when `vcov = "unconditional"` (the default).
 
 ```{r}
 # Fit weighted outcome model
 fit_gs <- glm(Math ~ splines::ns(logBLL, df = 5) *
-               (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                  Smoke_Pregnant + NICU),
-             data = nhanes3lead,
-             weights = MEC_wt)
+                (Age + Male + Race + PIR + Enough_Food +
+                   Smoke_in_Home + Smoke_Pregnant + NICU),
+              data = nhanes3lead,
+              weights = MEC_wt)
 ```
 
 With `glm()`, we need to set `wts = TRUE` in the call to `adrf()` to ensure the weights are properly included in the ADRF estimation. If not, the weights will be used only in fitting the outcome mode, but the ADRF will generalize to the unweighted population. This is okay if the weights are balancing weights, but if they are sampling weights, it is critical for them to be incorporated into the ADRF as well.
@@ -867,8 +868,8 @@ Next, we can fit an outcome model using `with()` to create a `<mira>` object con
 fit_mi <- with(
   imp,
   lm(Math ~ splines::ns(logBLL, df = 5) *
-       (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-          Smoke_Pregnant + NICU))
+       (Age + Male + Race + PIR + Enough_Food +
+          Smoke_in_Home + Smoke_Pregnant + NICU))
 )
 ```
 
@@ -898,8 +899,8 @@ w_mi <- weightthem(logBLL ~ Male + Age + Race + PIR + Enough_Food +
 fit_w_mi <- with(
   w_mi,
   lm_weightit(Math ~ splines::ns(logBLL, df = 5) *
-                 (Age + Male + Race + PIR + Enough_Food + Smoke_in_Home +
-                    Smoke_Pregnant + NICU))
+                (Age + Male + Race + PIR + Enough_Food +
+                   Smoke_in_Home + Smoke_Pregnant + NICU))
 )
 
 adrf_w_mi <- adrf(fit_w_mi, treat = "logBLL")
