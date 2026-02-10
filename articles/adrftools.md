@@ -106,20 +106,13 @@ cognitive test scores, adjusting for potential confounders.
 data("nhanes3lead")
 
 head(nhanes3lead)
-##         Age Male     Race   PIR Enough_Food Smoke_in_Home Smoke_Pregnant NICU
-## 1 10.583333    0    White 1.266           1             0              0    0
-## 2  7.166667    0    Black 0.603           1             1              1    0
-## 3 11.916667    0 Hispanic 3.173           1             0              0    0
-## 4  6.583333    1    White 1.543           1             1              0    0
-## 5  8.250000    0    White 3.043           1             0              0    0
-## 6  8.250000    1    Other 1.746           1             1              0    0
-##       logBLL Math Reading Block Digit   MEC_wt
-## 1 -0.3566749   10       8    12     7  7785.67
-## 2  2.0014800   13       9     8    12 11001.98
-## 3  1.3609766    6      10    11     7  7024.62
-## 4  1.1631508    6       5     8     5  7901.41
-## 5  0.7419373    8       9    14     8  9997.87
-## 6  1.3609766   12      10    11     8 11979.76
+##         Age Male     Race   PIR Enough_Food Smoke_in_Home Smoke_Pregnant NICU     logBLL Math Reading Block Digit   MEC_wt
+## 1 10.583333    0    White 1.266           1             0              0    0 -0.3566749   10       8    12     7  7785.67
+## 2  7.166667    0    Black 0.603           1             1              1    0  2.0014800   13       9     8    12 11001.98
+## 3 11.916667    0 Hispanic 3.173           1             0              0    0  1.3609766    6      10    11     7  7024.62
+## 4  6.583333    1    White 1.543           1             1              0    0  1.1631508    6       5     8     5  7901.41
+## 5  8.250000    0    White 3.043           1             0              0    0  0.7419373    8       9    14     8  9997.87
+## 6  8.250000    1    Other 1.746           1             1              0    0  1.3609766   12      10    11     8 11979.76
 ```
 
 The treatment variables is `logBLL`, the natural log of blood lead
@@ -314,13 +307,13 @@ on the output of the `<effect_curve>` object (and then using
 adrf_bll(logBLL = c(0, 1, 2)) |>
   point_contrast() |>
   summary()
-##                           ADRF Point Contrasts
-## ────────────────────────────────────────────────────────────────────────
-##                         Term Estimate Std. Error      t  P-value  CI Low
-##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2127 -1.863   0.1476 -0.8938
-##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2800 -4.556 < 0.0001 -1.9305
-##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2642 -3.328   0.0025 -1.4972
-## ────────────────────────────────────────────────────────────────────────
+##                               ADRF Point Contrasts
+## ────────────────────────────────────────────────────────────────────────────────
+##                         Term Estimate Std. Error      t  P-value  CI Low CI High
+##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2127 -1.863   0.1476 -0.8938  0.1010
+##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2800 -4.556 < 0.0001 -1.9305 -0.6210
+##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2642 -3.328   0.0025 -1.4972 -0.2615
+## ────────────────────────────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.338, df = 2401)
 ## Null value: 0
@@ -1046,13 +1039,13 @@ the subgroup ADRFs at specific points:
 ``` r
 adrf_bll_male_contrast(logBLL = c(0, 1, 2)) |>
   summary()
-##                          ADRF Contrast Estimates
-## ──────────────────────────────────────────────────────────────────────────
-##                 Contrast logBLL Estimate Std. Error      t P-value  CI Low
-##  [Male = 1] - [Male = 0]      0  -0.0938     0.3354 -0.280  0.9890 -0.8942
-##  [Male = 1] - [Male = 0]      1  -0.8551     0.2239 -3.820  0.0004 -1.3892
-##  [Male = 1] - [Male = 0]      2  -0.9300     0.4329 -2.148  0.0914 -1.9631
-## ──────────────────────────────────────────────────────────────────────────
+##                              ADRF Contrast Estimates
+## ──────────────────────────────────────────────────────────────────────────────────
+##                 Contrast logBLL Estimate Std. Error      t P-value  CI Low CI High
+##  [Male = 1] - [Male = 0]      0  -0.0938     0.3354 -0.280  0.9890 -0.8942  0.7066
+##  [Male = 1] - [Male = 0]      1  -0.8551     0.2239 -3.820  0.0004 -1.3892 -0.3209
+##  [Male = 1] - [Male = 0]      2  -0.9300     0.4329 -2.148  0.0914 -1.9631  0.1030
+## ──────────────────────────────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.386, df = 2401)
 ## Null value: 0
@@ -1684,38 +1677,22 @@ set.seed(1234)
 nhanes3lead_mis <- ampute(nhanes3lead, mech = "MCAR")$amp
 
 summary(nhanes3lead_mis)
-##       Age              Male              Race          PIR       
-##  Min.   : 5.833   Min.   :0.0000   Black   :806   Min.   :0.000  
-##  1st Qu.: 7.500   1st Qu.:0.0000   Hispanic:843   1st Qu.:0.671  
-##  Median : 9.083   Median :1.0000   Other   :108   Median :1.287  
-##  Mean   : 9.017   Mean   :0.5078   White   :684   Mean   :1.627  
-##  3rd Qu.:10.500   3rd Qu.:1.0000   NA's    : 80   3rd Qu.:2.375  
-##  Max.   :11.917   Max.   :1.0000                  Max.   :6.943  
-##  NA's   :88       NA's   :89                      NA's   :79     
-##   Enough_Food     Smoke_in_Home    Smoke_Pregnant        NICU       
-##  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
-##  1st Qu.:1.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
-##  Median :1.0000   Median :0.0000   Median :0.0000   Median :0.0000  
-##  Mean   :0.8887   Mean   :0.3899   Mean   :0.1995   Mean   :0.1121  
-##  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  
-##  Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000  
-##  NA's   :86       NA's   :77       NA's   :80       NA's   :85      
-##      logBLL             Math           Reading           Block       
-##  Min.   :-0.3567   Min.   : 0.000   Min.   : 0.000   Min.   : 1.000  
-##  1st Qu.: 0.4700   1st Qu.: 6.000   1st Qu.: 4.000   1st Qu.: 7.000  
-##  Median : 0.9933   Median : 8.000   Median : 7.000   Median : 9.000  
-##  Mean   : 0.9730   Mean   : 7.947   Mean   : 6.977   Mean   : 8.666  
-##  3rd Qu.: 1.4586   3rd Qu.:10.000   3rd Qu.:10.000   3rd Qu.:11.000  
-##  Max.   : 3.3810   Max.   :20.000   Max.   :18.000   Max.   :19.000  
-##  NA's   :86        NA's   :97       NA's   :90       NA's   :84      
-##      Digit            MEC_wt          Block_bin     
-##  Min.   : 1.000   Min.   :  213.4   Min.   :0.0000  
-##  1st Qu.: 6.000   1st Qu.: 1660.2   1st Qu.:0.0000  
-##  Median : 8.000   Median : 3117.1   Median :0.0000  
-##  Mean   : 8.192   Mean   : 7190.2   Mean   :0.1861  
-##  3rd Qu.:10.000   3rd Qu.: 9090.0   3rd Qu.:0.0000  
-##  Max.   :19.000   Max.   :70105.7   Max.   :1.0000  
-##  NA's   :78       NA's   :81        NA's   :76
+##       Age              Male              Race          PIR         Enough_Food     Smoke_in_Home    Smoke_Pregnant        NICU            logBLL             Math           Reading      
+##  Min.   : 5.833   Min.   :0.0000   Black   :806   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :-0.3567   Min.   : 0.000   Min.   : 0.000  
+##  1st Qu.: 7.500   1st Qu.:0.0000   Hispanic:843   1st Qu.:0.671   1st Qu.:1.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.: 0.4700   1st Qu.: 6.000   1st Qu.: 4.000  
+##  Median : 9.083   Median :1.0000   Other   :108   Median :1.287   Median :1.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median : 0.9933   Median : 8.000   Median : 7.000  
+##  Mean   : 9.017   Mean   :0.5078   White   :684   Mean   :1.627   Mean   :0.8887   Mean   :0.3899   Mean   :0.1995   Mean   :0.1121   Mean   : 0.9730   Mean   : 7.947   Mean   : 6.977  
+##  3rd Qu.:10.500   3rd Qu.:1.0000   NA's    : 80   3rd Qu.:2.375   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.: 1.4586   3rd Qu.:10.000   3rd Qu.:10.000  
+##  Max.   :11.917   Max.   :1.0000                  Max.   :6.943   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   : 3.3810   Max.   :20.000   Max.   :18.000  
+##  NA's   :88       NA's   :89                      NA's   :79      NA's   :86       NA's   :77       NA's   :80       NA's   :85       NA's   :86        NA's   :97       NA's   :90      
+##      Block            Digit            MEC_wt          Block_bin     
+##  Min.   : 1.000   Min.   : 1.000   Min.   :  213.4   Min.   :0.0000  
+##  1st Qu.: 7.000   1st Qu.: 6.000   1st Qu.: 1660.2   1st Qu.:0.0000  
+##  Median : 9.000   Median : 8.000   Median : 3117.1   Median :0.0000  
+##  Mean   : 8.666   Mean   : 8.192   Mean   : 7190.2   Mean   :0.1861  
+##  3rd Qu.:11.000   3rd Qu.:10.000   3rd Qu.: 9090.0   3rd Qu.:0.0000  
+##  Max.   :19.000   Max.   :19.000   Max.   :70105.7   Max.   :1.0000  
+##  NA's   :84       NA's   :78       NA's   :81        NA's   :76
 ```
 
 Next, we’ll use
@@ -1863,9 +1840,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.427  8.020   9.093
-##       1    7.958  7.593   8.355
-##       2    7.081  6.528   7.838
+##       0    8.425  8.021   9.319
+##       1    7.965  7.610   8.343
+##       2    7.214  6.567   7.955
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%
