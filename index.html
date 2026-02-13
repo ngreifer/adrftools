@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Tools for Estimating Average Dose-Response Functions • adrftools</title>
+<title>Estimating, Visualizing, and Testing Average Dose-Response Functions • adrftools</title>
 <!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
   window.MathJax = {
     chtml: {
@@ -16,9 +16,9 @@
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Tools for Estimating Average Dose-Response Functions">
-<meta name="description" content="Provides tools for estimating, visualizing, and testing average dose-response functions for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure.">
-<meta property="og:description" content="Provides tools for estimating, visualizing, and testing average dose-response functions for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure.">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Estimating, Visualizing, and Testing Average Dose-Response Functions">
+<meta name="description" content="Facilitates estimating, visualizing, and testing average dose-response functions (ADRFs) for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure. Includes support for frequentist and Bayesian regression models, analytical and bootstrap inference, and characterization of subgroup effects.">
+<meta property="og:description" content="Facilitates estimating, visualizing, and testing average dose-response functions (ADRFs) for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure. Includes support for frequentist and Bayesian regression models, analytical and bootstrap inference, and characterization of subgroup effects.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -54,8 +54,8 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="adrftools-tools-for-estimating-average-dose-response-functions">
-<em>adrftools</em>: Tools for Estimating Average Dose-Response Functions<a class="anchor" aria-label="anchor" href="#adrftools-tools-for-estimating-average-dose-response-functions"></a>
+<div class="page-header"><h1 id="adrftools-estimating-visualizing-and-testing-average-dose-response-functions">
+<em>adrftools</em>: Estimating, Visualizing, and Testing Average Dose-Response Functions<a class="anchor" aria-label="anchor" href="#adrftools-estimating-visualizing-and-testing-average-dose-response-functions"></a>
 </h1></div>
 <!-- badges: start -->
 <!-- [![CRAN status](https://www.r-pkg.org/badges/version/adrftools)](https://CRAN.R-project.org/package=adrftools) -->
@@ -130,7 +130,7 @@
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co">#&gt; ──────────────────────────────────────────</span></span>
 <span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt;  logBLL Estimate Std. Error CI Low CI High</span></span>
 <span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt;     0.0    8.394     0.1706  7.959   8.829</span></span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt;     0.5    8.305     0.1247  7.987   8.624</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt;     0.5    8.305     0.1247  7.987   8.623</span></span>
 <span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#&gt;     1.0    8.066     0.1129  7.778   8.354</span></span>
 <span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#&gt;     1.5    7.484     0.1436  7.117   7.850</span></span>
 <span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#&gt;     2.0    7.078     0.2186  6.520   7.635</span></span>
@@ -159,7 +159,7 @@
 <span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt;     -0.3567 and 2.4248</span></span>
 <span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt;  P-value</span></span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co">#&gt;   0.3153</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co">#&gt;   0.3159</span></span>
 <span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; ───────────────────────────────────────────────────────</span></span>
 <span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co">#&gt; Computed using the Imhof approximation</span></span></code></pre></div>
 <p>The results indicate that the ADRF is not flat, but there isn’t enough evidence to claim it is nonlinear in the range specified. We might project a linear model onto the ADRF to produce a more interpretable summary:</p>
@@ -175,8 +175,8 @@
 <div class="sourceCode" id="cb19"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="co">#&gt;                  ADRF Projection Coefficients</span></span>
 <span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="co">#&gt; ──────────────────────────────────────────────────────────────</span></span>
 <span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="co">#&gt;         Term Estimate Std. Error     t  P-value CI Low CI High</span></span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="co">#&gt;  (Intercept)    8.498     0.1329 63.95 &lt; 0.0001  8.237   8.759</span></span>
-<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="co">#&gt;       logBLL   -0.643     0.1267 -5.07 &lt; 0.0001 -0.891  -0.394</span></span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="co">#&gt;  (Intercept)    8.498     0.1329 63.96 &lt; 0.0001  8.237   8.758</span></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="co">#&gt;       logBLL   -0.642     0.1266 -5.07 &lt; 0.0001 -0.891  -0.394</span></span>
 <span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="co">#&gt; ──────────────────────────────────────────────────────────────</span></span>
 <span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="co">#&gt; Inference: unconditional</span></span>
 <span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="co">#&gt; Confidence level: 95% (t* = 1.961, df = 2455)</span></span>

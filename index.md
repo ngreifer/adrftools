@@ -1,4 +1,4 @@
-# *adrftools*: Tools for Estimating Average Dose-Response Functions
+# *adrftools*: Estimating, Visualizing, and Testing Average Dose-Response Functions
 
 ## 
 
@@ -117,7 +117,7 @@ adrf_bll(logBLL = c(0, .5, 1, 1.5, 2)) |>
 #> ──────────────────────────────────────────
 #>  logBLL Estimate Std. Error CI Low CI High
 #>     0.0    8.394     0.1706  7.959   8.829
-#>     0.5    8.305     0.1247  7.987   8.624
+#>     0.5    8.305     0.1247  7.987   8.623
 #>     1.0    8.066     0.1129  7.778   8.354
 #>     1.5    7.484     0.1436  7.117   7.850
 #>     2.0    7.078     0.2186  6.520   7.635
@@ -159,7 +159,7 @@ summary(adrf_bll, hypothesis = "linear")
 #>     -0.3567 and 2.4248
 #> 
 #>  P-value
-#>   0.3153
+#>   0.3159
 #> ───────────────────────────────────────────────────────
 #> Computed using the Imhof approximation
 ```
@@ -192,8 +192,8 @@ summary(proj)
 #>                  ADRF Projection Coefficients
 #> ──────────────────────────────────────────────────────────────
 #>         Term Estimate Std. Error     t  P-value CI Low CI High
-#>  (Intercept)    8.498     0.1329 63.95 < 0.0001  8.237   8.759
-#>       logBLL   -0.643     0.1267 -5.07 < 0.0001 -0.891  -0.394
+#>  (Intercept)    8.498     0.1329 63.96 < 0.0001  8.237   8.758
+#>       logBLL   -0.642     0.1266 -5.07 < 0.0001 -0.891  -0.394
 #> ──────────────────────────────────────────────────────────────
 #> Inference: unconditional
 #> Confidence level: 95% (t* = 1.961, df = 2455)
