@@ -72,18 +72,16 @@
 #' adrf2
 #'
 #' plot(adrf2)
-#'
+#' @examplesIf rlang::is_installed("fwb")
 #' # ADRF of logBLL on Math, bootstrap
 #' # inference
-#' \dontrun{
-#' adrf_b <- adrf(fit, treat = "logBLL",
+#' \donttest{adrf_b <- adrf(fit, treat = "logBLL",
 #'                vcov = "fwb")
 #'
 #' adrf_b
 #'
-#' plot(adrf_b)
-#' }
-#'
+#' plot(adrf_b)}
+#' @examples
 #' # ADRF in subset
 #' adrf_m <- adrf(fit, treat = "logBLL",
 #'                subset = Male == 1)

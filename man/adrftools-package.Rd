@@ -4,9 +4,9 @@
 \name{adrftools-package}
 \alias{adrftools}
 \alias{adrftools-package}
-\title{adrftools: Tools for Estimating Average Dose-Response Functions}
+\title{adrftools: Estimating, Visualizing, and Testing Average Dose-Response Functions}
 \description{
-Provides tools for estimating, visualizing, and testing average dose-response functions for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure.
+Facilitates estimating, visualizing, and testing average dose-response functions (ADRFs) for characterizing the causal effect of a continuous (i.e., non-discrete) treatment or exposure. Includes support for frequentist and Bayesian regression models, analytical and bootstrap inference, and characterization of subgroup effects.
 }
 \seealso{
 Useful links:

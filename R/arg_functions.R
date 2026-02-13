@@ -65,17 +65,35 @@ arg_not_missing <- function(x, arg = rlang::caller_arg(x)) {
   }
 }
 
-arg_numeric <- function(x, arg = rlang::caller_arg(x)) {
-  if (!is.numeric(x)) {
-    .err("{.arg {arg}} must be numeric")
-  }
-
+arg_no_NA <- function(x, arg = rlang::caller_arg(x)) {
   if (anyNA(x)) {
     if (length(x) == 1L) {
       .err("{.arg {arg}} cannot be {.val {NA}}")
     }
 
     .err("{.arg {arg}} cannot contain {.val {NA}} values")
+  }
+}
+
+arg_atomic <- function(x, arg = rlang::caller_arg(x)) {
+  if (!is.atomic(x)) {
+    .err("{.arg {arg}} must be an atomic vector")
+  }
+}
+
+arg_numeric <- function(x, arg = rlang::caller_arg(x)) {
+  if (!is.numeric(x)) {
+    .err("{.arg {arg}} must be numeric")
+  }
+
+  arg_no_NA(x, arg = arg)
+}
+
+arg_whole_numeric <- function(x, arg = rlang::caller_arg(x)) {
+  arg_numeric(x, arg = arg)
+
+  if (!is.integer(x) && !check_if_zero(x - trunc(x))) {
+    .err("{.arg {arg}} must be a whole numeric vector")
   }
 }
 
@@ -97,6 +115,11 @@ arg_whole_number <- function(x, arg = rlang::caller_arg(x)) {
 
 arg_count <- function(x, arg = rlang::caller_arg(x)) {
   arg_whole_number(x, arg = arg)
+  arg_gte(x, 0, arg = arg)
+}
+
+arg_counts <- function(x, arg = rlang::caller_arg(x)) {
+  arg_whole_numeric(x, arg = arg)
   arg_gte(x, 0, arg = arg)
 }
 
@@ -168,13 +191,7 @@ arg_character <- function(x, arg = rlang::caller_arg(x)) {
     .err("{.arg {arg}} must be character")
   }
 
-  if (anyNA(x)) {
-    if (length(x) == 1L) {
-      .err("{.arg {arg}} cannot be {.val {NA}}")
-    }
-
-    .err("{.arg {arg}} cannot contain {.val {NA}} values")
-  }
+  arg_no_NA(x, arg = arg)
 }
 
 arg_string <- function(x, arg = rlang::caller_arg(x)) {
@@ -186,9 +203,7 @@ arg_string <- function(x, arg = rlang::caller_arg(x)) {
     .err("{.arg {arg}} must have length 1")
   }
 
-  if (anyNA(x)) {
-    .err("{.arg {arg}} cannot be {.val {NA}}")
-  }
+  arg_no_NA(x, arg = arg)
 }
 
 arg_flag <- function(x, arg = rlang::caller_arg(x)) {
@@ -200,9 +215,7 @@ arg_flag <- function(x, arg = rlang::caller_arg(x)) {
     .err("{.arg {arg}} must have length 1")
   }
 
-  if (anyNA(x)) {
-    .err("{.arg {arg}} cannot be {.val {NA}}")
-  }
+  arg_no_NA(x, arg = arg)
 }
 
 arg_list <- function(x, arg = rlang::caller_arg(x)) {
@@ -223,18 +236,45 @@ arg_data <- function(x, arg = rlang::caller_arg(x)) {
   }
 }
 
+arg_function <- function(x, arg = rlang::caller_arg(x)) {
+  if (!is.function(x)) {
+    .err("{.arg {arg}} must be a function")
+  }
+}
+
 arg_subset <- function(x, values, arg = rlang::caller_arg(x)) {
   if (!all(x %in% values)) {
     if (length(x) == 1L) {
       .err("{.arg {arg}} must be one of {.or {.val {values}}}")
     }
 
-    .err("each entry of {.arg {arg}} must be one of {.or {.val {values}}}")
+    .err("each element of {.arg {arg}} must be one of {.or {.val {values}}}")
   }
 }
 
 arg_equal <- function(x1, x2, arg1 = rlang::caller_arg(x1), arg2 = rlang::caller_arg(x2), ...) {
   if (!isTRUE(all.equal(x1, x2, ...))) {
     .err("{.arg {arg1}} must be equal to {.arg {arg2}}")
+  }
+}
+
+arg_formula <- function(x, one_sided = NULL, arg = rlang::caller_arg(x)) {
+
+  if (length(one_sided) == 0L) {
+    if (!rlang::is_formula(x)) {
+      .err("{.arg {arg}} must be a formula")
+    }
+  }
+  else {
+    arg_flag(one_sided)
+
+    if (one_sided) {
+      if (!rlang::is_formula(x, lhs = FALSE)) {
+        .err("{.arg {arg}} must be a one-sided formula")
+      }
+    }
+    else if (!rlang::is_formula(x, lhs = TRUE)) {
+      .err("{.arg {arg}} must be a two-sided formula")
+    }
   }
 }

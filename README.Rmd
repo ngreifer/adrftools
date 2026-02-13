@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# *adrftools*: Tools for Estimating Average Dose-Response Functions
+# *adrftools*: Estimating, Visualizing, and Testing Average Dose-Response Functions
 
 <!-- badges: start -->
 <!-- [![CRAN status](https://www.r-pkg.org/badges/version/adrftools)](https://CRAN.R-project.org/package=adrftools) -->
@@ -25,6 +25,7 @@ knitr::opts_chunk$set(
 ------
 
 ### Overview
+
 *adrftools* is an R package for estimating the average dose-response function (ADRF), which characterizes the effect of a continuous treatment on an outcome. Functionality is included for performing g-computation on a regression model to estimate the ADRF, plot the ADRF, and test hypotheses about the ADRF. See `vignette("adrftools")` for a full tutorial on using *adrftools*.
 
 ### Installation

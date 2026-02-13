@@ -98,18 +98,16 @@ adrf2 <- adrf(fit, treat = "logBLL",
 adrf2
 
 plot(adrf2)
-
+\dontshow{if (rlang::is_installed("fwb")) withAutoprint(\{ # examplesIf}
 # ADRF of logBLL on Math, bootstrap
 # inference
-\dontrun{
-adrf_b <- adrf(fit, treat = "logBLL",
+\donttest{adrf_b <- adrf(fit, treat = "logBLL",
                vcov = "fwb")
 
 adrf_b
 
-plot(adrf_b)
-}
-
+plot(adrf_b)}
+\dontshow{\}) # examplesIf}
 # ADRF in subset
 adrf_m <- adrf(fit, treat = "logBLL",
                subset = Male == 1)
