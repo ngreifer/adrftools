@@ -91,28 +91,28 @@
 
 #' @export
 curve_projection <- function(x, model, transform = TRUE) {
-  arg_not_missing(x)
+  arg::arg_supplied(x)
 
   check_effect_curve(x, projection_ok = FALSE)
 
-  arg_not_missing(model)
+  arg::arg_supplied(model)
 
   .treat <- .attr(x, ".treat")
 
   if (rlang::is_string(model)) {
     model <- model |>
-      match_arg(c("flat", "linear", "quadratic", "cubic")) |>
+      arg::match_arg(c("flat", "linear", "quadratic", "cubic")) |>
       switch(flat = ~1,
              linear = as.formula(sprintf("~ %1$s", .treat)),
              quadratic = as.formula(sprintf("~ %1$s + I(%1$s^2)", .treat)),
              cubic = as.formula(sprintf("~ %1$s + I(%1$s^2) + I(%1$s^3)", .treat)))
   }
   else if (!rlang::is_formula(model, lhs = FALSE)) {
-    .err("{.arg model} must be a string or a one-sided formula with the projection model on the right-hand side")
+    arg::err("{.arg model} must be a string or a one-sided formula with the projection model on the right-hand side")
   }
   else if (!all(get_varnames(model) %in% .treat)) {
     #Check that only treat is in model
-    .err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg model}")
+    arg::err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg model}")
   }
 
   .est <- .attr(x, ".est")
@@ -132,7 +132,7 @@ curve_projection <- function(x, model, transform = TRUE) {
   nm <- colnames(mm)
 
   if (!all(is.finite(mm))) {
-    .err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
+    arg::err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
   }
 
   n_by <- get_n_by(.contrast, .by_grid)
@@ -295,8 +295,8 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
       # Process df
       df <- df %or% .attr(object, ".df")
 
-      arg_number(df)
-      arg_gt(df, 0)
+      arg::arg_number(df)
+      arg::arg_gt(df, 0)
 
       stat <- if (is.finite(df)) "t" else "z"
 
@@ -426,7 +426,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
 
 #' @exportS3Method print summary.curve_projection
 print.summary.curve_projection <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
-  arg_whole_number(digits)
+  arg::arg_whole_number(digits)
 
   .reference <- .attr(x, ".reference")
   .contrast <- .attr(x, ".contrast")
@@ -485,7 +485,7 @@ model.matrix.curve_projection <- function(object, ...) {
     model.matrix(data = proj_data)
 
   if (!all(is.finite(mm))) {
-    .err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
+    arg::err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
   }
 
   n_by <- get_n_by(.contrast, .by_grid)
@@ -505,36 +505,36 @@ formula.curve_projection <- function(x, ...) {
 #' @exportS3Method stats::anova curve_projection
 #' @rdname curve_projection
 anova.curve_projection <- function(object, object2, df = NULL, ...) {
-  arg_not_missing(object)
-  arg_is(object, "curve_projection")
+  arg::arg_supplied(object)
+  arg::arg_is(object, "curve_projection")
 
-  arg_not_missing(object2)
-  arg_is(object2, "curve_projection")
+  arg::arg_supplied(object2)
+  arg::arg_is(object2, "curve_projection")
 
   if (any_apply(c(".values", ".treat", ".vcov_type", ".curve_type", ".response",
                   ".by_grid", ".contrast", ".reference", ".family", ".df"),
                 function(a) !identical(.attr(object, a), .attr(object2, a)))) {
-    .err("{.arg object} and {.arg object2} must be the outputs of {.fun curve_projection} applied to the same {.cls effect_curve} object")
+    arg::err("{.arg object} and {.arg object2} must be the outputs of {.fun curve_projection} applied to the same {.cls effect_curve} object")
   }
 
   # Process df
   df <- df %or% .attr(object, ".df")
 
-  arg_number(df)
-  arg_gt(df, 0)
+  arg::arg_number(df)
+  arg::arg_gt(df, 0)
 
   test <- if (is.finite(df)) "F" else "Chisq"
 
   tolerance <- ...get("tolerance", 1e-7)
 
-  arg_number(tolerance)
-  arg_gt(tolerance, 0)
+  arg::arg_number(tolerance)
+  arg::arg_gt(tolerance, 0)
 
   b1 <- coef(object, complete = FALSE)
   b2 <- coef(object2, complete = FALSE)
 
   if (length(b2) >= length(b1)) {
-    .err("{.arg object2} does not appear to be nested within {.arg object1}")
+    arg::err("{.arg object2} does not appear to be nested within {.arg object1}")
   }
 
   Z1 <- .lm.fit(x = model.matrix(object2)[, names(b2), drop = FALSE],
@@ -545,7 +545,7 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   .q <- sum(keep)
 
   if (.q > length(b1) - length(b2)) {
-    .err("{.arg object2} does not appear to be nested within {.arg object}")
+    arg::err("{.arg object2} does not appear to be nested within {.arg object}")
   }
 
   L <- t(Z1_svd[["v"]][, keep, drop = FALSE])

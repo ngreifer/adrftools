@@ -175,8 +175,8 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
         # Process df
         df <- df %or% .attr(x, ".df")
 
-        arg_number(df)
-        arg_gt(df, 0)
+        arg::arg_number(df)
+        arg::arg_gt(df, 0)
 
         stat <- if (is.finite(df)) "t" else "z"
 
@@ -218,7 +218,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
           if (null_or_error(t_crit)) {
             error <- conditionMessage(.attr(t_crit, "condition"))
-            .err("There was an error computing simultaneous confidence intervals:\n{error}")
+            arg::err("There was an error computing simultaneous confidence intervals:\n{error}")
           }
         }
         else {

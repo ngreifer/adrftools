@@ -100,18 +100,18 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   .vcov_type <- .attr(object, ".vcov_type")
 
   if (.vcov_type == "none") {
-    .err('{.fun summary} cannot be used when {.code vcov = "none"} in the original call to {.fun adrf}')
+    arg::err('{.fun summary} cannot be used when {.code vcov = "none"} in the original call to {.fun adrf}')
   }
 
   if (missing(hypothesis) || is_null(hypothesis)) {
     hypothesis <- if (.is_pure_adrf(object)) "flat" else 0
   }
   else if (rlang::is_string(hypothesis)) {
-    hypothesis <- match_arg(hypothesis, c("flat", "linear", "quadratic", "cubic"))
+    hypothesis <- arg::match_arg(hypothesis, c("flat", "linear", "quadratic", "cubic"))
   }
   else if (rlang::is_formula(hypothesis)) {
     if (!rlang::is_formula(hypothesis, lhs = FALSE)) {
-      .err("if {.arg hypothesis} is a formula, it must be a one-sided formula with the projection model on the right-hand side")
+      arg::err("if {.arg hypothesis} is a formula, it must be a one-sided formula with the projection model on the right-hand side")
     }
 
     .treat <- .attr(object, ".treat")
@@ -120,11 +120,11 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     vars_in_formula <- get_varnames(hypothesis)
 
     if (!all(get_varnames(hypothesis) %in% .treat)) {
-      .err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg hypothesis} when supplied as a formula")
+      arg::err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg hypothesis} when supplied as a formula")
     }
   }
   else if (!is_number(hypothesis)) {
-    .err("{.arg hypothesis} must be a string, formula, or a number")
+    arg::err("{.arg hypothesis} must be a string, formula, or a number")
   }
 
   if (missing(method) || is_null(method)) {
@@ -139,10 +139,8 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     }
   }
 
-  arg_string(method)
-  method <- tolower(method)
-  method <- match_arg(method, c("sim", "imhof", "davies", "liu",
-                                "satterthwaite", "saddlepoint"))
+  method <- arg::match_arg(method, c("sim", "imhof", "davies", "liu",
+                                     "satterthwaite", "saddlepoint"))
 
   if (method %in% c("imhof", "davies", "liu")) {
     rlang::check_installed("CompQuadForm")
@@ -154,13 +152,13 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   ev_tol <- 1e-10
   if (method %in% c("imhof", "davies", "liu", "sim", "satterthwaite",
                     "saddlepoint")) {
-    arg_number(ev_tol)
-    arg_gt(ev_tol, 0)
+    arg::arg_number(ev_tol)
+    arg::arg_gt(ev_tol, 0)
   }
 
   if (method == "sim") {
-    arg_count(nsim)
-    arg_gt(nsim, 100)
+    arg::arg_count(nsim)
+    arg::arg_gt(nsim, 100)
   }
   else {
     nsim <- NULL
@@ -168,8 +166,8 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   df <- df %or% .attr(object, ".df")
 
-  arg_number(df)
-  arg_gt(df, 0)
+  arg::arg_number(df)
+  arg::arg_gt(df, 0)
 
   .est0 <- .attr(object, ".est")
   .vcov0 <- .attr(object, ".vcov")

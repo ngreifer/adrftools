@@ -105,7 +105,7 @@ adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type 
                          data = NULL, subset = NULL, by = NULL, wts = NULL,
                          range = .95, n = 51, fwb.args = list(), ...) {
 
-  arg_not_missing(treat)
+  arg::arg_supplied(treat)
 
   subset_substitute <- substitute(subset)
 
@@ -123,7 +123,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                       data = NULL, subset = NULL, by = NULL, wts = NULL,
                       range = .95, n = 51, ...) {
 
-  arg_not_missing(treat)
+  arg::arg_supplied(treat)
 
   subset_substitute <- substitute(subset)
 
@@ -140,7 +140,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                                    data, subset, by, wts, cluster = NULL, fwb.args = list(),
                                    type, .adrf_env = parent.frame(2L), ...) {
   # type
-  arg_string(type)
+  arg::arg_string(type)
 
   # get data
   model_data <- process_model_data(x, data)
@@ -304,7 +304,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       fwb.args <- list()
     }
 
-    arg_list(fwb.args)
+    arg::arg_list(fwb.args)
 
     if (identical(vcov, "boot")) {
       fwb.args[["wtype"]] <- "multinom"
@@ -397,7 +397,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     }
 
     if (ncol(gr) != nrow(V)) {
-      .err("the supplied covariance matrix does not have the right dimensions. It should have dimension {ncol(gr)} by {ncol(gr)} but actually has dimension {nrow(V)} by {ncol(V)}")
+      arg::err("the supplied covariance matrix does not have the right dimensions. It should have dimension {ncol(gr)} by {ncol(gr)} but actually has dimension {nrow(V)} by {ncol(V)}")
     }
 
     .vcov <- quad_mult(gr, V)
@@ -450,13 +450,13 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   }, logical(1L))
 
   if (any(are_bayes) && !all(are_bayes)) {
-    .err("either all models fit to the imputed datasets must be Bayesian or no models must be")
+    arg::err("either all models fit to the imputed datasets must be Bayesian or no models must be")
   }
 
   is_bayes <- any(are_bayes)
 
   # type
-  arg_string(type)
+  arg::arg_string(type)
 
   # family
   .family <- process_family(x[["analyses"]][[1L]], type)
@@ -465,7 +465,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     !identical(.family, process_family(mod),
                ignore.environment = TRUE)
   })) {
-    .err("all models must have the same family")
+    arg::err("all models must have the same family")
   }
 
   switch(.get_model_type(x[["analyses"]][[1L]]),

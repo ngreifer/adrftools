@@ -266,7 +266,7 @@ null_or_error <- function(x) {is_null(x) || inherits(x, "try-error")}
   attr(x, which, exact = exact)
 }
 block_diag <- function(m, n = 1L) {
-  arg_count(n)
+  arg::arg_count(n)
 
   m <- as.matrix(m)
 
@@ -311,61 +311,6 @@ get_varnames <- function(expr) {
   }
 
   recurse(expr)
-}
-
-#More informative and cleaner version of base::match.arg(). Uses arg, rlang, and cli.
-match_arg <- function(arg, choices, several.ok = FALSE, context = NULL,
-                      arg.name = rlang::caller_arg(arg)) {
-  #Replaces match.arg() but gives cleaner error message and processing of arg.
-  if (missing(arg)) {
-    .err("no argument was supplied to match_arg() (this is a bug)")
-  }
-
-  # arg.name <- deparse1(substitute(arg), width.cutoff = 500L)
-
-  if (missing(choices)) {
-    sysP <- sys.parent()
-    formal.args <- formals(sys.function(sysP))
-    choices <- eval(formal.args[[as.character(substitute(arg))]],
-                    envir = sys.frame(sysP))
-  }
-
-  if (is_null(arg)) {
-    return(choices[1L])
-  }
-
-  if (several.ok) {
-    arg_character(arg, arg.name)
-  }
-  else {
-    arg_string(arg, arg.name)
-
-    if (identical(arg, choices)) {
-      return(arg[1L])
-    }
-  }
-
-  i <- pmatch(arg, choices, nomatch = 0L, duplicates.ok = TRUE)
-
-  if (allv(i, 0L)) {
-    one_of <- {
-      if (length(choices) <= 1L) NULL
-      else if (several.ok) "at least one of"
-      else "one of"
-    }
-
-    if (is_null(context)) {
-      .err("the argument to {.arg {arg.name}} should be {one_of} {.or {.val {choices}}}")
-    }
-    else {
-      .err(sprintf("%s the argument to {.arg {arg.name}} should be {one_of} {.or {.val {choices}}}",
-                   context))
-    }
-  }
-
-  i <- i[i > 0L]
-
-  choices[i]
 }
 
 len <- function(x, recursive = TRUE) {

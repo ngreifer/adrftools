@@ -265,7 +265,7 @@ process_treat_mv <- function(treat, data) {
   treat_vars <- data[treat]
 
   if (!all_apply(treat_vars, chk::vld_numeric)) {
-    .err("{.arg treat} must be the names of one or more numeric variables in the original dataset")
+    arg::err("{.arg treat} must be the names of one or more numeric variables in the original dataset")
   }
 
   treat_vars
@@ -279,7 +279,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
 
     if (z == 1L) {
       if (length(ranges) > 2L) {
-        .err("when supplied as a vector, {.arg range} must have length 1 or 2")
+        arg::err("when supplied as a vector, {.arg range} must have length 1 or 2")
       }
 
       ranges <- list(ranges) |>
@@ -290,7 +290,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
         setNames(names(treat_vars))
     }
     else {
-      .err("{.arg ranges} must be a list with an entry for each treatment")
+      arg::err("{.arg ranges} must be a list with an entry for each treatment")
     }
   }
 
@@ -300,14 +300,14 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
   }
 
   if (length(ranges) != z) {
-    .err("{.arg ranges} must be a list with an entry for each treatment")
+    arg::err("{.arg ranges} must be a list with an entry for each treatment")
   }
 
   if (is_null(names(ranges))) {
     names(ranges) <- names(treat_vars)
   }
   else if (!setequal(unique(names(ranges)), unique(names(treat_vars)))) {
-    .err("the names of each entry in {.arg ranges} must correspond to one of the supplied treatments")
+    arg::err("the names of each entry in {.arg ranges} must correspond to one of the supplied treatments")
   }
 
   ranges <- ranges[names(treat_vars)]
@@ -316,7 +316,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
 
   for (i in names(treat_vars)) {
     if (!is.numeric(ranges[[i]])) {
-      .err("each entry in {.arg ranges} must be numeric")
+      arg::err("each entry in {.arg ranges} must be numeric")
     }
 
     if (length(ranges[[i]]) > 1L) {
@@ -327,7 +327,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
       if (strict) {
         if (any(ranges[[i]] < range_t[1L]) || any(ranges[[i]] > range_t[2L])) {
           r <- format(range_t, digits = 4L, drop0trailing = TRUE)
-          .err("no values in the {.arg ranges} entry for {i} can be outside the range of its observed observed treatment values ({r[1L]} to {r[2L]})")
+          arg::err("no values in the {.arg ranges} entry for {i} can be outside the range of its observed observed treatment values ({r[1L]} to {r[2L]})")
         }
       }
       else {
@@ -335,7 +335,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
 
         if (any(ranges[[i]] < range_t[1L] - .1 * range_diff) ||
             any(ranges[[i]] > range_t[2L] + .1 * range_diff)) {
-          .err("some values in the {.arg ranges} entry for {i} are outside the range of observed treatment values")
+          arg::err("some values in the {.arg ranges} entry for {i} are outside the range of observed treatment values")
         }
       }
     }
@@ -347,7 +347,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
                                w = w)
     }
     else {
-      .err("if an entry in {.arg ranges} is a single number, it must be a quantile (i.e., between 0 and 1)")
+      arg::err("if an entry in {.arg ranges} is a single number, it must be a quantile (i.e., between 0 and 1)")
     }
 
     values[[i]] <- seq(ranges[[i]][1L], ranges[[i]][2L], length.out = n)
@@ -413,7 +413,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
 
     for (.t in .treat) {
       if (is_null(values[[.t]])) {
-        .err("values must be supplied for {(.t)}")
+        arg::err("values must be supplied for {(.t)}")
       }
 
       chk::chk_numeric(values[[.t]], add_quotes(.t, "`"))
@@ -608,7 +608,7 @@ curve_contrast_mv <- function(x) {
 
   if (is_null(.by_grid)) {
     fn_name <- rlang::current_call() |> rlang::call_name()
-    .err("{.fun adrf} must have been called with {.arg by} specified to use {.fun {fn_name}}")
+    arg::err("{.fun adrf} must have been called with {.arg by} specified to use {.fun {fn_name}}")
   }
 
   .est <- .attr(x, ".est")
@@ -652,7 +652,7 @@ curve_projection_mv <- function(x, model, transform = TRUE) {
 
   if (chk::vld_string(model)) {
     model <- model |>
-      match_arg(c("flat", "linear", "quadratic", "cubic")) |>
+      arg::match_arg(c("flat", "linear", "quadratic", "cubic")) |>
       switch(flat = ~1,
              linear = as.formula(sprintf("~ %s", paste(.treat, collapse = " + "))),
              quadratic = as.formula(sprintf("~ (%s)^2 + %s",
@@ -660,11 +660,11 @@ curve_projection_mv <- function(x, model, transform = TRUE) {
                                             paste(sprintf("I(%s^2)", .treat), collapse = " + "))))
   }
   else if (!rlang::is_formula(model, lhs = FALSE)) {
-    .err("{.arg model} must be a string or a one-sided formula with the projection model on the right-hand side")
+    arg::err("{.arg model} must be a string or a one-sided formula with the projection model on the right-hand side")
   }
   else if (!all(get_varnames(model) %in% .treat)) {
     #Check that only treat is in model
-    .err("only the treatment variables ({.and {.var {(.treat)}}}) are allowed to appear in {.arg model}")
+    arg::err("only the treatment variables ({.and {.var {(.treat)}}}) are allowed to appear in {.arg model}")
   }
 
   .est <- .attr(x, ".est")
@@ -682,7 +682,7 @@ curve_projection_mv <- function(x, model, transform = TRUE) {
   nm <- colnames(mm)
 
   if (!all(is.finite(mm))) {
-    .err("evaluation of the projection model produced non-finite values of {.or {.var {(.treat)}}}, which is not allowed")
+    arg::err("evaluation of the projection model produced non-finite values of {.or {.var {(.treat)}}}, which is not allowed")
   }
 
   n_by <- get_n_by(.contrast, .by_grid)
@@ -907,7 +907,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                         silent = TRUE)
 
           if (null_or_error(t_crit)) {
-            .err("there was an error computing simultaneous confidence intervals")
+            arg::err("there was an error computing simultaneous confidence intervals")
           }
         }
         else {

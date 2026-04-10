@@ -50,10 +50,10 @@
 
 #' @export
 reference_curve <- function(x, reference) {
-  arg_not_missing(x)
+  arg::arg_supplied(x)
   check_effect_curve(x, reference_ok = FALSE, projection_ok = FALSE)
 
-  arg_not_missing(reference)
+  arg::arg_supplied(reference)
   check_reference(reference, values = .attr(x, ".values"))
 
   x <- .add_values(x, reference)

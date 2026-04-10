@@ -111,8 +111,8 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
   if (ci.type == "wald") {
     df <- df %or% .attr(object, ".df")
 
-    arg_number(df)
-    arg_gt(df, 0)
+    arg::arg_number(df)
+    arg::arg_gt(df, 0)
 
     stat <- if (is.finite(df)) "t" else "z"
 
@@ -186,7 +186,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
                      silent = TRUE)
 
         if (null_or_error(pvals)) {
-          .err("there was an error computing simultaneous p-values")
+          arg::err("there was an error computing simultaneous p-values")
         }
       }
       else {
@@ -232,7 +232,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
                       silent = TRUE)
 
         if (null_or_error(t_crit)) {
-          .err("there was an error computing simultaneous confidence intervals")
+          arg::err("there was an error computing simultaneous confidence intervals")
         }
       }
       else {
@@ -313,7 +313,7 @@ vcov.curve_est <- function(object, ...) {
 
 #' @exportS3Method print summary.curve_est
 print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
-  arg_whole_number(digits)
+  arg::arg_whole_number(digits)
 
   .reference <- .attr(x, ".reference")
   .contrast <- .attr(x, ".contrast")

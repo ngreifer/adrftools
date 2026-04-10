@@ -1,6 +1,6 @@
 #Compute gradient numerically using centered difference
 .gradient <- function(.f, .x, .eps = 1e-8, .parm = NULL, .direction = "center", .method = "fd", ...) {
-  .method <- match_arg(.method, c("fd", "richardson"))
+  .method <- arg::match_arg(.method, c("fd", "richardson"))
 
   if (.method == "fd") {
     .gradientFD(.f = .f, .x = .x, .eps = .eps, .parm = .parm, .direction = .direction, ...)
@@ -13,7 +13,7 @@
 #Finite difference gradient
 .gradientFD <- function(.f, .x, .eps = 1e-8, .parm = NULL, .direction = "center", ...) {
 
-  .direction <- match_arg(.direction, c("center", "left", "right"))
+  .direction <- arg::match_arg(.direction, c("center", "left", "right"))
 
   if (is_null(.parm)) {
     .parm <- seq_along(.x)
@@ -74,7 +74,7 @@
 #Using Richardson extrapolation
 .gradientRich <- function(.f, .x, .eps = 1e-8, .parm = NULL, .direction = "center", ...) {
 
-  .direction <- match_arg(.direction, c("center", "left", "right"))
+  .direction <- arg::match_arg(.direction, c("center", "left", "right"))
 
   if (is_null(.parm)) {
     .parm <- seq_along(.x)

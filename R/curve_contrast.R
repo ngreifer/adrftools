@@ -51,7 +51,7 @@
 
 #' @export
 curve_contrast <- function(x) {
-  arg_not_missing(x)
+  arg::arg_supplied(x)
 
   check_effect_curve(x, contrast_ok = FALSE, projection_ok = FALSE)
 
@@ -59,7 +59,7 @@ curve_contrast <- function(x) {
 
   if (is_null(.by_grid)) {
     fn_name <- rlang::current_call() |> rlang::call_name()
-    .err("{.fun adrf} must have been called with {.arg by} specified to use {.fun {fn_name}}")
+    arg::err("{.fun adrf} must have been called with {.arg by} specified to use {.fun {fn_name}}")
   }
 
   .est <- .attr(x, ".est")

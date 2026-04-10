@@ -38,7 +38,7 @@
 
 #' @export
 point_contrast <- function(object) {
-  arg_is(object, "curve_est")
+  arg::arg_is(object, "curve_est")
 
   .treat <- attr(object, ".treat")
   .vcov_type <- .attr(object, ".vcov_type")
@@ -53,7 +53,7 @@ point_contrast <- function(object) {
 
   if (n < 2L) {
     fn_name <- rlang::current_call() |> rlang::call_name()
-    .err("{.fun {fn_name}} can only be used when the {.cls effect_curve} object was called with two or more values")
+    arg::err("{.fun {fn_name}} can only be used when the {.cls effect_curve} object was called with two or more values")
   }
 
   combos <- utils::combn(seq_len(n), 2L, simplify = TRUE)
@@ -155,8 +155,8 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
   if (ci.type == "wald") {
     df <- df %or% .attr(object, ".df")
 
-    arg_number(df)
-    arg_gt(df, 0)
+    arg::arg_number(df)
+    arg::arg_gt(df, 0)
 
     stat <- if (is.finite(df)) "t" else "z"
 
@@ -209,7 +209,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
                      silent = TRUE)
 
         if (null_or_error(pvals)) {
-          .err("there was an error computing simultaneous p-values")
+          arg::err("there was an error computing simultaneous p-values")
         }
       }
       else {
@@ -256,7 +256,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
                       silent = TRUE)
 
         if (null_or_error(t_crit)) {
-          .err("there was an error computing simultaneous confidence intervals")
+          arg::err("there was an error computing simultaneous confidence intervals")
         }
       }
       else {

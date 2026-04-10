@@ -51,7 +51,7 @@
 
 #' @export
 amef <- function(x, eps = 1e-5) {
-  arg_not_missing(x)
+  arg::arg_supplied(x)
 
   check_effect_curve(x, amef_ok = FALSE, projection_ok = FALSE)
 
