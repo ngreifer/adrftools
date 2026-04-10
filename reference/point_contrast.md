@@ -108,7 +108,7 @@ single point, use
 - [`summary.curve_est()`](https://ngreifer.github.io/adrftools/reference/summary.curve_est.md)
   for inference on individual points on an effect curve
 
-- [`marginaleffects::hypotheses()`](https://marginaleffects.com/man/r/hypotheses.html)
+- [`marginaleffects::hypotheses()`](https://rdrr.io/pkg/marginaleffects/man/hypotheses.html)
   for general hypotheses on `curve_est` (and other) objects
 
 ## Examples
@@ -134,7 +134,7 @@ adrf1(logBLL = c(0, 1, 2)) |>
 #>                         Term Estimate Std. Error      t  P-value  CI Low
 #>  [logBLL = 1] - [logBLL = 0]  -0.4579     0.2662 -1.720   0.1962 -1.0810
 #>  [logBLL = 2] - [logBLL = 0]  -1.4403     0.3074 -4.685 < 0.0001 -2.1601
-#>  [logBLL = 2] - [logBLL = 1]  -0.9824     0.2610 -3.764   0.0005 -1.5934
+#>  [logBLL = 2] - [logBLL = 1]  -0.9824     0.2610 -3.764   0.0005 -1.5935
 #> ────────────────────────────────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
 #> Confidence level: 95% (t* = 2.341, df = 2473)

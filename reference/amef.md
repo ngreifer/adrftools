@@ -63,7 +63,7 @@ At the boundaries of the ADRF, one-sided derivatives are used.
 - [`curve_contrast()`](https://ngreifer.github.io/adrftools/reference/curve_contrast.md)
   for contrasting AMEFs computed within subgroups
 
-- [`marginaleffects::avg_slopes()`](https://marginaleffects.com/man/r/slopes.html)
+- [`marginaleffects::avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
   for computing average adjusted slopes for fitted models (similar to
   the AMEF)
 
@@ -103,7 +103,7 @@ amef1(logBLL = c(0, 1, 2)) |>
 #>                       AMEF Estimates
 #> ───────────────────────────────────────────────────────────
 #>  logBLL Estimate Std. Error       t P-value  CI Low CI High
-#>       0  -0.1768     0.4286 -0.4125  0.9549 -1.1854  0.8319
+#>       0  -0.1768     0.4286 -0.4125  0.9549 -1.1854  0.8318
 #>       1  -0.8144     0.2780 -2.9297  0.0097 -1.4687 -0.1601
 #>       2  -0.7111     0.7004 -1.0152  0.6160 -2.3597  0.9374
 #> ───────────────────────────────────────────────────────────

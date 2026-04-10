@@ -200,7 +200,7 @@ respectively, as implemented in
 [*fwb*](https://ngreifer.github.io/fwb/); these both also account for
 sampling and estimation uncertainty. Finally, any argument to the `vcov`
 argument of
-[`marginaleffects::get_vcov()`](https://marginaleffects.com/man/r/get_vcov.html)
+[`marginaleffects::get_vcov()`](https://rdrr.io/pkg/marginaleffects/man/get_vcov.html)
 can be supplied to perform conditional inference (i.e., treating the
 sample as fixed); the “default” variance can be requested by setting
 `vcov = "conditional"` (which typically just uses the
@@ -1842,9 +1842,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.431  8.017   9.246
-##       1    7.940  7.594   8.346
-##       2    7.157  6.568   7.965
+##       0    8.446  8.041   9.223
+##       1    7.968  7.586   8.368
+##       2    7.177  6.562   7.830
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%
