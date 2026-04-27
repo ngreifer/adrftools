@@ -121,7 +121,7 @@ curve_projection <- function(x, model, transform = TRUE) {
   .contrast <- .attr(x, ".contrast")
   .vcov_type <- .attr(x, ".vcov_type")
 
-  proj_data <- data.frame(.values) |>
+  proj_data <- qDF(.values) |>
     setNames(.treat) |>
     model.frame(formula = model)
 
@@ -477,7 +477,7 @@ model.matrix.curve_projection <- function(object, ...) {
   .by_grid <- .attr(object, ".by_grid")
   .contrast <- .attr(object, ".contrast")
 
-  proj_data <- data.frame(.values) |>
+  proj_data <- qDF(.values) |>
     setNames(.treat) |>
     model.frame(formula = formula(object))
 

@@ -217,13 +217,12 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
                  cubic = cbind(1, poly(.values, 3)))
   }
   else if (rlang::is_formula(hypothesis)) {
-    proj_data <- data.frame(.values) |>
+    proj_data <- qDF(.values) |>
       setNames(.treat) |>
       model.frame(formula = hypothesis)
 
-    mt <- .attr(proj_data, "terms")
-
-    mm <- model.matrix(mt, data = proj_data)
+    mm <- .attr(proj_data, "terms") |>
+      model.matrix(data = proj_data)
   }
 
   #Weights for trapezoidal Riemann sum

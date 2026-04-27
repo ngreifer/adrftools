@@ -891,11 +891,10 @@ process_cluster <- function(.cluster, model, data) {
 
   if (rlang::is_formula(.cluster)) {
     cluster <- try({
-      cluster_tmp <- expand.model.frame(model, .cluster, na.expand = FALSE)
-
-      model.frame(.cluster, data = cluster_tmp,
-                  na.action = na.pass)},
-      silent = TRUE)
+      model |>
+        expand.model.frame(extras = .cluster) |>
+        model.frame(formula = .cluster, na.action = na.pass)
+    }, silent = TRUE)
 
     if (null_or_error(cluster)) {
       cluster <- try(model.frame(.cluster, data = data, na.action = na.pass),
@@ -907,7 +906,7 @@ process_cluster <- function(.cluster, model, data) {
     }
   }
   else {
-    cluster <- as.data.frame(.cluster)
+    cluster <- qDF(.cluster)
   }
 
   if (nrow(cluster) != nrow(data)) {
@@ -975,12 +974,12 @@ process_ci.type <- function(ci.type, .vcov_type, simultaneous = NULL) {
 
   arg::arg_string(ci.type)
 
-  if (!isTRUE(simultaneous)) {
-    return(ci.type)
+  if (isTRUE(simultaneous)) {
+    ci.type <- arg::match_arg(ci.type, c("perc", "wald"),
+                              .context = "when {.code simultaneous = TRUE},")
   }
 
-  arg::match_arg(ci.type, c("perc", "wald"),
-                 .context = "when {.code simultaneous = TRUE},")
+  ci.type
 }
 
 process_simultaneous <- function(simultaneous, .est) {
