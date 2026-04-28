@@ -1684,9 +1684,9 @@ summary(nhanes3lead_mis)
 ##  1st Qu.: 7.500   1st Qu.:0.0000   Hispanic:843   1st Qu.:0.671   1st Qu.:1.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.: 0.4700   1st Qu.: 6.000   1st Qu.: 4.000  
 ##  Median : 9.083   Median :1.0000   Other   :108   Median :1.287   Median :1.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median : 0.9933   Median : 8.000   Median : 7.000  
 ##  Mean   : 9.017   Mean   :0.5078   White   :684   Mean   :1.627   Mean   :0.8887   Mean   :0.3899   Mean   :0.1995   Mean   :0.1121   Mean   : 0.9730   Mean   : 7.947   Mean   : 6.977  
-##  3rd Qu.:10.500   3rd Qu.:1.0000   NA's    : 80   3rd Qu.:2.375   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.: 1.4586   3rd Qu.:10.000   3rd Qu.:10.000  
+##  3rd Qu.:10.500   3rd Qu.:1.0000   NAs     : 80   3rd Qu.:2.375   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.: 1.4586   3rd Qu.:10.000   3rd Qu.:10.000  
 ##  Max.   :11.917   Max.   :1.0000                  Max.   :6.943   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   : 3.3810   Max.   :20.000   Max.   :18.000  
-##  NA's   :88       NA's   :89                      NA's   :79      NA's   :86       NA's   :77       NA's   :80       NA's   :85       NA's   :86        NA's   :97       NA's   :90      
+##  NAs    :88       NAs    :89                      NAs    :79      NAs    :86       NAs    :77       NAs    :80       NAs    :85       NAs    :86        NAs    :97       NAs    :90      
 ##      Block            Digit            MEC_wt          Block_bin     
 ##  Min.   : 1.000   Min.   : 1.000   Min.   :  213.4   Min.   :0.0000  
 ##  1st Qu.: 7.000   1st Qu.: 6.000   1st Qu.: 1660.2   1st Qu.:0.0000  
@@ -1694,7 +1694,7 @@ summary(nhanes3lead_mis)
 ##  Mean   : 8.666   Mean   : 8.192   Mean   : 7190.2   Mean   :0.1861  
 ##  3rd Qu.:11.000   3rd Qu.:10.000   3rd Qu.: 9090.0   3rd Qu.:0.0000  
 ##  Max.   :19.000   Max.   :19.000   Max.   :70105.7   Max.   :1.0000  
-##  NA's   :84       NA's   :78       NA's   :81        NA's   :76
+##  NAs    :84       NAs    :78       NAs    :81        NAs    :76
 ```
 
 Next, we’ll use
@@ -1842,9 +1842,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.446  8.041   9.223
-##       1    7.968  7.586   8.368
-##       2    7.177  6.562   7.830
+##       0    8.410  8.030   9.135
+##       1    7.936  7.592   8.329
+##       2    7.206  6.597   8.048
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%

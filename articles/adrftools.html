@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">adrftools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9001</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
                         <h4 data-toc-skip class="author">Noah
 Greifer</h4>
             
-            <h4 data-toc-skip class="date">2026-04-10</h4>
+            <h4 data-toc-skip class="date">2026-04-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/ngreifer/adrftools/blob/main/vignettes/adrftools.Rmd" class="external-link"><code>vignettes/adrftools.Rmd</code></a></small>
       <div class="d-none name"><code>adrftools.Rmd</code></div>
@@ -1606,9 +1606,9 @@ using <code><a href="https://amices.org/mice/reference/ampute.html" class="exter
 <span><span class="co">##  1st Qu.: 7.500   1st Qu.:0.0000   Hispanic:843   1st Qu.:0.671   1st Qu.:1.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.: 0.4700   1st Qu.: 6.000   1st Qu.: 4.000  </span></span>
 <span><span class="co">##  Median : 9.083   Median :1.0000   Other   :108   Median :1.287   Median :1.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median : 0.9933   Median : 8.000   Median : 7.000  </span></span>
 <span><span class="co">##  Mean   : 9.017   Mean   :0.5078   White   :684   Mean   :1.627   Mean   :0.8887   Mean   :0.3899   Mean   :0.1995   Mean   :0.1121   Mean   : 0.9730   Mean   : 7.947   Mean   : 6.977  </span></span>
-<span><span class="co">##  3rd Qu.:10.500   3rd Qu.:1.0000   NA's    : 80   3rd Qu.:2.375   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.: 1.4586   3rd Qu.:10.000   3rd Qu.:10.000  </span></span>
+<span><span class="co">##  3rd Qu.:10.500   3rd Qu.:1.0000   NAs     : 80   3rd Qu.:2.375   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.: 1.4586   3rd Qu.:10.000   3rd Qu.:10.000  </span></span>
 <span><span class="co">##  Max.   :11.917   Max.   :1.0000                  Max.   :6.943   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   : 3.3810   Max.   :20.000   Max.   :18.000  </span></span>
-<span><span class="co">##  NA's   :88       NA's   :89                      NA's   :79      NA's   :86       NA's   :77       NA's   :80       NA's   :85       NA's   :86        NA's   :97       NA's   :90      </span></span>
+<span><span class="co">##  NAs    :88       NAs    :89                      NAs    :79      NAs    :86       NAs    :77       NAs    :80       NAs    :85       NAs    :86        NAs    :97       NAs    :90      </span></span>
 <span><span class="co">##      Block            Digit            MEC_wt          Block_bin     </span></span>
 <span><span class="co">##  Min.   : 1.000   Min.   : 1.000   Min.   :  213.4   Min.   :0.0000  </span></span>
 <span><span class="co">##  1st Qu.: 7.000   1st Qu.: 6.000   1st Qu.: 1660.2   1st Qu.:0.0000  </span></span>
@@ -1616,7 +1616,7 @@ using <code><a href="https://amices.org/mice/reference/ampute.html" class="exter
 <span><span class="co">##  Mean   : 8.666   Mean   : 8.192   Mean   : 7190.2   Mean   :0.1861  </span></span>
 <span><span class="co">##  3rd Qu.:11.000   3rd Qu.:10.000   3rd Qu.: 9090.0   3rd Qu.:0.0000  </span></span>
 <span><span class="co">##  Max.   :19.000   Max.   :19.000   Max.   :70105.7   Max.   :1.0000  </span></span>
-<span><span class="co">##  NA's   :84       NA's   :78       NA's   :81        NA's   :76</span></span></code></pre></div>
+<span><span class="co">##  NAs    :84       NAs    :78       NAs    :81        NAs    :76</span></span></code></pre></div>
 <p>Next, we’ll use <code><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice::mice()</a></code> to impute the missing data
 into 5 imputed datasets. Note that in practice, many more imputations
 should be used and the usual methods for assessing convergence and
@@ -1735,9 +1735,9 @@ credibility level that excludes the null value.</p>
 <span><span class="co">##         ADRF Estimates</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">##  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">##       0    8.446  8.041   9.223</span></span>
-<span><span class="co">##       1    7.968  7.586   8.368</span></span>
-<span><span class="co">##       2    7.177  6.562   7.830</span></span>
+<span><span class="co">##       0    8.410  8.030   9.135</span></span>
+<span><span class="co">##       1    7.936  7.592   8.329</span></span>
+<span><span class="co">##       2    7.206  6.597   8.048</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>
