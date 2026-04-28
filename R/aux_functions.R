@@ -1,6 +1,7 @@
 process_by <- function(by, data) {
   if (is_null(by)) {
-    return(list(by_id = qG(alloc(1L, nrow(data)))))
+    return(list(by_grid = NULL,
+                by_id = qG(alloc(1L, fnrow(data)))))
   }
 
   if (is.character(by)) {
@@ -28,7 +29,7 @@ process_by <- function(by, data) {
           sort = FALSE) |>
     roworderv(".merge_id")
 
-  list(by_grid = by_grid[-ncol(by_grid)],
+  list(by_grid = by_grid[-fncol(by_grid)],
        by_id = qG(by_mf[[length(by_mf)]]))
 }
 
@@ -45,7 +46,7 @@ process_subset <- function(index.sub, data, env = parent.frame(2L)) {
   }
 
   if (is.logical(subset)) {
-    if (length(subset) != nrow(data)) {
+    if (length(subset) != fnrow(data)) {
       arg::err("when {.arg subset} is logical, it must have the same length as the original dataset")
     }
 
@@ -53,17 +54,17 @@ process_subset <- function(index.sub, data, env = parent.frame(2L)) {
   }
 
   if (is.numeric(subset)) {
-    s <- alloc(FALSE, nrow(data))
+    s <- alloc(FALSE, fnrow(data))
     if (all(subset > 0)) {
       s[subset] <- TRUE
     }
     else {
-      s <- alloc(TRUE, nrow(data))
+      s <- alloc(TRUE, fnrow(data))
       s[subset] <- FALSE
     }
   }
   else if (is.character(subset)) {
-    s <- setNames(alloc(FALSE, nrow(data)),
+    s <- setNames(alloc(FALSE, fnrow(data)),
                   rownames(data))
     s[subset] <- TRUE
   }
@@ -78,7 +79,7 @@ process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL)
       return(TRUE)
     }
 
-    return(alloc(TRUE, nrow(.by_grid)))
+    return(alloc(TRUE, fnrow(.by_grid)))
   }
 
   if (is_not_null(.contrast)) {
@@ -110,10 +111,8 @@ process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL)
 
 process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   arg::arg_numeric(range)
+  arg::arg_length(range, 1:2)
 
-  if (length(range) > 2L) {
-    arg::err("{.arg range} must have length 1 or 2")
-  }
 
   arg::arg_count(n)
   arg::arg_between(n, c(2L, 1000L))
@@ -225,7 +224,7 @@ process_model_data <- function(model, data = NULL) {
 process_model_data_mi <- function(model, data = NULL) {
   data_list <- get_data_mids(model)
 
-  if (any(lengths(data_list) == 0L)) {
+  if (anyv(vlengths(data_list), 0L)) {
     if (is_null(data)) {
       arg::err("the dataset used to fit the model could not be extracted. Please supply the dataset to {.arg data}")
     }
@@ -294,7 +293,7 @@ get_data_mids <- function(x, imp = NULL) {
 process_treat <- function(treat, data) {
   arg::arg_string(treat)
 
-  if (!any(names(data) == treat)) {
+  if (!anyv(names(data), treat)) {
     arg::err(c("{.arg treat} must be the name of a variable in the original dataset.",
                "*" = "Supplied value: {.val {treat}}",
                "*" = "Available names: {.or {.val {names(data)}}}"))
@@ -315,11 +314,8 @@ process_wts <- function(wts, model, data = NULL) {
         utils::hasName(model.frame(model), "(s.weights)")) {
       wts <- "(s.weights)"
     }
-    else if (inherits(model, "svyglm")) {
-      wts <- TRUE
-    }
     else {
-      wts <- FALSE
+      wts <- inherits(model, "svyglm")
     }
   }
   else if (!rlang::is_string(wts) && !rlang::is_bool(wts) && !is.numeric(wts)) {
@@ -374,7 +370,7 @@ process_wts <- function(wts, model, data = NULL) {
       arg::arg_data.frame(data)
     }
 
-    n <- nrow(data)
+    n <- fnrow(data)
   }
 
   if (isFALSE(wts)) {
@@ -443,7 +439,7 @@ process_wts_mi <- function(wts, model, data = NULL) {
             data.i <- mice::complete(data, action = .i)
           }
 
-          n.i <- nrow(data.i)
+          n.i <- fnrow(data.i)
         }
 
         wts_list[[.i]] <- alloc(1.0, n.i)
@@ -504,7 +500,7 @@ process_wts_mi <- function(wts, model, data = NULL) {
       rlang::check_installed("mice")
 
       ns[] <- vapply(mice::complete(data, action = "all"),
-                     nrow, integer(1L))
+                     fnrow, integer(1L))
       break
     }
 
@@ -514,7 +510,7 @@ process_wts_mi <- function(wts, model, data = NULL) {
       arg::err("no dataset could be found to process the weights supplied to {.arg wts}. Please supply a dataset to {.arg data}")
     }
 
-    ns[.i] <- nrow(data.i)
+    ns[.i] <- fnrow(data.i)
   }
 
   if (length(wts) == sum(ns)) {
@@ -717,7 +713,7 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
       if (builtin_vcovs[p] == "unconditional") {
         if (null_or_error(try(sandwich::bread(model), silent = TRUE)) ||
             null_or_error(try(sandwich::estfun(model), silent = TRUE))) {
-          arg::wrn('{.arg vcov} cannot be {.val {"unconditional"}} with this type of model. Using {.val {"conditional"}}')
+          arg::wrn('{.arg vcov} cannot be {.val unconditional} with this type of model. Using {.val conditional}')
 
           return(Recall(vcov = "conditional", model = model, cluster = cluster,
                         is_bayes = is_bayes, data = data))
@@ -818,7 +814,7 @@ process_vcov_and_cluster_mi <- function(vcov, models, cluster = NULL, is_bayes =
         for (model in models) {
           if (null_or_error(try(sandwich::bread(model), silent = TRUE)) ||
               null_or_error(try(sandwich::estfun(model), silent = TRUE))) {
-            arg::wrn('{.arg vcov} cannot be {.val {"unconditional"}} with this type of model. Using {.val {"conditional"}}')
+            arg::wrn('{.arg vcov} cannot be {.val unconditional} with this type of model. Using {.val conditional}')
 
             return(Recall(vcov = "conditional", models = models, cluster = cluster,
                           is_bayes = is_bayes, data_complete = data_complete,
@@ -845,7 +841,7 @@ process_vcov_and_cluster_mi <- function(vcov, models, cluster = NULL, is_bayes =
 
       if (any_apply(vcov_try_list, null_or_error)) {
         bad_imps <- which(vapply(vcov_try_list, null_or_error, logical(1L)))
-        arg::err("the cluster covariance could not be calculated for imputations {.or {bad_imps}}")
+        arg::err("the cluster covariance could not be calculated for imputation{?s} {.or {bad_imps}}")
       }
 
       out_list <- lapply(seq_along(models), function(.i) {
@@ -902,19 +898,19 @@ process_cluster <- function(.cluster, model, data) {
     }
 
     if (null_or_error(cluster)) {
-      arg::err("clusters could not be extracted from the model; trying supplying {.arg cluster} as a data frame or list")
+      arg::err("clusters could not be extracted from the model; try supplying {.arg cluster} as a data frame or list")
     }
   }
   else {
     cluster <- qDF(.cluster)
   }
 
-  if (nrow(cluster) != nrow(data)) {
+  if (fnrow(cluster) != fnrow(data)) {
     arg::err("the number of observations in {.arg cluster} must equal that in the original dataset")
   }
 
   if (anyNA(cluster, recursive = TRUE)) {
-    arg::err("{.val {NA}}s are not allowed in the {cli::qty(ncol(cluster))} clustering variable{?s}")
+    arg::err("{.val {NA}}s are not allowed in the {cli::qty(fncol(cluster))} clustering variable{?s}")
   }
 
   cluster[] <- lapply(cluster, qF)
@@ -923,7 +919,7 @@ process_cluster <- function(.cluster, model, data) {
   if (p > 1L) {
     clu <- lapply(seq_len(p), function(i) utils::combn(seq_len(p), i, simplify = FALSE)) |>
       unlist(recursive = FALSE)
-    sgn <- (-1L)^(lengths(clu) + 1L)
+    sgn <- (-1L)^(vlengths(clu) + 1L)
     cluster <- lapply(clu, function(i) finteraction(cluster[i]))
   }
   else {
@@ -1017,13 +1013,14 @@ process_df <- function(fit) {
 process_null <- function(null = NULL, x = NULL) {
   if (is_not_null(null)) {
     if (length(null) == 1L && allNA(null)) {
-      null <- NA_real_
+      return(NA_real_)
     }
-    else {
-      arg::arg_number(null)
-    }
+
+    arg::arg_number(null)
+    return(null)
   }
-  else if (inherits(x, "effect_curve")) {
+
+  if (inherits(x, "effect_curve")) {
     null <- if (.is_pure_adrf(x)) NA_real_ else 0
   }
   else if (identical(get_curve_type(x), "ADRF") &&
@@ -1053,16 +1050,19 @@ check_proj <- function(x, proj = NULL) {
 get_curve_type <- function(x) {
   .curve_type <- .attr(x, ".curve_type")
 
-  if (is_null(.curve_type)) {
-    if (inherits(x, "adrf_curve")) {
-      .curve_type <- "ADRF"
-    }
-    else if (inherits(x, "amef_curve")) {
-      .curve_type <- "AMEF"
-    }
+  if (is_not_null(.curve_type)) {
+    return(.curve_type)
   }
 
-  .curve_type
+  if (inherits(x, "adrf_curve")) {
+    return("ADRF")
+  }
+
+  if (inherits(x, "amef_curve")) {
+    return("AMEF")
+  }
+
+  NULL
 }
 
 check_effect_curve <- function(x, amef_ok = TRUE, reference_ok = TRUE,
@@ -1142,7 +1142,7 @@ get_n_by <- function(.contrast = NULL, .by_grid = NULL) {
   }
 
   if (is_not_null(.by_grid)) {
-    return(nrow(.by_grid))
+    return(fnrow(.by_grid))
   }
 
   1L
@@ -1197,7 +1197,7 @@ add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = 
 # Make nearest positive semidefinite matrix; adapted from
 # corpcor::make.positive.definite()
 .to_psd <- function(m) {
-  d <- nrow(m)
+  d <- fnrow(m)
 
   es <- eigen(m, symmetric = TRUE)
   esv <- es$values
@@ -1236,7 +1236,7 @@ add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = 
     data <- insight::get_data(x, verbose = FALSE)
   }
 
-  p <- try(marginaleffects::get_predict(x, newdata = ss(data, seq_len(min(nrow(data), 2L)))),
+  p <- try(marginaleffects::get_predict(x, newdata = ss(data, seq_len(min(fnrow(data), 2L)))),
            silent = TRUE)
 
   is_not_null(.attr(p, "posterior_draws"))
@@ -1315,9 +1315,9 @@ make_rmvt <- function(mu, Sigma, df = Inf, tol = 1e-7) {
 #' @param df degrees of freedom
 .sim_p_value <- function(stat, v, n = 1e6, max_size = 1e7, df = Inf) {
   # Make multivariate t/normal random generator
-  rmvt <- make_rmvt(alloc(0.0, ncol(v)), v, df = df)
+  rmvt <- make_rmvt(alloc(0.0, fncol(v)), v, df = df)
 
-  d <- nrow(v)
+  d <- fnrow(v)
 
   # Max number of iterations in one run, based on max_size
   max_n <- max(1, max_size %/% d)
@@ -1419,8 +1419,8 @@ get_locpoly_w <- function(x, v = x, w = NULL, p = 3, ...) {
     w <- get_kernel_w(x = x, v = v, ...)
   }
 
-  arg::arg_equal(length(x), nrow(w))
-  arg::arg_equal(length(v), ncol(w))
+  arg::arg_equal(length(x), fnrow(w))
+  arg::arg_equal(length(v), fncol(w))
 
   if (p == 0) {
     return(w)
@@ -1492,7 +1492,7 @@ get_by_grid_labels <- function(.by_grid, sep = ", ") {
 }
 
 .print_estimate_table <- function(x, digits, topn, main = NULL, help.fn = NULL, bar = TRUE, rownames = FALSE, ...) {
-  nr <- nrow(x)
+  nr <- fnrow(x)
 
   if (nr > 2 * topn + 1L) {
     head_ind <- seq_len(topn)
@@ -1595,7 +1595,7 @@ get_by_grid_labels <- function(.by_grid, sep = ", ") {
 }
 
 .format_p_value <- function(p, digits = 4L) {
-  p_text <- rep.int(NA_character_, length(p))
+  p_text <- alloc(NA_character_, length(p))
 
   min_p <- .1^digits
 

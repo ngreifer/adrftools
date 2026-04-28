@@ -206,7 +206,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
                    null = null,
                    simultaneous = simultaneous)
 
-      res$p.value <- s[, ncol(s)]
+      res$p.value <- s[, fncol(s)]
     }
     else if (.vcov_type == "posterior") {
       res$p.value <- posterior_p_value(.draws, parm = seq_along(est),

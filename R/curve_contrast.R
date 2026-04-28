@@ -72,7 +72,7 @@ curve_contrast <- function(x) {
                            combo = seq_along(combos),
                            KEEP.OUT.ATTRS = FALSE)
 
-  m <- matrix(0, nrow = nrow(comp_grid), ncol = length(.est))
+  m <- matrix(0, nrow = fnrow(comp_grid), ncol = length(.est))
 
   by_id <- rep(seq_row(.by_grid), each = length(.values))
 

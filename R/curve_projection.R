@@ -275,7 +275,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
                                       .by_grid = .by_grid,
                                       .contrast = .contrast)
 
-    .s <- which(rep(.subset, each = length(.proj_coefficients) / nrow(.by_grid)))
+    .s <- which(rep(.subset, each = length(.proj_coefficients) / fnrow(.by_grid)))
 
     .by_grid <- ss(.by_grid, .subset)
 
@@ -344,7 +344,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
                      null = null,
                      simultaneous = FALSE)
 
-        res$p.value <- s[, ncol(s)]
+        res$p.value <- s[, fncol(s)]
       }
       else if (.vcov_type == "posterior") {
         res$p.value <- posterior_p_value(.proj_draws, parm = .s, null = null,
@@ -490,11 +490,8 @@ model.matrix.curve_projection <- function(object, ...) {
 
   n_by <- get_n_by(.contrast, .by_grid)
 
-  mm <- block_diag(mm, n_by)
-
-  colnames(mm) <- .get_curve_est_labels(object)
-
-  mm
+  block_diag(mm, n_by) |>
+    setColnames(.get_curve_est_labels(object))
 }
 
 #' @exportS3Method stats::formula curve_projection
@@ -627,7 +624,7 @@ print.anova.curve_projection <- function(x, digits = max(4L, getOption("digits")
   finv <- transform$inv_transform
   finv_prime <- transform$d_inv_transform
 
-  n <- nrow(x)
+  n <- fnrow(x)
 
   if (is_null(w)) {
     wsqt <- rep.int(1, n)

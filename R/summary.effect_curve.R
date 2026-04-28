@@ -191,7 +191,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
                                       .by_grid = .by_grid,
                                       .contrast = .contrast)
 
-    .s <- which(rep(.subset, each = length(.est0) / nrow(.by_grid)))
+    .s <- which(rep(.subset, each = length(.est0) / fnrow(.by_grid)))
 
     .by_grid <- ss(.by_grid, .subset)
 

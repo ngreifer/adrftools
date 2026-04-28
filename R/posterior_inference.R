@@ -36,7 +36,7 @@ posterior_p_value <- function(draws, parm, null = 0, simultaneous = FALSE) {
 .pointwise_p_to_simul_p <- function(p, draws) {
   level <- 1 - p
 
-  k <- ncol(draws)
+  k <- fncol(draws)
 
   fun <- function(q) {
     interval <- dapply(draws, fquantile, probs = c(q, 1 - q),

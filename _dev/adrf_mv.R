@@ -17,7 +17,7 @@
 
   # values
   values_list <- process_range_mv(ranges, n, treat_vars, w = wts)
-  ns <- lengths(values_list)
+  ns <- vlengths(values_list)
 
   values <- do.call("expand.grid", c(values_list, list(KEEP.OUT.ATTRS = FALSE)))
   n < nrow(values)
@@ -422,7 +422,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
     values <- do.call("expand.grid", c(values[.treat], list(KEEP.OUT.ATTRS = FALSE)))
 
     # subset
-    if (any(rlang::fn_fmls_names() == "subset") && is_null(.contrast)) {
+    if (is_null(.contrast) && anyv(rlang::fn_fmls_names(), "subset")) {
       .subset <- process_subset_by_grid(substitute(subset),
                                         .by_grid = .by_grid,
                                         .contrast = .contrast)

@@ -140,7 +140,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
     .s <- seq_along(.est0)
   }
   else {
-    .s <- which(rep(.subset, each = length(.est0) / nrow(.by_grid)))
+    .s <- which(rep(.subset, each = length(.est0) / fnrow(.by_grid)))
     .est0 <- .est0[.s]
   }
 

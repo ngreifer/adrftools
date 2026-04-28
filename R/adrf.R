@@ -213,7 +213,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     .fmean <- collapse::fmean
   }
 
-  ni <- nrow(model_data)
+  ni <- fnrow(model_data)
   ii <- seq_len(ni)
 
   vi <- seq_len(n)
@@ -259,7 +259,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   .boot <- .draws <- NULL
 
   if (is_bayes) {
-    .draws <- rsplit(seq_row(data_grid), rep.int(val_id, nrow(data_grid) / (ni * n))) |>
+    .draws <- rsplit(seq_row(data_grid), rep.int(val_id, fnrow(data_grid) / (ni * n))) |>
       lapply(function(.j) {
         est_fun(x, data0 = ss(data_grid, .j)) |>
           .attr("posterior_draws") |>
@@ -368,11 +368,11 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     }
 
     if (is_null(cl_list)) {
-      .vcov <- crossprod(S / nrow(S))
+      .vcov <- crossprod(S / fnrow(S))
     }
     else {
       .vcov <- Reduce("+", lapply(seq_along(cl_list[["cluster"]]), function(j) {
-        crossprod(fsum(S, cl_list[["cluster"]][[j]]) / nrow(S)) * cl_list[["adj"]][j]
+        crossprod(fsum(S, cl_list[["cluster"]][[j]]) / fnrow(S)) * cl_list[["adj"]][j]
       }))
     }
   }
@@ -396,8 +396,8 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       }
     }
 
-    if (ncol(gr) != nrow(V)) {
-      arg::err("the supplied covariance matrix does not have the right dimensions. It should have dimension {ncol(gr)} by {ncol(gr)} but actually has dimension {nrow(V)} by {ncol(V)}")
+    if (fncol(gr) != fnrow(V)) {
+      arg::err("the supplied covariance matrix does not have the right dimensions. It should have dimension {fncol(gr)} by {fncol(gr)} but actually has dimension {fnrow(V)} by {fncol(V)}")
     }
 
     .vcov <- quad_mult(gr, V)
@@ -546,7 +546,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       .fmean <- collapse::fmean
     }
 
-    ni <- nrow(model_data)
+    ni <- fnrow(model_data)
     ii <- seq_len(ni)
 
     val_id <- rep(vi, each = ni)
@@ -580,7 +580,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
     if (is_bayes) {
       .draws <- .draws |>
-        rbind(rsplit(seq_row(data_grid), rep.int(val_id, nrow(data_grid) / (ni * n))) |>
+        rbind(rsplit(seq_row(data_grid), rep.int(val_id, fnrow(data_grid) / (ni * n))) |>
                 lapply(function(.j) {
                   est_fun(xi, data0 = ss(data_grid, .j)) |>
                     .attr("posterior_draws") |>
@@ -639,11 +639,11 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       }
 
       if (is_null(cl_list)) {
-        vcov.list[[.i]] <- crossprod(S / nrow(S))
+        vcov.list[[.i]] <- crossprod(S / fnrow(S))
       }
       else {
         vcov.list[[.i]] <- Reduce("+", lapply(seq_along(cl_list[["cluster"]]), function(j) {
-          crossprod(fsum(S, cl_list[["cluster"]][[j]]) / nrow(S)) * cl_list[["adj"]][j]
+          crossprod(fsum(S, cl_list[["cluster"]][[j]]) / fnrow(S)) * cl_list[["adj"]][j]
         }))
       }
     }

@@ -119,12 +119,12 @@ NULL
     arg::arg_numeric(values, add_quotes(.treat, "`"))
 
     # subset
-    if (any(rlang::fn_fmls_names() == "subset") && is_null(.contrast)) {
+    if (is_null(.contrast) && anyv(rlang::fn_fmls_names(), "subset")) {
       .subset <- process_subset_by_grid(substitute(subset),
                                         .by_grid = .by_grid,
                                         .contrast = .contrast)
 
-      .s <- which(rep(.subset, each = length(.est) / nrow(.by_grid)))
+      .s <- which(rep(.subset, each = length(.est) / fnrow(.by_grid)))
 
       .by_grid <- ss(.by_grid, .subset)
 

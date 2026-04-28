@@ -58,7 +58,7 @@ point_contrast <- function(object) {
 
   combos <- utils::combn(seq_len(n), 2L, simplify = TRUE)
 
-  nc <- ncol(combos)
+  nc <- fncol(combos)
 
   contr_mat <- matrix(0, nrow = nc, ncol = n)
 
@@ -229,7 +229,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
                    null = null,
                    simultaneous = simultaneous)
 
-      res$p.value <- s[, ncol(s)]
+      res$p.value <- s[, fncol(s)]
     }
     else if (.vcov_type == "posterior") {
       res$p.value <- posterior_p_value(.draws, parm = seq_along(est),
