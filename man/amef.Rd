@@ -15,7 +15,7 @@ amef(x, eps = 1e-05)
 An object of class \code{amef_curve}, which inherits from \code{\link{effect_curve}}.
 }
 \description{
-\code{amef()} computes the average marginal effect function (AMEF), the derivative of the average dose-response function (ADRF). This computed from an \code{adrf_curve} object or from a fitting outcome model directly.
+\code{amef()} computes the average marginal effect function (AMEF), the derivative of the average dose-response function (ADRF), from an \code{adrf_curve} object.
 }
 \details{
 The AMEF is calculated numerically using the central finite derivative formula:
@@ -23,6 +23,8 @@ The AMEF is calculated numerically using the central finite derivative formula:
 \deqn{\frac{df(x)}{dx} \approx \frac{f(x + e) - f(x - e)}{2e}}
 
 The values of the ADRF at the evaluation points are computed using a local polynomial regression as described at \code{\link{effect_curve}}. At the boundaries of the ADRF, one-sided derivatives are used.
+
+Because subtracting a reference value does not change the derivative, \code{amef()} applied to the output of \code{\link[=reference_curve]{reference_curve()}} returns the AMEF of the original ADRF. To compute the difference between each point on the AMEF and the AMEF at a reference point, apply \code{\link[=reference_curve]{reference_curve()}} to the output of \code{amef()}.
 }
 \examples{
 data("nhanes3lead")
@@ -56,6 +58,6 @@ amef1(logBLL = c(0, 1, 2)) |>
 \item \code{\link[=curve_projection]{curve_projection()}} for projecting a simpler model onto the AMEF
 \item \code{\link[=reference_curve]{reference_curve()}} for computing the difference between each point on the AMEF and a specific reference point
 \item \code{\link[=curve_contrast]{curve_contrast()}} for contrasting AMEFs computed within subgroups
-\item \code{\link[marginaleffects:slopes]{marginaleffects::avg_slopes()}} for computing average adjusted slopes for fitted models (similar to the AMEF)
+\item \code{\link[marginaleffects:avg_slopes]{marginaleffects::avg_slopes()}} for computing average adjusted slopes for fitted models (similar to the AMEF)
 }
 }

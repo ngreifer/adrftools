@@ -29,7 +29,7 @@ simultaneous_conf_level <- function(vcov, conf_level = .95, df = Inf,
   withCallingHandlers({
     t_crit <- mvtnorm::qmvt(conf_level,
                             tail = "both.tails",
-                            df = df,
+                            df = .mvt_df(df),
                             corr = vcov,
                             maxiter = maxiter,
                             ptol = ptol,

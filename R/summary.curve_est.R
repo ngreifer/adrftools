@@ -7,8 +7,8 @@
 #' @param conf_level the desired confidence level. Set to 0 to omit confidence intervals. Default is .95.
 #' @param simultaneous `logical`; whether the computed p-values and confidence intervals should be simultaneous (`TRUE`) or pointwise (`FALSE`). Simultaneous (also known as uniform) intervals jointly cover all specified estimates at the desired confidence level, whereas pointwise confidence intervals only cover each estimate at the desired level. Simultaneous p-values are inversions of the simultaneous confidence intervals. Default is `TRUE`. See Details.
 #' @param null the null value for the hypothesis tests. Default is to use a null value of 0 when the effect curve is an AMEF, a curve contrast, or a reference effect curve, and to omit hypothesis tests otherwise. Set to `NA` to manually omit hypothesis tests.
-#' @param transform whether to compute intervals and perform tests on the transformed estimates. Allowable options include `TRUE`, `FALSE`, or a function specifying a transformation. Ignored unless `object` is an ADRF. See Details.
-#' @param df the "denominator" degrees of freedom to use for the tests and critical test statistics for confidence intervals. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise.
+#' @param transform whether to compute intervals and perform tests on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `object` is an ADRF. See Details.
+#' @param df the "denominator" degrees of freedom to use for the tests and critical test statistics for confidence intervals. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
 #' @param ci.type string; when bootstrapping or Bayesian inference is used in the original effect curve, which type of confidence interval is to be computed. For bootstrapping, allowable options include `"perc"` for percentile intervals, `"wald"` for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed. For Bayesian models, allowable options include `"perc"` for equi-tailed intervals and `"wald"` for Wald intervals. Default is `"perc"`. Ignored when bootstrapping is not used and the model is not Bayesian.
 #' @param ... ignored.
 #'
@@ -18,17 +18,22 @@
 #' @details
 #' ## Transform
 #'
-#' The usual confidence intervals and tests assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simple a transformation of the estimated points along the curve already computed. Confidence intervals are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome. When `null` is a number, that number is also transformed. When `transform` is specified, standard errors are not reported (i.e., because the standard errors used for tests and confidence intervals are those of the transformed estimates).
+#' The usual confidence intervals and tests assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. Confidence intervals are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome. When `null` is a number, that number is also transformed. When `transform` is specified, standard errors are not reported (i.e., because the standard errors used for tests and confidence intervals are those of the transformed estimates).
+#'
+#' When `transform` is `TRUE`, the link function of the outcome model is used; when a family or link object is supplied, its link function is used. Only transformations with a known inverse and derivative are allowed. When the transformation cannot be applied to every estimate (e.g., `qlogis` with an estimate outside 0 and 1), the estimates are left untransformed.
 #'
 #' ## Simultaneous confidence intervals and tests
 #'
-#' Simultaneous confidence intervals ensure all estimates, not just a given individual point, are contained within the union of confidence intervals at the given confidence level. These are wider than pointwise intervals to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `summary()` uses the "sup-t" simultaneous confidence interval, which is the smallest one-parameter interval that covers all estimates at the desired rate. Simultaneous hypothesis tests are performed by inverting the simultaneous confidence intervals; the p-value for each test is the complement of the smallest confidence level for which a simultaneous confidence intervals accounting for other tests contains the null value. The widths of the confidence intervals and the p-values depend on how many and which estimates are computed.
+#' Simultaneous confidence intervals ensure all estimates, not just a given individual point, are contained within the union of confidence intervals at the given confidence level. These are wider than pointwise intervals to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `summary()` uses the "sup-t" simultaneous confidence interval, which is the smallest one-parameter interval that covers all estimates at the desired rate. Simultaneous hypothesis tests are performed by inverting the simultaneous confidence intervals; the p-value for each test is the complement of the smallest confidence level for which a simultaneous confidence intervals accounting for other tests contains the null value. The widths of the confidence intervals and the p-values depend on how many and which estimates are computed. With bootstrapping or Bayesian models and `ci.type = "perc"`, the simultaneous intervals are the equal-tailed percentile intervals with the tail probability calibrated so that they jointly contain the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
+#'
+#' @references
+#' Montiel Olea, J. L., & Plagborg-Møller, M. (2019). Simultaneous confidence bands: Theory, implementation, and an application to SVARs. *Journal of Applied Econometrics*, 34(1), 1–17. \doi{10.1002/jae.2656}
 #'
 #' @seealso
 #' * [adrf()] for computing the ADRF
 #' * [`curve_est`] for information on the output of an effect curve
 #' * [plot.effect_curve()] for plotting an effect curve
-#' * [summary.effect_curve()] for testing omnibus hypotheses about a effect curve
+#' * [summary.effect_curve()] for testing omnibus hypotheses about an effect curve
 #'
 #' @examples
 #' data("nhanes3lead")
@@ -77,7 +82,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
     null <- process_null(null, object)
 
     do_inference <- (conf_level > 0 || !anyNA(null)) &&
-      is_not_null(stats::vcov(object))
+      !is_null(stats::vcov(object))
   }
 
   if (!do_inference) {
@@ -104,9 +109,10 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
 
   est <- transform(est0)
 
+  # process_transform() has already replaced a transformation that cannot be
+  # reversed with the identity
   do_transform <- ci.type != "perc" &&
-    !all(check_if_zero(est - est0)) &&
-    all(check_if_zero(inv_transform(est) - est0))
+    !all(check_if_zero(est - est0))
 
   if (ci.type == "wald") {
     df <- df %or% .attr(object, ".df")
@@ -130,7 +136,8 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
     }
     else if (do_transform) {
       d_transform <- transform_list$d_transform
-      vcov <- quad_mult(diag(d_transform(est0)),
+      # nrow is given because diag() of a single number makes an identity matrix
+      vcov <- quad_mult(diag(d_transform(est0), nrow = length(est0)),
                         stats::vcov(object))
     }
     else {
@@ -179,7 +186,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
                             function(zi) {
                               1 - mvtnorm::pmvt(lower = rep.int(-zi, sum(!zeros)),
                                                 upper = rep.int(zi, sum(!zeros)),
-                                                df = df, corr = vp,
+                                                df = .mvt_df(df), corr = vp,
                                                 abseps = 1e-5,
                                                 maxpts = 1e6)
                             }, numeric(1L)),
@@ -207,6 +214,9 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
                    simultaneous = simultaneous)
 
       res$p.value <- s[, fncol(s)]
+
+      # Estimates with no variance have no p-value, as with Wald inference
+      is.na(res$p.value[.zero_var(ss(.boot[["t"]], j = seq_along(est)))]) <- TRUE
     }
     else if (.vcov_type == "posterior") {
       res$p.value <- posterior_p_value(.draws, parm = seq_along(est),
@@ -226,7 +236,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
 
         t_crit <- try(mvtnorm::qmvt(conf_level,
                                     tail = "both.tails",
-                                    df = df, corr = vp,
+                                    df = .mvt_df(df), corr = vp,
                                     abseps = 1e-5,
                                     maxpts = 1e6)$quantile,
                       silent = TRUE)
@@ -278,7 +288,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
   attr(object, "simultaneous") <- simultaneous
   attr(object, "conf_level") <- conf_level
 
-  if (conf_level > 0 && is_not_null(t_crit)) {
+  if (conf_level > 0 && !is_null(t_crit)) {
     attr(t_crit, "df") <- df
     attr(object, "crit") <- t_crit
   }
@@ -306,6 +316,11 @@ coef.curve_est <- function(object, ...) {
 vcov.curve_est <- function(object, ...) {
   v <- .attr(object, ".vcov")
 
+  # No covariance matrix when vcov = "none" in the original call to adrf()
+  if (is_null(v)) {
+    return(NULL)
+  }
+
   dimnames(v) <- rep.int(list(.get_curve_est_labels(object)), 2L)
 
   v
@@ -324,14 +339,13 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
   }
 
   main <- paste(c(get_curve_type(x),
-                  if (is_not_null(.reference)) "Reference",
-                  if (is_not_null(.contrast)) "Contrast",
+                  if (!is_null(.reference)) "Reference",
+                  if (!is_null(.contrast)) "Contrast",
                   label),
                 collapse = " ")
 
   .print_estimate_table(x = x, digits = digits, topn = Inf,
-                        main = main,
-                        rownames = FALSE,
+                        main = main, rownames = FALSE,
                         ...)
 
   .print_inference(x)
@@ -366,9 +380,9 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
   out <- character(0L)
 
   do_inference <- (.vcov_type != "none") &&
-    ((is_not_null(conf_level) && conf_level > 0) ||
-       (is_not_null(null) && !anyNA(null))) &&
-    is_not_null(stats::vcov(x))
+    ((!is_null(conf_level) && conf_level > 0) ||
+       (!is_null(null) && !anyNA(null))) &&
+    !is_null(stats::vcov(x))
 
   if (do_inference) {
     simultaneous <- .attr(x, "simultaneous")
@@ -380,7 +394,10 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
     if (conf_level > 0) {
       .crit <- .attr(x, "crit")
 
-      if (is_not_null(.crit)) {
+      if (is_null(.crit)) {
+        stat_msg <- ""
+      }
+      else {
         df <- .attr(.crit, "df")
 
         stat_msg <- {
@@ -395,9 +412,6 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
           }
         }
       }
-      else {
-        stat_msg <- ""
-      }
 
       out <- c(out,
                .it(sprintf("Confidence level: %s%%%s",
@@ -409,16 +423,16 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
   .reference <- .attr(x, ".reference")
   .treat <- .attr(x, ".treat")
 
-  null_ref <- c(if (is_not_null(.reference)) sprintf("Reference: %s = %s",
+  null_ref <- c(if (!is_null(.reference)) sprintf("Reference: %s = %s",
                                                      .treat, .reference),
-                if (is_not_null(null)) sprintf("Null value: %s",
+                if (!is_null(null)) sprintf("Null value: %s",
                                                format(null, digits = 4L, drop0trailing = TRUE)))
 
-  if (is_not_null(null_ref)) {
+  if (!is_null(null_ref)) {
     out <- c(out, paste(.it(null_ref), collapse = " | "))
   }
 
-  if (.print && is_not_null(out)) {
+  if (.print && !is_null(out)) {
     cli::cat_line(out)
   }
 

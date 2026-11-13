@@ -31,7 +31,7 @@ curve_projection(x, model, transform = TRUE)
 
 \item{model}{the projection model to be fit. Can be a one-sided formula corresponding to the projection model or one of the following strings: \code{"flat"}, \code{"linear"}, \code{"quadratic"}, \code{"cubic"}.}
 
-\item{transform}{whether to compute the projection using a transformation of the linear predictor. Allowable options include \code{TRUE}, \code{FALSE}, or a function specifying a transformation (of which the inverse is used as the inverse link of the projection model). Ignored unless \code{object} is an ADRF. See Details.}
+\item{transform}{whether to compute the projection using a transformation of the linear predictor. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless \code{object} is an ADRF. See Details.}
 
 \item{object, object2}{a \code{curve_projection} object; the output of a call to \code{curve_projection()}.}
 
@@ -39,7 +39,7 @@ curve_projection(x, model, transform = TRUE)
 
 \item{null}{the null value for hypothesis test. Default is 0. Set to \code{NA} to omit tests.}
 
-\item{df}{the "denominator" degrees of freedom to use for the test. Default is to use the residual degrees of freedom from the original model if it is a linear model (in which case an F-test is used) and \code{Inf} otherwise (in which case a \eqn{\chi^2} test is used).}
+\item{df}{the "denominator" degrees of freedom to use for the test. Default is to use the residual degrees of freedom from the original model if it is a linear model (in which case an F-test is used) and \code{Inf} otherwise (in which case a \eqn{\chi^2} test is used), or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see \code{\link[=adrf]{adrf()}}).}
 
 \item{ci.type}{string; when bootstrapping or Bayesian inference is used in the original effect curve, which type of confidence interval is to be computed. For bootstrapping, allowable options include \code{"perc"} for percentile intervals, \code{"wald"} for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When \code{simultaneous = TRUE}, only \code{"perc"} and \code{"wald"} are allowed. For Bayesian models, allowable options include \code{"perc"} for equi-tailed intervals and \code{"wald"} for Wald intervals. Default is \code{"perc"}. Ignored when bootstrapping is not used and the model is not Bayesian.}
 

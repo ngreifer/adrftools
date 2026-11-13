@@ -8,3 +8,7 @@ inst/doc
 docs
 .positai
 CLAUDE.md
+.progress-runs
+
+# Per-worker checkpoints of simulation runs whose merged results are saved
+_dev/omnibus-size-study/*.part-*.rds

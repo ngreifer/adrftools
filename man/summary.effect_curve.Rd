@@ -3,7 +3,7 @@
 \name{summary.effect_curve}
 \alias{summary.effect_curve}
 \alias{print.summary.effect_curve}
-\title{Test omnibus hypotheses about an effect curves}
+\title{Test omnibus hypotheses about an effect curve}
 \usage{
 \method{summary}{effect_curve}(
   object,
@@ -23,13 +23,13 @@
 
 \item{hypothesis}{the hypothesis to be tested. Allowable options include \code{"flat"} (the default), \code{"linear"}, \code{"quadratic"}, \code{"cubic"}, a one-sided formula corresponding to a projection model, or a single number (e.g., 0). See Details. The default is \code{"flat"} for ADRFs and 0 otherwise.}
 
-\item{method}{string; the method used to compute the p-value of the test. Allowable options include \code{"sim"} for simulation-based, \code{"imhof"} for Imhof's approximation, \code{"davies"} for Davies's approximation, \code{"liu"} for Liu's approximation, \code{"satterthwaite"} for Satterthwaite's approximation, and \code{"saddlepoint"} for a saddlepoint approximation. Default is \code{"imhof"} when the \pkg{CompQuadForm} package is installed, otherwise \code{"saddlepoint"} when the \pkg{survey} package is installed, and \code{"sim"} otherwise. See Details.}
+\item{method}{string; the method used to compute the p-value of the test. Allowable options include \code{"sim"} for simulation-based, \code{"imhof"} for Imhof's approximation, \code{"davies"} for Davies's approximation, \code{"liu"} for Liu's approximation, \code{"satterthwaite"} for Satterthwaite's approximation, and \code{"saddlepoint"} for a saddlepoint approximation. Default is \code{"imhof"} when the \pkg{CompQuadForm} package is installed and \code{"saddlepoint"} otherwise. See Details.}
 
 \item{subset}{an optional logical expression indicating the subset of the subgroups for which to perform tests. Can only be used when \code{by} was supplied to the original call to \code{\link[=adrf]{adrf()}}, and only to refer to variables defining subgroups.}
 
-\item{transform}{whether to perform the test on the transformed estimates. Allowable options include \code{TRUE}, \code{FALSE}, or a function specifying a transformation. Ignored unless \code{object} is an ADRF object. See Details.}
+\item{transform}{whether to perform the test on the transformed estimates. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}. Ignored unless \code{object} is an ADRF object. See Details.}
 
-\item{df}{the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and \code{Inf} otherwise.}
+\item{df}{the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and \code{Inf} otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see \code{\link[=adrf]{adrf()}}).}
 
 \item{nsim}{when \code{method} is \code{"sim"}, the number of iterations used to simulate the p-values. Higher numbers give more accurate p-values subject to less Monte Carlo error but are slower and require more memory. Default is 1,000,000.}
 
@@ -52,7 +52,7 @@ An object of class \code{"summary.effect_curve"}, which is a data.frame with a c
 
 Rejecting the null hypothesis means that the curve is more complicated than the specified model. For example, rejecting the null hypothesis that the curve is linear implies that the curve is nonlinear (and, therefore, not flat either).
 
-The test involves computing a test statistic, specifying its distribution under the null hypothesis, and computing the p-value using the compliment of the cumulative density function of the distribution evaluated at the test statistic value. The test statistic depends on \code{"hypothesis"}. For \code{hypothesis} equal to a constant, say, \eqn{c}, the test statistic is
+The test involves computing a test statistic, specifying its distribution under the null hypothesis, and computing the p-value using the complement of the cumulative distribution function of the distribution evaluated at the test statistic value. The test statistic depends on \code{"hypothesis"}. For \code{hypothesis} equal to a constant, say, \eqn{c}, the test statistic is
 \deqn{T^* = \int_\mathcal{A} (\theta(a) - c)^2 \ da}
 Otherwise, the test statistic is
 \deqn{T^* = \int_\mathcal{A} (\theta(a) - \hat{\theta}_0(a))^2 \ da}
@@ -61,17 +61,17 @@ where \eqn{\hat{\theta}_0} is the projection of \eqn{\theta(a)} onto the null su
 Each of these can be approximated as a quadratic form, \eqn{T=\mathbf{\theta}'\mathbf{W}\mathbf{\theta}} where \eqn{\mathbf{\theta}} is a vector of estimates at evaluation points along the curve and \eqn{\mathbf{W}} is a diagonal matrix of weights implementing a trapezoidal approximation to the integral. The null hypothesis is that \eqn{T=0}, which approximates the null hypothesis that \eqn{T^*=0}. Each of the allowable options to \code{method} corresponds to a method of approximating the distribution of \eqn{T} under the null hypothesis:
 \itemize{
 \item \code{"sim"} simulates the null distribution by simulating from a multivariate normal distribution under the null hypothesis and computing the test statistic in each simulation. The p-value is the proportion of simulated estimates greater than the observed test statistic. When \code{df} is not \code{Inf}, the simulation is done from a multivariate t-distribution.
-\item \code{"imhof"}, \code{"davies"}, and \code{"liu"} assume the test statistic follows a generalized \eqn{\chi^2}-distribution and approximate its CDF numerically. \code{"imhof"} tends to be the most accurate and is recommended. These methods require the \CRANpkg{CompQuadForm} package to be installed.
+\item \code{"imhof"}, \code{"davies"}, and \code{"liu"} assume the test statistic follows a generalized \eqn{\chi^2}-distribution and approximate its CDF numerically. \code{"imhof"} tends to be the most accurate and is recommended. Because Imhof's and Davies's methods control the absolute rather than the relative error of the computed probability, p-values below .0001, and any these methods fail to compute, are computed using the saddlepoint approximation instead. \code{"liu"} can be inaccurate when \code{df} is not \code{Inf}. These methods require the \CRANpkg{CompQuadForm} package to be installed.
 \item \code{"satterthwaite"} also assumes the test statistic follows a generalized \eqn{\chi^2}-distribution, but this distribution is approximated using a scaled F-distribution with the same first two moments.
-\item \code{"saddlepoint"} also assumes the test statistic follows a generalized \eqn{\chi^2}-distribution, and this distribution is approximated using a saddlepoint method as implemented in \pkgfun{survey}{pFsum}. This method requires the \CRANpkg{survey} package to be installed.
+\item \code{"saddlepoint"} also assumes the test statistic follows a generalized \eqn{\chi^2}-distribution, and this distribution is approximated using the saddlepoint method described by Kuonen (1999), which remains accurate far into the tails of the distribution. Near the center of the distribution, where the saddlepoint approximation is not defined, the Satterthwaite approximation is used instead.
 }
 
-In general, we recommend using \code{method = "imhof"}, though this requires \pkg{CompQuadForm} to be installed (and is the default when it is). \code{method = "saddlepoint"} has also been shown to be quite accurate and very fast. When using \code{"sim"}, increasing \code{nsim} improves the accuracy of the p-value by reducing Monte Carlo error. The default value of \code{1e6} ensures that the simulated p-value is within .0005 of the true p-value with at least 98\\% confidence for p-values less than .05. For greater precision at higher p-value thresholds, \code{nsim} should be increased. The other methods exist primarily for comparison purposes. \code{"satterthwaite"} is particularly fast and doesn't require any other packages, but it can be somewhat inaccurate.
+In general, we recommend using \code{method = "imhof"}, though this requires \pkg{CompQuadForm} to be installed (and is the default when it is). \code{method = "saddlepoint"} is also accurate, is very fast, and doesn't require any other packages. When using \code{"sim"}, increasing \code{nsim} improves the accuracy of the p-value by reducing Monte Carlo error. The default value of \code{1e6} ensures that the simulated p-value is within .0005 of the true p-value with at least 98\% confidence for p-values less than .05. For greater precision at higher p-value thresholds, \code{nsim} should be increased. The other methods exist primarily for comparison purposes. \code{"satterthwaite"} is particularly fast and doesn't require any other packages, but it can be somewhat inaccurate.
 \subsection{Transform}{
 
 When the effect curve is an ADRF and the outcomes are bounded (e.g., a probability between 0 and 1), the \code{transform} argument can be specified, which changes the details of the tests.
 
-The tests above assume the estimates along the effect curve are normally distributed (or t-distributed when \code{df} is not \code{Inf}). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. \code{transform} transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simple a transformation of the estimated points along the curve already computed. When \code{hypothesis} is a number, that number is also transformed.
+The tests above assume the estimates along the effect curve are normally distributed (or t-distributed when \code{df} is not \code{Inf}). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. \code{transform} transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. When \code{hypothesis} is a number, that number is also transformed.
 
 Tests on the transformed and untransformed ADRFs correspond to different hypotheses; the difference is not simply a matter of the appropriate distribution of the statistic. For example, for binary outcome model with a logistic transformation, testing that the transformed ADRF is linear corresponds to testing whether the ADRF is a sigmoid function, whereas testing that the untransformed ADRF is linear corresponds to testing whether the ADRF is a straight line. These choices correspond to how the projection of the ADRF is formed; see \code{\link[=curve_projection]{curve_projection()}} for details. See Examples for an example with a binary outcome. In the example, there is evidence to reject that the transformed ADRF is linear for one of the groups, indicating that a sigmoid function is not sufficient for describing the ADRF, but there is indeterminate evidence (at the .05) to reject that the untransformed ADRF is linear for either group, indicating that a linear function is sufficient for describing the ADRF (at least in the treatment range examined).
 }
@@ -117,6 +117,9 @@ plot(adrf1, proj = proj2, conf_level = 0)
 ## testing if the ADRF contrast is 0
 curve_contrast(adrf1) |>
   summary()
+}
+\references{
+Kuonen, D. (1999). Saddlepoint approximations for distributions of quadratic forms in normal variables. \emph{Biometrika}, 86(4), 929–935. \doi{10.1093/biomet/86.4.929}
 }
 \seealso{
 \itemize{

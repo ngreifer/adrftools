@@ -81,7 +81,7 @@ print.effect_curve <- function(x, ...) {
   if (inherits(x, "reference_curve")) {
     .reference <- .attr(x, ".reference")
 
-    if (is_not_null(.reference)) {
+    if (!is_null(.reference)) {
       cli::format_inline(" - reference level: {round(.reference, 4L)}") |>
         cli::cat_line()
     }
@@ -92,7 +92,7 @@ print.effect_curve <- function(x, ...) {
   if (!inherits(x, "contrast_curve")) {
     .by_grid <- .attr(x, ".by_grid")
 
-    if (is_not_null(.by_grid)) {
+    if (!is_null(.by_grid)) {
       by_vec <- cli::cli_vec(names(.by_grid), style = list("vec-last" = ", "))
       cli::format_inline(" - by: {by_vec}") |>
         cli::cat_line()
@@ -104,7 +104,7 @@ print.effect_curve <- function(x, ...) {
   if (inherits(x, "contrast_curve")) {
     .contrast <- .attr(x, ".contrast")
 
-    if (is_not_null(.contrast)) {
+    if (!is_null(.contrast)) {
       contrast_vec <- cli::cli_vec(.contrast, style = list("vec-last" = ", "))
       cli::format_inline(" - contrast{?s}: {contrast_vec}") |>
         cli::cat_line()
@@ -138,7 +138,7 @@ print.effect_curve <- function(x, ...) {
   if (inherits(x, "curve_projection")) {
     .formula <- .attr(x, ".proj_formula")
 
-    if (is_not_null(.formula)) {
+    if (!is_null(.formula)) {
       cli::format_inline(" - projection model: {(.formula)}") |>
         cli::cat_line()
     }

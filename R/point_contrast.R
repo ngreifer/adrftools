@@ -40,6 +40,16 @@
 point_contrast <- function(object) {
   arg::arg_is(object, "curve_est")
 
+  # The output of summary() carries its intervals and tests, which do not apply
+  # to the contrasts
+  if (inherits(object, "summary.curve_est")) {
+    class(object) <- setdiff(class(object), "summary.curve_est")
+
+    for (a in c("simultaneous", "conf_level", "crit", "ci.type", "null")) {
+      attr(object, a) <- NULL
+    }
+  }
+
   .treat <- attr(object, ".treat")
   .vcov_type <- .attr(object, ".vcov_type")
   .contrast <- attr(object, ".contrast")
@@ -77,14 +87,16 @@ point_contrast <- function(object) {
     .boot[["t0"]] <- tcrossprod(.boot[["t0"]], contr_mat) |>
       drop()
 
-    attr(object, ".vcov") <- stats::vcov(.boot)
+    # The map is linear, so the covariance of the transformed draws is the
+    # transformed covariance
+    attr(object, ".vcov") <- quad_mult(contr_mat, stats::vcov(object))
     attr(object, ".boot") <- .boot
   }
   else if (.vcov_type == "posterior") {
     .draws <- .attr(object, ".draws") |>
       tcrossprod(contr_mat)
 
-    attr(object, ".vcov") <- stats::cov(.draws)
+    attr(object, ".vcov") <- quad_mult(contr_mat, stats::vcov(object))
     attr(object, ".draws") <- .draws
   }
   else if (.vcov_type != "none") {
@@ -102,14 +114,22 @@ point_contrast <- function(object) {
   object[setdiff(names(object), c(c(.treat, "estimate")))] <- NULL
   setrename(object, setNames("term", .treat))
 
+  # Labeling subgroups uses merge(), which drops attributes, so they are
+  # restored afterward
+  attrs <- attributes(object)
+
   object <- object |>
     ss(rep.int(1L, length(.est0))) |>
     ftransform(estimate = .est0) |>
     add_est_labels(.contrast, .by_grid, .contrast_names, "term")
 
+  for (a in setdiff(names(attrs), c("names", "row.names", "class"))) {
+    attr(object, a) <- attrs[[a]]
+  }
+
   attr(object, ".contrast_names") <- .contrast_names
 
-  class(object) <- unique(c("curve_est_contrast", class(object)))
+  class(object) <- unique(c("curve_est_contrast", attrs[["class"]]))
 
   object
 }
@@ -132,7 +152,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
     null <- process_null(null)
 
     do_inference <- (conf_level > 0 || !anyNA(null)) &&
-      is_not_null(stats::vcov(object))
+      !is_null(stats::vcov(object))
   }
 
   if (!do_inference) {
@@ -202,7 +222,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
                             function(zi) {
                               1 - mvtnorm::pmvt(lower = rep.int(-zi, sum(!zeros)),
                                                 upper = rep.int(zi, sum(!zeros)),
-                                                df = df, corr = vp,
+                                                df = .mvt_df(df), corr = vp,
                                                 keepAttr = FALSE,
                                                 abseps = 1e-5)
                             }, numeric(1L)),
@@ -230,6 +250,9 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
                    simultaneous = simultaneous)
 
       res$p.value <- s[, fncol(s)]
+
+      # Estimates with no variance have no p-value, as with Wald inference
+      is.na(res$p.value[.zero_var(ss(.boot[["t"]], j = seq_along(est)))]) <- TRUE
     }
     else if (.vcov_type == "posterior") {
       res$p.value <- posterior_p_value(.draws, parm = seq_along(est),
@@ -249,7 +272,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
 
         t_crit <- try(mvtnorm::qmvt(conf_level,
                                     tail = "both.tails",
-                                    df = df, corr = vp,
+                                    df = .mvt_df(df), corr = vp,
                                     keepAttr = FALSE,
                                     maxiter = 1e5,
                                     abseps = 1e-5)$quantile,
@@ -296,7 +319,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
   attr(object, "simultaneous") <- simultaneous
   attr(object, "conf_level") <- conf_level
 
-  if (conf_level > 0 && is_not_null(t_crit)) {
+  if (conf_level > 0 && !is_null(t_crit)) {
     attr(t_crit, "df") <- df
     attr(object, "crit") <- t_crit
   }

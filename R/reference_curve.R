@@ -100,7 +100,7 @@ reference_curve <- function(x, reference) {
 
   matches <- max.col(-abs(outer(values, .values, "-")), "first")
 
-  to_interp <- !check_if_zero(values - .values[matches])
+  to_interp <- abs(values - .values[matches]) > .grid_tol(.values)
 
   if (any(to_interp)) {
     val_mat[to_interp, ] <- get_locpoly_w(x = values[to_interp],
@@ -138,7 +138,7 @@ reference_curve <- function(x, reference) {
     return(.make_fun(x,
                      .est = new_est,
                      .values = values,
-                     .vcov = stats::vcov(new_boot),
+                     .vcov = quad_mult(val_mat, ss(.attr(x, ".vcov"), seq_along(.est), seq_along(.est))),
                      .boot = new_boot))
   }
 
@@ -150,7 +150,7 @@ reference_curve <- function(x, reference) {
     return(.make_fun(x,
                      .est = new_est,
                      .values = values,
-                     .vcov = stats::cov(new_draws),
+                     .vcov = quad_mult(val_mat, ss(.attr(x, ".vcov"), seq_along(.est), seq_along(.est))),
                      .draws = new_draws))
   }
 

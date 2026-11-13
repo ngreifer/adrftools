@@ -3,7 +3,7 @@
 #' @aliases effect_curve-class curve_est curve_est-class
 #'
 #' @description
-#' An `effect_curve` object is a function that takes in values of the treatment and produces estimates of the effect curve at those values. `effect_curve` objects are produces by [adrf()] and functions that modify effect curves, such as [amef()], [curve_contrast()], [reference_curve()], and [curve_projection()]. The output of an `effect_curve` object is a `curve_est` object containing the effect curve estimates. This page describes `effect_curve` and `curve_est` objects.
+#' An `effect_curve` object is a function that takes in values of the treatment and produces estimates of the effect curve at those values. `effect_curve` objects are produced by [adrf()] and functions that modify effect curves, such as [amef()], [curve_contrast()], [reference_curve()], and [curve_projection()]. The output of an `effect_curve` object is a `curve_est` object containing the effect curve estimates. This page describes `effect_curve` and `curve_est` objects.
 #'
 #' ## Usage
 #' \preformatted{f <- adrf(x, ...)
@@ -17,7 +17,7 @@
 #' @param \dots arguments passed to [print.data.frame()].
 #'
 #' @returns
-#' A call to an `effect_curve` object returns a `curve_est` object, which is a `data.frame` containing a column for the treatment and a column for the effect curve estimates. `curve_est` objects have `print()`, [`summary()`][summary.curve_est], [`ceof()`][coef.curve_est], and [`vcov()`][vcov.curve_est] methods.
+#' A call to an `effect_curve` object returns a `curve_est` object, which is a `data.frame` containing a column for the treatment and a column for the effect curve estimates. `curve_est` objects have `print()`, [`summary()`][summary.curve_est], [`coef()`][coef.curve_est], and [`vcov()`][vcov.curve_est] methods.
 #'
 #' @details
 #' An `effect_curve` object contains a set of grid points on which the effect curve is initially evaluated. The effect curve estimates produced by a call to the `effect_curve` object are interpolated using 3rd-degree local polynomial regression with a Gaussian kernel and bandwidth equal to half the distance between grid points, unless they coincide with the grid points; this means the produced estimates are linear combinations of the grid point estimates.
@@ -66,7 +66,7 @@ NULL
                       .curve_type, .family, .df, .response, .call,
                       .by_grid, .contrast, .reference) {
 
-  if (missing(.curve_type) && is_not_null(fn)) {
+  if (missing(.curve_type) && !is_null(fn)) {
     if (inherits(fn, "adrf_curve")) {
       .curve_type <- "ADRF"
     }
@@ -86,27 +86,33 @@ NULL
     }
   }
 
-  if (is_not_null(.contrast_mat)) {
+  if (!is_null(.contrast_mat)) {
+    # The contrast matrix has one column per original estimate; contrasts (as
+    # in curve_contrast()) can have fewer rows than columns
+    est_ind <- seq_len(fncol(.contrast_mat))
+
     # est is the contrast estimates
     .est <- drop(tcrossprod(.est, .contrast_mat))
 
     if (.vcov_type == "bootstrap") {
       .boot[["t"]] <- .boot[["t"]] |>
-        ss(j = seq_along(.est)) |>
+        ss(j = est_ind) |>
         tcrossprod(.contrast_mat)
 
-      .boot[["t0"]] <- .boot[["t0"]][seq_along(.est)] |>
+      .boot[["t0"]] <- .boot[["t0"]][est_ind] |>
         tcrossprod(.contrast_mat) |>
         drop()
 
-      .vcov <- stats::vcov(.boot)
+      # The map is linear, so the covariance of the transformed draws is the
+      # transformed covariance, which is much faster to compute
+      .vcov <- quad_mult(.contrast_mat, ss(.vcov, est_ind, est_ind))
     }
     else if (.vcov_type == "posterior") {
       .draws <- .draws |>
-        ss(j = seq_along(.est)) |>
+        ss(j = est_ind) |>
         tcrossprod(.contrast_mat)
 
-      .vcov <- stats::cov(.draws)
+      .vcov <- quad_mult(.contrast_mat, ss(.vcov, est_ind, est_ind))
     }
     else if (.vcov_type != "none") {
       .vcov <- quad_mult(.contrast_mat, .vcov)
@@ -140,7 +146,7 @@ NULL
 
     matches <- max.col(-abs(outer(values, .values, "-")), "first")
 
-    to_interp <- !check_if_zero(values - .values[matches])
+    to_interp <- abs(values - .values[matches]) > .grid_tol(.values)
 
     if (any(to_interp)) {
       val_mat[to_interp, ] <- get_locpoly_w(x = values[to_interp],
@@ -174,7 +180,9 @@ NULL
         tcrossprod(val_mat) |>
         drop()
 
-      attr(res, ".vcov") <- stats::vcov(.boot)
+      # The map is linear, so the covariance of the transformed draws is the
+      # transformed covariance
+      attr(res, ".vcov") <- quad_mult(val_mat, ss(.vcov, .s, .s))
       attr(res, ".boot") <- .boot
     }
     else if (.vcov_type == "posterior") {
@@ -182,7 +190,7 @@ NULL
         ss(j = .s) |>
         tcrossprod(val_mat)
 
-      attr(res, ".vcov") <- stats::cov(.draws)
+      attr(res, ".vcov") <- quad_mult(val_mat, ss(.vcov, .s, .s))
       attr(res, ".draws") <- .draws
     }
     else if (.vcov_type != "none") {
@@ -207,7 +215,7 @@ NULL
 
   rlang::fn_fmls_names(fn)[1L] <- .treat
 
-  if (is_null(.by_grid) || is_not_null(.contrast)) {
+  if (is_null(.by_grid) || !is_null(.contrast)) {
     rlang::fn_fmls(fn)[-seq_along(.treat)] <- NULL
   }
 
@@ -237,11 +245,11 @@ NULL
     classes <- c("amef_curve", classes)
   }
 
-  if (is_not_null(.reference)) {
+  if (!is_null(.reference)) {
     classes <- c("reference_curve", classes)
   }
 
-  if (is_not_null(.contrast)) {
+  if (!is_null(.contrast)) {
     classes <- c("contrast_curve", classes)
   }
 

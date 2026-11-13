@@ -6,11 +6,11 @@
 #' @inheritParams summary.curve_est
 #' @param x an [`effect_curve`] object; the output of a call to [adrf()].
 #' @param model the projection model to be fit. Can be a one-sided formula corresponding to the projection model or one of the following strings: `"flat"`, `"linear"`, `"quadratic"`, `"cubic"`.
-#' @param transform whether to compute the projection using a transformation of the linear predictor. Allowable options include `TRUE`, `FALSE`, or a function specifying a transformation (of which the inverse is used as the inverse link of the projection model). Ignored unless `object` is an ADRF. See Details.
+#' @param transform whether to compute the projection using a transformation of the linear predictor. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless `object` is an ADRF. See Details.
 #' @param subset an optional logical expression indicating the subset of subgroups for which to compute the projection. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param object,object2 a `curve_projection` object; the output of a call to `curve_projection()`.
 #' @param null the null value for hypothesis test. Default is 0. Set to `NA` to omit tests.
-#' @param df the "denominator" degrees of freedom to use for the test. Default is to use the residual degrees of freedom from the original model if it is a linear model (in which case an F-test is used) and `Inf` otherwise (in which case a \eqn{\chi^2} test is used).
+#' @param df the "denominator" degrees of freedom to use for the test. Default is to use the residual degrees of freedom from the original model if it is a linear model (in which case an F-test is used) and `Inf` otherwise (in which case a \eqn{\chi^2} test is used), or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
 #' @param \dots ignored.
 #'
 #' @returns
@@ -123,7 +123,7 @@ curve_projection <- function(x, model, transform = TRUE) {
 
   proj_data <- qDF(.values) |>
     setNames(.treat) |>
-    model.frame(formula = model)
+    model.frame(formula = model, na.action = stats::na.pass)
 
   mt <- .attr(proj_data, "terms")
 
@@ -162,6 +162,8 @@ curve_projection <- function(x, model, transform = TRUE) {
       proj_boot <- .attr(x, ".boot")
 
       proj_boot[["t0"]] <- fit$coefficients
+      # With one coefficient, dapply() returns a vector, so the result is
+      # coerced to a matrix with one column per coefficient
       proj_boot[["t"]] <- proj_boot[["t"]] |>
         dapply(MARGIN = 1L, return = "matrix",
                FUN = function(esti) {
@@ -169,7 +171,7 @@ curve_projection <- function(x, model, transform = TRUE) {
                           transform = transform_list,
                           start = proj_coefficients)$coefficients
                }) |>
-        unname()
+        matrix(ncol = length(proj_coefficients))
 
       proj_boot[["call"]] <- NULL
 
@@ -200,14 +202,14 @@ curve_projection <- function(x, model, transform = TRUE) {
                           transform = transform_list,
                           start = proj_coefficients)$coefficients
                }) |>
-        unname()
+        matrix(ncol = length(proj_coefficients))
 
       proj_vcov <- stats::cov(proj_draws)
 
       .draws <- tcrossprod(proj_draws, mm) |>
         transform_list$inv_transform()
 
-      .vcov <- stats::vcov(.draws)
+      .vcov <- stats::cov(.draws)
 
       proj_fn <- .make_fun(x,
                            .est = fit$fitted.values,
@@ -217,10 +219,9 @@ curve_projection <- function(x, model, transform = TRUE) {
       attr(proj_fn, ".proj_draws") <- proj_draws
     }
     else {
-      J  <- fit$jacobian
-      JW <- J * w
+      J <- fit$jacobian
 
-      ww <- solve(crossprod(J, JW), t(JW))
+      ww <- .proj_influence(mm, .est, fit, w, transform_list)
 
       proj_vcov <- quad_mult(ww, .attr(x, ".vcov"))
 
@@ -236,6 +237,10 @@ curve_projection <- function(x, model, transform = TRUE) {
 
   attr(proj_fn, ".proj_coefficients") <- proj_coefficients
   attr(proj_fn, ".proj_coefficient_names") <- nm
+
+  # The transformed estimates identify the transformation, so anova() can check
+  # that two projections used the same one
+  attr(proj_fn, ".proj_transformed_est") <- transform_list$transform(.est)
   attr(proj_fn, ".proj_formula") <- deparse1(mt)
 
   class(proj_fn) <- unique(c("curve_projection", class(proj_fn)))
@@ -266,15 +271,16 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
     null <- process_null(null)
   }
 
-  # subset
-  if (is_null(.by_grid) || is_not_null(.contrast)) {
+  # subset; process_subset_by_grid() gives an error when subset is supplied
+  # without by or for a contrast
+  .subset <- process_subset_by_grid(substitute(subset),
+                                    .by_grid = .by_grid,
+                                    .contrast = .contrast)
+
+  if (is_null(.by_grid) || !is_null(.contrast)) {
     .s <- seq_along(.proj_coefficients)
   }
   else {
-    .subset <- process_subset_by_grid(substitute(subset),
-                                      .by_grid = .by_grid,
-                                      .contrast = .contrast)
-
     .s <- which(rep(.subset, each = length(.proj_coefficients) / fnrow(.by_grid)))
 
     .by_grid <- ss(.by_grid, .subset)
@@ -285,7 +291,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
   # Only do inference if vcov_type is not empty and conf_level is
   # nonzero or null hypothesis is specified
   do_inference <- (.vcov_type != "none") &&
-    is_not_null(.proj_vcov) &&
+    !is_null(.proj_vcov) &&
     (conf_level > 0 || !anyNA(null))
 
   if (do_inference) {
@@ -398,7 +404,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
   attr(res, "conf_level") <- conf_level
 
   if (do_inference) {
-    if (conf_level > 0 && is_not_null(t_crit)) {
+    if (conf_level > 0 && !is_null(t_crit)) {
       attr(t_crit, "df") <- df
       attr(res, "crit") <- t_crit
     }
@@ -432,8 +438,8 @@ print.summary.curve_projection <- function(x, digits = max(3L, getOption("digits
   .contrast <- .attr(x, ".contrast")
 
   main <- paste(c(get_curve_type(x),
-                  if (is_not_null(.reference)) "Reference",
-                  if (is_not_null(.contrast)) "Contrast",
+                  if (!is_null(.reference)) "Reference",
+                  if (!is_null(.contrast)) "Contrast",
                   "Projection Coefficients"),
                 collapse = " ")
 
@@ -459,6 +465,11 @@ coef.curve_projection <- function(object, ...) {
 vcov.curve_projection  <- function(object, ...) {
   v <- .attr(object, ".proj_vcov")
 
+  # No covariance matrix when vcov = "none" in the original call to adrf()
+  if (is_null(v)) {
+    return(NULL)
+  }
+
   dimnames(v) <- rep.int(list(.get_curve_est_labels(object)), 2L)
 
   v
@@ -479,7 +490,7 @@ model.matrix.curve_projection <- function(object, ...) {
 
   proj_data <- qDF(.values) |>
     setNames(.treat) |>
-    model.frame(formula = formula(object))
+    model.frame(formula = formula(object), na.action = stats::na.pass)
 
   mm <- .attr(proj_data, "terms") |>
     model.matrix(data = proj_data)
@@ -514,6 +525,11 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
     arg::err("{.arg object} and {.arg object2} must be the outputs of {.fun curve_projection} applied to the same {.cls effect_curve} object")
   }
 
+  if (!isTRUE(all.equal(.attr(object, ".proj_transformed_est"),
+                        .attr(object2, ".proj_transformed_est")))) {
+    arg::err("{.arg object} and {.arg object2} must use the same {.arg transform}")
+  }
+
   # Process df
   df <- df %or% .attr(object, ".df")
 
@@ -531,7 +547,7 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   b2 <- coef(object2, complete = FALSE)
 
   if (length(b2) >= length(b1)) {
-    arg::err("{.arg object2} does not appear to be nested within {.arg object1}")
+    arg::err("{.arg object2} does not appear to be nested within {.arg object}")
   }
 
   Z1 <- .lm.fit(x = model.matrix(object2)[, names(b2), drop = FALSE],
@@ -552,17 +568,30 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   value.hyp <- L %*% b1
   vcov.hyp <- quad_mult(L, V)
 
+  # The effect curve varies only in the span of the treatment terms of the
+  # outcome model, so a projection with more terms than that has coefficients
+  # whose covariance matrix is singular
+  ev <- eigen(vcov.hyp, symmetric = TRUE, only.values = TRUE)[["values"]]
+
+  if (min(ev) <= sqrt(.Machine$double.eps) * max(ev, 0)) {
+    arg::err(c("The extra terms in {.arg object} cannot be tested because the covariance matrix of their coefficients is singular.",
+               i = "This happens when the projection in {.arg object} has more terms than the effect curve can identify, e.g., more than the number of terms involving the treatment in the outcome model."))
+  }
+
   SSH <- drop(crossprod(value.hyp, solve(vcov.hyp, value.hyp)))
 
   width <- min(55L, getOption("width", 55L))
 
   .title <- "Wald Test"
 
-  .topnote <- sprintf("Model 1: %s\nModel 2: %s\n",
-                      deparse1(formula(object)) |>
-                        strwrap(width, exdent = 11L),
-                      deparse1(formula(object2)) |>
-                        strwrap(width, exdent = 11L))
+  # Each formula is wrapped as a whole and the lines joined, so a long formula
+  # stays in a single heading element
+  .topnote <- c(sprintf("Model 1: %s", deparse1(formula(object))) |>
+                  strwrap(width, exdent = 9L),
+                sprintf("Model 2: %s", deparse1(formula(object2))) |>
+                  strwrap(width, exdent = 9L)) |>
+    paste(collapse = "\n") |>
+    paste0("\n")
 
   .nullhyp <- "H\u2080: Extra terms in Model 1 have coefficients equal to 0 (i.e., Model 2 is sufficient)"
 
@@ -615,6 +644,34 @@ print.anova.curve_projection <- function(x, digits = max(4L, getOption("digits")
     cli::cat_line()
 
   invisible(x)
+}
+
+# The derivative of the projection coefficients with respect to the curve
+# estimates `y`. The projection solves J'W(y - mu) = 0 with J = diag(mu') X,
+# so the derivative is H^-1 J'W with H = J'WJ - X' diag(w r mu'') X, where
+# r = y - mu are the residuals and mu'' is the second derivative of the inverse
+# transformation; the second term is zero for the identity, and is not zero in
+# general because a projection is misspecified by design. Columns are
+# equilibrated before solving, so raw powers of a treatment on a large scale
+# stay well conditioned.
+.proj_influence <- function(x, y, fit, w, transform) {
+  J <- fit$jacobian
+
+  eta <- drop(x %*% fit$coefficients)
+  r <- y - fit$fitted.values
+
+  h <- 1e-4 * pmax(1, abs(eta))
+  mu2 <- (transform$d_inv_transform(eta + h) - transform$d_inv_transform(eta - h)) / (2 * h)
+
+  d <- sqrt(colSums(J^2 * w))
+  d[d == 0] <- 1
+
+  Js <- J / rep(d, each = fnrow(J))
+  xs <- x / rep(d, each = fnrow(x))
+
+  H <- crossprod(Js, Js * w) - crossprod(xs, xs * (w * r * mu2))
+
+  qr.solve(H, t(Js * w)) / d
 }
 
 .nls_fit <- function(x, y, w = NULL, offset = 0, transform, start = NULL,

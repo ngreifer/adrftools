@@ -1,0 +1,30 @@
+"check","method","SE at logBLL = 0","SE at logBLL = 1","SE at logBLL = 2"
+"1a unweighted logistic","stdReg::stdGlm x (n-1)/n",0.014552,0.0080306,0.01207
+"1a unweighted logistic","adrf",0.014552,0.0080306,0.01207
+"1b weighted linear","stdReg::stdGlm x (n-1)/n",0.30043,0.15537,0.26992
+"1b weighted linear","adrf",0.30043,0.15537,0.26992
+"1b weighted linear","adrf before fix (by hand)",0.29405,0.15095,0.27192
+"1c weighted logistic, clustered","stdReg::stdGlm",0.037706,0.01568,0.020537
+"1c weighted logistic, clustered","adrf",0.037706,0.01568,0.020537
+"2a model weights != target weights","geex",0.029751,0.016022,0.023374
+"2a model weights != target weights","adrf",0.029751,0.016022,0.023374
+"2b subgroup Male = 1","geex",0.040663,0.023033,0.03458
+"2b subgroup Male = 1","adrf",0.040663,0.023033,0.03458
+"2a model weights != target weights","fwb bootstrap (R = 2000)",0.029245,0.016237,0.023555
+"4 stratified clustered design","adrf(svyglm)",0.17593,0.10276,0.18846
+"4 stratified clustered design","survey JKn replicates",0.17731,0.10306,0.18932
+"4 stratified clustered design","linearization with svytotal()",0.17593,0.10276,0.18846
+"4b weights-only design","adrf(svyglm)",0.17063,0.10957,0.21975
+"4b weights-only design","survey JK1 replicates",0.1721,0.1101,0.22188
+"5 estimated weights, adjusted outcome model","geex, weights estimated (full stack)",0.13144,0.073735,0.13916
+"5 estimated weights, adjusted outcome model","geex, weights treated as fixed",0.13202,0.073795,0.13998
+"5 estimated weights, adjusted outcome model","adrf(lm(weights = sw))",0.13202,0.073795,0.13998
+"5 estimated weights, adjusted outcome model","fwb bootstrap re-estimating weights (R = 2000)",0.13318,0.074366,0.13846
+"5c estimated weights, MSM outcome model","geex, weights estimated (full stack)",0.15076,0.086176,0.15465
+"5c estimated weights, MSM outcome model","geex, weights treated as fixed",0.15409,0.086776,0.1604
+"5c estimated weights, MSM outcome model","adrf(lm(weights = sw))",0.15409,0.086776,0.1604
+"5c estimated weights, MSM outcome model","fwb bootstrap re-estimating weights (R = 2000)",0.15474,0.086158,0.15493
+"5b WeightIt glm_weightit, MSM","adrf(glm_weightit)",0.1511,0.086206,0.1574
+"5b WeightIt glm_weightit, MSM","delta method on vcov(glm_weightit)",0.1511,0.086206,0.1574
+"5b WeightIt glm_weightit, MSM","adrf(lm(weights = w)), weights fixed",0.15437,0.086889,0.16313
+"5b WeightIt glm_weightit, MSM","fwb bootstrap re-estimating weights (R = 2000)",0.15373,0.085116,0.15647

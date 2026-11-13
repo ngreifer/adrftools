@@ -6,32 +6,41 @@
 #' @param x a fitted model object (e.g., from [lm()] or [glm()]).
 #' @param treat a string specifying the name of the treatment variable.
 #' @param vcov how the covariance matrix of the estimates should be computed. If `"unconditional"` (the default for frequentist models), use the sandwich estimator including sampling uncertainty. If `"boot"` or `"fwb"`, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the `vcov` argument of [marginaleffects::get_vcov()]. Can also be `"none"` to avoid computing the uncertainty. For Bayesian models, only `"posterior"`, which uses the posterior of the estimates, and `"none"` are allowed. For models fit to multiply imputed data, `"boot"` and `"fwb"` are not allowed.
-#' @param cluster an optional data frame or one-sided formula with the clustering terms for cluster-robust inference.
-#' @param range numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the affect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.
+#' @param cluster an optional data frame or one-sided formula with the clustering terms for cluster-robust inference. When `vcov` is `"conditional"`, the covariance matrix of the model coefficients is computed using [sandwich::vcovCL()] with its default type; `vcov` can also be `"HC0"`, `"HC1"`, `"HC2"`, or `"HC3"` to request that type from [sandwich::vcovCL()] (`"HC2"` and `"HC3"` are available only for `lm()` and `glm()` models). Other strings and functions supplied to `vcov` cannot be used with `cluster`.
+#' @param range numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the effect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.
 #' @param n integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.
 #' @param type character string indicating the type of prediction. Passed to [marginaleffects::get_predict()]. Default is `"response"` for predictions on the scale of the outcome variable. Other options might include `"link"` for the linear predictor. This argument is ignored for `lm` objects.
 #' @param data an optional data frame containing the observations originally used to fit the outcome model supplied to `x`. This should only be used if the supplied model is not supported by \pkg{insight}. In most cases, this should not need to be supplied.
-#' @param subset an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function.
+#' @param subset an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function. Can also be a vector of row numbers or row names; logical vectors and row numbers refer to the units used to fit the model (i.e., excluding any dropped because of missing values), and row names refer to the original dataset.
 #' @param by optional variable(s) over which to group the estimation. Can be a character vector or one-sided formula.
-#' @param wts optional numeric vector of weights to generalize the effect curve to a weighted population.
+#' @param wts optional weights used to generalize the effect curve to a weighted population. Can be a numeric vector, the name of a variable in the original dataset, `TRUE` to use the weights used to fit the model, or `FALSE` for no weights. The default depends on the model; see Details.
 #' @param fwb.args an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when `vcov` is `"boot"` or `"fwb"`.
 #' @param ... further arguments passed to [marginaleffects::get_predict()].
 #'
 #' @returns
-#' An object of class `effect_curve`. This object is a function with attributes. See [`effect_curve-class`] for details on this function and its outputs.
+#' An object of class `<effect_curve>`. This object is a function with attributes. See [`effect_curve-class`] for details on this function and its outputs.
 #'
 #' @details
 #' `adrf()` estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When `vcov = "unconditional"`, the variance is computed using the formulas in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires [sandwich::estfun()] and [sandwich::bread()] methods for the supplied object to be available.
 #'
-#' When a `mira` object from \pkg{mice} or a `mimira` object from \pkg{MatchThem} is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. Bootstrapping is not allowed with such objects.
-#'
-#' When a `svyglm` object from \pkg{survey} is supplied, `adrf()` automatically incorporates the survey weights extracted from the object. The same is true for `glm_weightit` objects, etc., from \pkg{WeightIt} when `s.weights` are supplied in the original call to `weightit()`. See `vignette("adrftools")` for more details on using the `wts` argument.
+#' When a `<mira>` object from \pkg{mice} or a `<mimira>` object from \pkg{MatchThem} is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. The degrees of freedom used for tests and confidence intervals are those of Reiter (2007), or of Li, Raghunathan, and Rubin (1991) when the complete-data degrees of freedom are infinite (e.g., for generalized linear models). These account for the number of imputations and the fraction of missing information, which is assumed to be the same for all points on the curve, so a single value is used for every point and for joint inference. Bootstrapping is not allowed with such objects.
 #'
 #' ## `range`
 #'
 #' The `range` argument controls for which range of the treatment the effect curve is to be evaluated. It can be supplied either as two numbers corresponding to the lower and upper bounds for the treatment (e.g., `range = c(0, 10)`) or as a single number corresponding to the middle quantile of the treatment (e.g., `range = .9`, which uses the .05 and .95 quantiles of the treatment as the bounds). The default is .95 to use the .025 and .975 quantiles of the treatment. When supplied as a quantile, the quantiles are evaluated incorporating the weights supplied to `wts`.
 #'
 #' A reason not to use the full treatment range (e.g., by setting `range = 1`) is that there is likely very little certainty about the effect curve at the treatment extremes. This uncertainty can muddy tests of the effect curve. However, limiting the treatment range means inferences about the effect curve are less generalizable to more extreme values of the treatment. Note that this does not change the data used to fit the effect curve, just the points along the effect curve for which inference and estimation are to take place.
+#'
+#' ## `wts`
+#'
+#' The `wts` argument supplies weights that define the population over which the predicted outcomes are averaged, such as sampling weights. When supplied as a numeric vector, it must have one value for each unit used to fit the model (or, with multiply imputed data, either one value for each unit in each imputed dataset or one value for each row of the imputed datasets stacked together). When supplied as a string, it is the name of a variable in the original dataset. `wts = TRUE` uses the weights used to fit the model, as extracted by [insight::get_weights()], and `wts = FALSE` weights all units equally.
+#'
+#' When `wts` is not supplied, the default depends on the model. When a `<svyglm>` object from \pkg{survey} is supplied, the survey weights are used. When a `<glm_weightit>` object, etc., from \pkg{WeightIt} is supplied, the sampling weights are used if `s.weights` were supplied in the original call to `weightit()`; the balancing weights are not, because they are used to fit the outcome model rather than to define the target population. For other models, all units are weighted equally, even when the model was fit with weights. See `vignette("adrftools")` for more details on using the `wts` argument.
+#'
+#' @references
+#' Li, K. H., Raghunathan, T. E., & Rubin, D. B. (1991). Large-sample significance levels from multiply imputed data using moment-based statistics and an *F* reference distribution. *Journal of the American Statistical Association*, 86(416), 1065–1073. \doi{10.1080/01621459.1991.10475152}
+#'
+#' Reiter, J. P. (2007). Small-sample degrees of freedom for multi-component significance tests with multiple imputation for missing data. *Biometrika*, 94(2), 502–508. \doi{10.1093/biomet/asm028}
 #'
 #' @seealso
 #' * [plot.effect_curve()] for plotting the ADRF
@@ -127,7 +136,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
   subset_substitute <- substitute(subset)
 
-  .effect_curve_internal_mi(
+  .effect_curve_internal(
     x = x, treat = treat, vcov = vcov,
     range = range, n = n,
     data = data, subset = subset_substitute,
@@ -136,69 +145,216 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   )
 }
 
+# Estimates the ADRF for a single fitted model or for the models fit to each
+# imputed dataset of a `mira` object. A single model is treated as a list of one
+# model. Data, weights, the covariance specification, and `subset` are
+# processed for each model, the subgroups defined by `by` are formed across all
+# models, and .adrf_fit_one() computes the estimates for each model. Estimates
+# from multiply imputed data are pooled using Rubin's rules, or, for Bayesian
+# models, by stacking the posterior draws.
 .effect_curve_internal <- function(x, treat, vcov, range, n,
                                    data, subset, by, wts, cluster = NULL, fwb.args = list(),
                                    type, .adrf_env = parent.frame(2L), ...) {
   # type
   arg::arg_string(type)
 
-  # get data
-  model_data <- process_model_data(x, data)
+  is_mi <- inherits(x, "mira")
+
+  models <- {
+    if (is_mi) x[["analyses"]]
+    else list(x)
+  }
+
+  m <- length(models)
+
+  # get data: the predictors (model_data) and all variables in the original
+  # data (eval_data), for subset, by, wts, and cluster
+  if (is_mi) {
+    model_data.complete <- process_model_data_mi(x, data)
+
+    imp_split <- gsplit(seq_row(model_data.complete), model_data.complete[[".imp"]])
+
+    eval_data.complete <- process_eval_data_mi(x, model_data.complete, data)
+
+    pred_names <- setdiff(names(model_data.complete), ".imp")
+
+    model_data.list <- lapply(imp_split, function(.i) {
+      ss(model_data.complete, .i, pred_names)
+    })
+
+    eval_data.list <- lapply(imp_split, function(.i) {
+      ss(eval_data.complete, .i)
+    })
+  }
+  else {
+    model_data.list <- list(process_model_data(x, data))
+
+    eval_data.list <- list(process_eval_data(x, model_data.list[[1L]], data))
+  }
+
+  # Variables used in offsets supplied outside the formula are not predictors
+  # but are needed to compute predictions
+  model_data.list <- lapply(seq_len(m), function(.i) {
+    add_offset_vars(models[[.i]], model_data.list[[.i]], eval_data.list[[.i]])
+  })
 
   # treat
-  treat_var <- process_treat(treat, model_data)
+  treat_var <- lapply(model_data.list, process_treat, treat = treat) |>
+    unlist()
 
   # wts
-  wts <- process_wts(wts, x, data)
+  wts.list <- process_wts_list(wts, models, eval_data.list)
 
   # values
-  values <- process_range(range, n, treat_var, w = wts)
+  values <- process_range(range, n, treat_var, w = unlist(wts.list))
   n <- length(values)
 
   # bayes
-  is_bayes <- .is_bayesian(x, model_data)
+  are_bayes <- vapply(seq_len(m), function(.i) {
+    .is_bayesian(models[[.i]], model_data.list[[.i]])
+  }, logical(1L))
 
-  # vcov + cluster
-  cl_list <- process_vcov_and_cluster(vcov, x, cluster,
-                                      is_bayes, model_data)
+  is_bayes <- any(are_bayes)
 
-  vcov <- cl_list[["vcov"]]
-  cl_list[["vcov"]] <- NULL
-
-  # subset
-  s <- process_subset(subset, model_data, env = .adrf_env)
-  model_data <- ss(model_data, s)
-
-  # by
-  processed_by_list <- process_by(by, model_data)
-  by_grid <- processed_by_list$by_grid
-  by_id <- processed_by_list$by_id
+  if (is_bayes && !all(are_bayes)) {
+    arg::err("either all models fit to the imputed datasets must be Bayesian or no models must be")
+  }
 
   # family
-  .family <- process_family(x, type)
+  .family <- process_family(models[[1L]], type)
 
-  switch(.get_model_type(x, type = type),
-         "lm" = {
-           estimator <- .get_estimator.lm(x)
-           grad_fun <- .get_grad_fun.lm(x)
-           pred_fun <- .get_pred_fun.lm(x)
-         },
-         "glm" = {
-           estimator <- .get_estimator.glm(x)
-           grad_fun <- .get_grad_fun.glm(x)
-           pred_fun <- .get_pred_fun.glm(x, type = type)
-         },
-         "default" = {
-           estimator <- .get_estimator.default(x)
-           grad_fun <- .get_grad_fun.default(x)
-           pred_fun <- .get_pred_fun.default(x, type = type)
-         })
+  if (any_apply(models[-1L], function(mod) {
+    !identical(.family, process_family(mod, type),
+               ignore.environment = TRUE)
+  })) {
+    arg::err("all models must have the same family")
+  }
+
+  # vcov + cluster
+  cl_list.list <- process_vcov_and_cluster_list(vcov, models, cluster,
+                                                is_bayes, eval_data.list)
+
+  vcov_type <- {
+    if (identical(cl_list.list[[1L]][["vcov"]], "none")) "none"
+    else if (is_bayes) "posterior"
+    else if (any(cl_list.list[[1L]][["vcov"]] %in% c("boot", "fwb"))) "bootstrap"
+    else if (identical(cl_list.list[[1L]][["vcov"]], "unconditional")) "unconditional"
+    else "conditional"
+  }
+
+  # subset
+  s.list <- lapply(seq_len(m), function(.i) {
+    process_subset(subset, eval_data.list[[.i]], env = .adrf_env)
+  })
+
+  # by, with subgroups defined across all models after subsetting
+  processed_by_list <- lapply(seq_len(m), function(.i) {
+    ss(eval_data.list[[.i]], s.list[[.i]])
+  }) |>
+    rowbind() |>
+    process_by(by = by)
+
+  by_grid <- processed_by_list$by_grid
+  n_by <- get_n_by(.by_grid = by_grid)
+
+  by_codes <- as.integer(processed_by_list$by_id) |>
+    split(rep.int(seq_len(m), vlengths(s.list)))
+
+  if (any_apply(by_codes, function(b) !all(seq_len(n_by) %in% b))) {
+    arg::err("every subgroup defined by {.arg by} must be present in every imputed dataset")
+  }
+
+  if (any_apply(seq_len(m), function(.i) {
+    any(fsum(ss(wts.list[[.i]], s.list[[.i]]), g = by_codes[[.i]]) <= 0)
+  })) {
+    arg::err("the values of {.arg wts} must have a positive sum in every subgroup defined by {.arg subset} and {.arg by}")
+  }
 
   # df
   .df <- process_df(x)
 
   # response
-  .response <- process_response(x)
+  .response <- process_response(models[[1L]])
+
+  fits <- lapply(seq_len(m), function(.i) {
+    .adrf_fit_one(x = models[[.i]], treat = treat, values = values,
+                  model_data = model_data.list[[.i]], s = s.list[[.i]],
+                  wts = wts.list[[.i]], by_id = by_codes[[.i]], n_by = n_by,
+                  cl_list = cl_list.list[[.i]], vcov_type = vcov_type,
+                  is_bayes = is_bayes, type = type, data = data,
+                  fwb.args = fwb.args, ...)
+  })
+
+  .boot <- .draws <- .vcov <- NULL
+
+  if (is_bayes) {
+    # Posterior draws from all imputed datasets are stacked
+    .draws <- lapply(fits, .subset2, "draws") |>
+      do.call(what = "rbind")
+
+    .est <- colMeans(.draws)
+
+    if (identical(vcov_type, "none")) {
+      .draws <- NULL
+    }
+    else {
+      .vcov <- stats::cov(.draws)
+    }
+  }
+  else if (m == 1L) {
+    .est <- fits[[1L]][["est"]]
+    .vcov <- fits[[1L]][["vcov"]]
+    .boot <- fits[[1L]][["boot"]]
+  }
+  else {
+    # Rubin's rules
+    pooled <- pool_est(lapply(fits, .subset2, "est"),
+                       if (vcov_type != "none") lapply(fits, .subset2, "vcov"))
+
+    .est <- pooled[["est"]]
+    .vcov <- pooled[["vcov"]]
+
+    if (vcov_type != "none") {
+      .df <- .mi_df(pooled[["vcov_w"]], pooled[["vcov_b"]], m = m, df_com = .df)
+    }
+  }
+
+  attr(vcov_type, "clustered") <- !is_null(cl_list.list[[1L]][["cluster"]])
+
+  .make_fun(.est = drop(unname(.est)),
+            .vcov = unname(.vcov),
+            .values = values,
+            .treat = treat,
+            .vcov_type = vcov_type,
+            .boot = .boot,
+            .draws = .draws,
+            .curve_type = "ADRF",
+            .family = .family,
+            .df = .df,
+            .response = .response,
+            .by_grid = by_grid)
+}
+
+# Computes the ADRF estimates for one fitted model: the point estimates and,
+# depending on `vcov_type`, their covariance matrix, bootstrap replicates, or
+# posterior draws. `by_id` contains integer subgroup codes for the units in
+# `subset`, and `n_by` is the number of subgroups.
+.adrf_fit_one <- function(x, treat, values, model_data, s, wts, by_id, n_by,
+                          cl_list, vcov_type, is_bayes, type, data = NULL,
+                          fwb.args = list(), ...) {
+  vcov <- cl_list[["vcov"]]
+  cl_list[["vcov"]] <- NULL
+
+  model_data <- ss(model_data, s)
+
+  by_id <- qG(by_id)
+
+  n <- length(values)
+
+  # type is ignored for linear models
+  if (inherits(x, "lm") && !inherits(x, "glm")) {
+    type <- "response"
+  }
 
   # Speed up if treat is the only variable by treating dataset as a single observation
   if (allv(names(model_data), treat) && all_the_same(by_id) && !isFALSE(...get(".quick"))) {
@@ -228,9 +384,30 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
   data_grid[[treat]] <- values[val_id]
 
+  switch(.get_model_type(x, type = type, data_grid = data_grid,
+                         model_data = model_data, is_bayes = is_bayes, ...),
+         "lm" = {
+           estimator <- .get_estimator.lm(x)
+           grad_fun <- .get_grad_fun.lm(x)
+           pred_fun <- .get_pred_fun.lm(x)
+         },
+         "glm" = {
+           estimator <- .get_estimator.glm(x)
+           grad_fun <- .get_grad_fun.glm(x)
+           pred_fun <- .get_pred_fun.glm(x, type = type)
+         },
+         {
+           estimator <- .get_estimator.default(x)
+           grad_fun <- .get_grad_fun.default(x)
+           pred_fun <- .get_pred_fun.default(x, type = type)
+         })
+
   if (!is_bayes) {
+    # Aliased coefficients are dropped once, here, for every branch;
+    # marginaleffects::get_vcov() drops them from the covariance matrix too
     beta0 <- marginaleffects::get_coef(x)
     aliased <- is.na(beta0)
+    beta0 <- beta0[!aliased]
   }
 
   if (!is_bayes && is_null(pred_fun)) {
@@ -238,8 +415,20 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       model.matrix(data = data_grid) |>
       ss(j = !aliased)
 
+    # Offsets (which model.matrix() leaves out) for each row of the grid
+    off_grid <- .grid_offset(x, data_grid, model_data)
+
     est_fun <- function(model = NULL, b = NULL, data0 = NULL) {
-      estimator(mm = data0 %or% mm, beta0 = b, model = model)
+      if (is_null(b)) {
+        # Coefficients of a refit model (e.g., in a bootstrap replicate) use
+        # the original aliasing pattern so they match the columns of `mm`; a
+        # coefficient newly aliased in the refit is set to 0, as predict()
+        # does
+        b <- marginaleffects::get_coef(model)[!aliased]
+        b[is.na(b)] <- 0
+      }
+
+      estimator(mm = data0 %or% mm, beta0 = b, model = model, offset = off_grid)
     }
   }
   else {
@@ -248,52 +437,41 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     }
   }
 
-  vcov_type <- {
-    if (identical(vcov, "none")) "none"
-    else if (is_bayes) "posterior"
-    else if (identical(vcov, "boot") || identical(vcov, "fwb")) "bootstrap"
-    else if (identical(vcov, "unconditional")) "unconditional"
-    else "conditional"
-  }
-
-  .boot <- .draws <- NULL
+  out <- list(est = NULL, vcov = NULL, boot = NULL, draws = NULL)
 
   if (is_bayes) {
-    .draws <- rsplit(seq_row(data_grid), rep.int(val_id, fnrow(data_grid) / (ni * n))) |>
+    out[["draws"]] <- rsplit(seq_row(data_grid), rep.int(val_id, fnrow(data_grid) / (ni * n))) |>
       lapply(function(.j) {
         est_fun(x, data0 = ss(data_grid, .j)) |>
           .attr("posterior_draws") |>
           .fmean(g = by_id, w = ss(wi, .j))
       }) |>
       do.call(what = "rbind") |>
-      t()
+      t() |>
+      ss(j = .value_major_to_by_major(n, n_by))
 
-    .est <- colMeans(.draws)
-
-    if (identical(vcov_type, "none")) {
-      .vcov <- .draws <- NULL
-    }
-    else {
-      .vcov <- stats::cov(.draws)
-    }
+    out[["est"]] <- colMeans(out[["draws"]])
   }
   else if (identical(vcov_type, "none")) {
-    .est <- est_fun(x) |>
+    out[["est"]] <- est_fun(x) |>
       .fmean(g = cross_id, w = wi)
-
-    .vcov <- NULL
   }
   else if (identical(vcov_type, "bootstrap")) {
+    # The model is refit with its own weights times the bootstrap weights; the
+    # target weights times the bootstrap weights are used to average the
+    # predictions
+    refit <- .make_boot_refit(x, data)
 
-    bootfun <- function(data, w = alloc(1.0, ni), ...) {
-
-      wts_boot <- wts * w
-
-      x_boot <- do.call("update", list(x, weights = wts_boot))
+    bootfun <- function(data, w, ...) {
+      x_boot <- withCallingHandlers(refit(w), warning = function(cnd) {
+        if (grepl("non-integer", conditionMessage(cnd), fixed = TRUE)) {
+          invokeRestart("muffleWarning")
+        }
+      })
 
       wi_boot <- {
         if (ni == 1L) alloc(1.0, n)
-        else rep.int(ss(wts_boot, s), n)
+        else rep.int(ss(wts * w, s), n)
       }
 
       est_fun(x_boot) |>
@@ -310,27 +488,27 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       fwb.args[["wtype"]] <- "multinom"
     }
 
-    if (is_not_null(cluster)) {
-      fwb.args[["cluster"]] <- cl_list[["cluster"]]
+    if (!is_null(cl_list[["cluster"]])) {
+      # Only one clustering variable is allowed with bootstrapping, which is
+      # checked in process_vcov_and_cluster()
+      fwb.args[["cluster"]] <- cl_list[["cluster"]][[1L]]
     }
 
-    .boot <- do.call(fwb::fwb, c(list(data = process_model_data(x),
-                                      statistic = bootfun,
-                                      drop0 = FALSE),
-                                 fwb.args))
+    out[["boot"]] <- do.call(fwb::fwb, c(list(data = process_model_data(x, data),
+                                              statistic = bootfun,
+                                              drop0 = FALSE),
+                                         fwb.args))
 
-    .est <- stats::coef(.boot)
-    .vcov <- stats::vcov(.boot)
+    out[["est"]] <- stats::coef(out[["boot"]])
+    out[["vcov"]] <- stats::vcov(out[["boot"]])
   }
   else if (identical(vcov_type, "unconditional")) {
-    beta0 <- beta0[!aliased]
-
     phat <- est_fun(x)
 
-    .est <- .fmean(phat, g = cross_id, w = wi)
+    out[["est"]] <- .fmean(phat, g = cross_id, w = wi)
 
     gr <- {
-      if (is_null(grad_fun) || is_not_null(pred_fun)) {
+      if (is_null(grad_fun) || !is_null(pred_fun)) {
         .gradient(function(b) {
           est_fun(x, b) |>
             .fmean(g = cross_id, w = wi) |>
@@ -338,24 +516,47 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
         }, .x = beta0)
       }
       else {
-        grad_fun(mm, eta = drop(mm %*% beta0)) |>
+        grad_fun(mm, eta = drop(mm %*% beta0) + off_grid) |>
           fmean(g = cross_id, w = wi)
       }
     }
 
     if (inherits(x, "svyglm")) {
-      infl <- ni * (.attr(x, "influence") %or% tcrossprod(model.matrix(x) * resid(x, "working") * x$weights,
-                                                          x$naive.cov))
+      # Scale by the full sample size, not the size of the subset or the
+      # single-row shortcut
+      infl <- .attr(x, "influence") %or% tcrossprod(model.matrix(x) * resid(x, "working") * x$weights,
+                                                    x$naive.cov)
+      infl <- fnrow(infl) * infl
+    }
+    else if (inherits(x, "glm_weightit") && identical(x[["vcov_type"]], "HC0")) {
+      # A WeightIt fit with `vcov = "HC0"` treats the weights as fixed, so the
+      # estimation of the weights is left out of the influence function
+      infl <- sandwich::estfun(x, asympt = FALSE) |>
+        tcrossprod(sandwich::bread(x))
     }
     else {
       infl <- sandwich::estfun(x) |>
         tcrossprod(sandwich::bread(x))
     }
 
+    if (!inherits(x, "svyglm")) {
+      # bread() is scaled by the number of units with nonzero model weights,
+      # but `S` is averaged over every row of estfun(), including units with
+      # zero model weights, so the scales are matched
+      n_bread <- try(stats::nobs(x), silent = TRUE)
+
+      if (!null_or_error(n_bread) && is.numeric(n_bread) && length(n_bread) == 1L &&
+          n_bread > 0 && n_bread < fnrow(infl)) {
+        infl <- infl * fnrow(infl) / n_bread
+      }
+    }
+
     S <- tcrossprod(infl, gr)
 
     if (ni > 1L) {
-      wts_sum <- sum(wts)
+      # Influence of sampling the covariates on the weighted mean of the
+      # predictions in subgroup b, scaled like the rows of `S`
+      N <- fnrow(S)
 
       phat_split <- gsplit(phat, cross_id)
 
@@ -363,27 +564,32 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
       for (k in seq_along(phat_split)) {
         b <- s[b_split[[cross_id$groups$by_id[k]]]]
-        S[b, k] <- S[b, k] + (phat_split[[k]] - .est[k]) * wts_sum / sum(wts[b])
+        S[b, k] <- S[b, k] + wts[b] * (phat_split[[k]] - out[["est"]][k]) * N / sum(wts[b])
       }
     }
 
-    if (is_null(cl_list)) {
-      .vcov <- crossprod(S / fnrow(S))
-    }
-    else {
-      .vcov <- Reduce("+", lapply(seq_along(cl_list[["cluster"]]), function(j) {
-        crossprod(fsum(S, cl_list[["cluster"]][[j]]) / fnrow(S)) * cl_list[["adj"]][j]
-      }))
+    out[["vcov"]] <- {
+      if (inherits(x, "svyglm")) .svyglm_vcov(x, S)
+      else if (is_null(cl_list)) crossprod(S / fnrow(S))
+      else {
+        V <- Reduce("+", lapply(seq_along(cl_list[["cluster"]]), function(j) {
+          crossprod(fsum(S, cl_list[["cluster"]][[j]]) / fnrow(S)) * cl_list[["adj"]][j]
+        }))
+
+        # Multiway clustering can give negative eigenvalues
+        if (length(cl_list[["cluster"]]) > 1L) .clip_psd(V)
+        else V
+      }
     }
   }
   else {
-    .est <- est_fun(x) |>
+    out[["est"]] <- est_fun(x) |>
       .fmean(g = cross_id, w = wi)
 
     V <- marginaleffects::get_vcov(x, vcov = vcov)
 
     gr <- {
-      if (is_null(grad_fun) || is_not_null(pred_fun)) {
+      if (is_null(grad_fun) || !is_null(pred_fun)) {
         .gradient(function(b) {
           est_fun(x, b) |>
             .fmean(g = cross_id, w = wi) |>
@@ -391,7 +597,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
         }, .x = beta0)
       }
       else {
-        grad_fun(mm, eta = drop(mm %*% beta0)) |>
+        grad_fun(mm, eta = drop(mm %*% beta0) + off_grid) |>
           .fmean(g = cross_id, w = wi)
       }
     }
@@ -400,305 +606,8 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       arg::err("the supplied covariance matrix does not have the right dimensions. It should have dimension {fncol(gr)} by {fncol(gr)} but actually has dimension {fnrow(V)} by {fncol(V)}")
     }
 
-    .vcov <- quad_mult(gr, V)
+    out[["vcov"]] <- quad_mult(gr, V)
   }
 
-  attr(vcov_type, "clustered") <- is_not_null(cl_list[["cluster"]])
-
-  .make_fun(.est = drop(unname(.est)),
-            .vcov = .vcov,
-            .values = values,
-            .treat = treat,
-            .vcov_type = vcov_type,
-            .boot = .boot,
-            .draws = .draws,
-            .curve_type = "ADRF",
-            .family = .family,
-            .df = .df,
-            .response = .response,
-            .by_grid = by_grid)
-}
-
-.effect_curve_internal_mi <- function(x, treat, vcov, range, n,
-                                      data, subset, by, wts, cluster = NULL,
-                                      type, .adrf_env = parent.frame(2L), ...) {
-  # get data
-  model_data.complete <- process_model_data_mi(x, data)
-
-  treat_var.complete <- process_treat(treat, model_data.complete)
-
-  imp_split <- gsplit(seq_row(model_data.complete), model_data.complete[[".imp"]])
-
-  # wts
-  wts.complete <- process_wts_mi(wts, x, data)
-
-  #values
-  values <- process_range(range, n, treat_var.complete,
-                          w = wts.complete)
-
-  n <- length(values)
-  vi <- seq_len(n)
-
-  # by
-  processed_by_list <- process_by(by, model_data.complete)
-  by_grid <- processed_by_list$by_grid
-  by_id.complete <- processed_by_list$by_id
-
-  # bayes
-  are_bayes <- vapply(seq_along(imp_split), function(.i) {
-    .is_bayesian(x[["analyses"]][[.i]], ss(model_data.complete, imp_split[[.i]]))
-  }, logical(1L))
-
-  if (any(are_bayes) && !all(are_bayes)) {
-    arg::err("either all models fit to the imputed datasets must be Bayesian or no models must be")
-  }
-
-  is_bayes <- any(are_bayes)
-
-  # type
-  arg::arg_string(type)
-
-  # family
-  .family <- process_family(x[["analyses"]][[1L]], type)
-
-  if (any_apply(x[["analyses"]][-1L], function(mod) {
-    !identical(.family, process_family(mod),
-               ignore.environment = TRUE)
-  })) {
-    arg::err("all models must have the same family")
-  }
-
-  switch(.get_model_type(x[["analyses"]][[1L]]),
-         "lm" = {
-           estimator <- .get_estimator.lm(x[["analyses"]][[1L]])
-           grad_fun <- .get_grad_fun.lm(x[["analyses"]][[1L]])
-           pred_fun <- .get_pred_fun.lm(x[["analyses"]][[1L]])
-         },
-         "glm" = {
-           estimator <- .get_estimator.glm(x[["analyses"]][[1L]])
-           grad_fun <- .get_grad_fun.glm(x[["analyses"]][[1L]])
-           pred_fun <- .get_pred_fun.glm(x[["analyses"]][[1L]], type = type)
-         },
-         "default" = {
-           estimator <- .get_estimator.default(x[["analyses"]][[1L]])
-           grad_fun <- .get_grad_fun.default(x[["analyses"]][[1L]])
-           pred_fun <- .get_pred_fun.default(x[["analyses"]][[1L]], type = type)
-         })
-
-  # df
-  .df <- process_df(x)
-
-  # response
-  .response <- process_response(x[["analyses"]][[1L]])
-
-  # vcov + cluster
-  cl_list.list <- process_vcov_and_cluster_mi(vcov, x[["analyses"]], cluster, is_bayes,
-                                              model_data.complete, imp_split)
-
-  m <- length(x[["analyses"]])
-
-  est.list <- vcov.list <- make_list(m)
-
-  .draws <- NULL
-
-  vcov_type <- {
-    if (identical(cl_list.list[[1L]][["vcov"]], "none")) "none"
-    else if (is_bayes) "posterior"
-    else if (identical(cl_list.list[[1L]][["vcov"]], "unconditional")) "unconditional"
-    else "conditional"
-  }
-
-  for (.i in seq_len(m)) {
-    .imp <- imp_split[[.i]]
-
-    model_data <- ss(model_data.complete, .imp)
-
-    # wts
-    wts <- wts.complete[.imp]
-
-    # vcov + cluster
-    cl_list <- cl_list.list[[.i]]
-
-    vcov <- cl_list[["vcov"]]
-
-    cl_list[["vcov"]] <- NULL
-
-    # subset
-    s <- process_subset(subset, model_data, env = .adrf_env)
-    model_data <- ss(model_data, s)
-
-    # by
-    by_id <- by_id.complete[.imp]
-
-    # model
-    xi <- x[["analyses"]][[.i]]
-
-    # Speed up if treat is the only variable by treating dataset as a single observation
-    if (allv(names(model_data), treat) && allv(by_id, by_id[1L]) && !isFALSE(...get(".quick"))) {
-      model_data <- ss(model_data, 1L)
-      wts <- 1.0
-      s <- 1L
-      by_id <- by_id[1L]
-
-      .fmean <- function(x, ...) {x}
-    }
-    else {
-      .fmean <- collapse::fmean
-    }
-
-    ni <- fnrow(model_data)
-    ii <- seq_len(ni)
-
-    val_id <- rep(vi, each = ni)
-
-    cross_id <- GRP(list(by_id = rep.int(by_id, n), val_id = val_id), sort = TRUE)
-
-    wi <- rep.int(ss(wts, s), n)
-
-    data_grid <- ss(model_data, rep.int(ii, n))
-
-    data_grid[[treat]] <- values[val_id]
-
-    if (!is_bayes && is_null(pred_fun)) {
-      beta0 <- marginaleffects::get_coef(xi)
-
-      aliased <- is.na(beta0)
-
-      mm <- get_tt(xi, model_data) |>
-        model.matrix(data = data_grid) |>
-        ss(j = !aliased)
-
-      est_fun <- function(model = NULL, b = NULL, data0 = NULL) {
-        estimator(mm = data0 %or% mm, beta0 = b, model = model)
-      }
-    }
-    else {
-      est_fun <- function(model = NULL, b = NULL, data0 = NULL) {
-        pred_fun(data_grid = data0 %or% data_grid, beta0 = b, model = model, ...)
-      }
-    }
-
-    if (is_bayes) {
-      .draws <- .draws |>
-        rbind(rsplit(seq_row(data_grid), rep.int(val_id, fnrow(data_grid) / (ni * n))) |>
-                lapply(function(.j) {
-                  est_fun(xi, data0 = ss(data_grid, .j)) |>
-                    .attr("posterior_draws") |>
-                    .fmean(g = by_id, w = ss(wi, .j))
-                }) |>
-                do.call(what = "rbind") |>
-                t())
-    }
-    else if (identical(vcov_type, "none")) {
-      est <- est_fun(xi) |>
-        .fmean(g = cross_id, w = wi)
-    }
-    else if (identical(vcov_type, "unconditional")) {
-      beta0 <- beta0[!aliased]
-
-      phat <- est_fun(xi)
-
-      est <- .fmean(phat, g = cross_id, w = wi)
-
-      gr <- {
-        if (is_null(grad_fun) || is_not_null(pred_fun)) {
-          .gradient(function(b) {
-            est_fun(xi, b) |>
-              .fmean(g = cross_id, w = wi) |>
-              drop()
-          }, .x = beta0)
-        }
-        else {
-          grad_fun(mm, eta = drop(mm %*% beta0)) |>
-            .fmean(g = cross_id, w = wi)
-        }
-      }
-
-      if (inherits(xi, "svyglm")) {
-        infl <- ni * (.attr(xi, "influence") %or% tcrossprod(model.matrix(xi) * resid(xi, "working") * xi$weights,
-                                                             xi$naive.cov))
-      }
-      else {
-        infl <- sandwich::estfun(xi) |>
-          tcrossprod(sandwich::bread(xi))
-      }
-
-      S <- tcrossprod(infl, gr)
-
-      if (ni > 1L) {
-        wts_sum <- sum(wts)
-
-        phat_split <- gsplit(phat, cross_id)
-
-        b_split <- gsplit(ii, by_id)
-
-        for (k in seq_along(phat_split)) {
-          b <- s[b_split[[cross_id$groups$by_id[k]]]]
-          S[b, k] <- S[b, k] + (phat_split[[k]] - est[k]) * wts_sum / sum(wts[b])
-        }
-      }
-
-      if (is_null(cl_list)) {
-        vcov.list[[.i]] <- crossprod(S / fnrow(S))
-      }
-      else {
-        vcov.list[[.i]] <- Reduce("+", lapply(seq_along(cl_list[["cluster"]]), function(j) {
-          crossprod(fsum(S, cl_list[["cluster"]][[j]]) / fnrow(S)) * cl_list[["adj"]][j]
-        }))
-      }
-    }
-    else {
-      est <- est_fun(xi) |>
-        .fmean(g = cross_id, w = wi)
-
-      V <- marginaleffects::get_vcov(xi, vcov = vcov)
-
-      gr <- {
-        if (is_null(grad_fun) || is_not_null(pred_fun)) {
-          .gradient(function(b) {
-            est_fun(xi, b) |>
-              .fmean(g = cross_id, w = wi) |>
-              drop()
-          }, .x = beta0)
-        }
-        else {
-          grad_fun(mm, eta = drop(mm %*% beta0)) |>
-            .fmean(g = cross_id, w = wi)
-        }
-      }
-
-      vcov.list[[.i]] <- quad_mult(gr, V)
-    }
-
-    est.list[[.i]] <- est
-  }
-
-  # Pool estimates
-  if (is_bayes) {
-    pooled <- list(est = colMeans(.draws))
-
-    if (identical(vcov_type, "none")) {
-      .draws <- NULL
-    }
-    else {
-      pooled$vcov <- stats::cov(.draws)
-    }
-  }
-  else {
-    pooled <- pool_est(est.list, vcov.list)
-  }
-
-  attr(vcov_type, "clustered") <- is_not_null(cl_list.list[[1L]][["cluster"]])
-
-  .make_fun(.est = unname(pooled$est),
-            .vcov = unname(pooled$vcov),
-            .values = values,
-            .treat = treat,
-            .vcov_type = vcov_type,
-            .draws = .draws,
-            .curve_type = "ADRF",
-            .family = .family,
-            .df = .df,
-            .response = .response,
-            .by_grid = by_grid)
+  out
 }

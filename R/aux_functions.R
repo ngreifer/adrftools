@@ -11,10 +11,21 @@ process_by <- function(by, data) {
     arg::err("{.arg by} must be a one-sided formula or character vector")
   }
 
-  by_mf <- update(by, NULL ~ .) |>
-    model.frame(data = data)
+  by_mf <- try(update(by, NULL ~ .) |>
+                 model.frame(data = data, na.action = stats::na.pass),
+               silent = TRUE)
+
+  if (inherits(by_mf, "try-error")) {
+    arg::err(c("{.arg by} could not be evaluated.",
+               x = conditionMessage(attr(by_mf, "condition")),
+               i = "Variables named in {.arg by} must be in the dataset used to fit the model. If that dataset cannot be found, supply it to {.arg data}."))
+  }
 
   attr(by_mf, "terms") <- NULL
+
+  if (anyNA(by_mf)) {
+    arg::err("the variables in {.arg by} cannot contain missing values among the units used to compute the effect curve")
+  }
 
   by_grid <- funique(by_mf) |>
     roworderv()
@@ -39,7 +50,13 @@ process_subset <- function(index.sub, data, env = parent.frame(2L)) {
     return(seq_row(data))
   }
 
-  subset <- eval(index.sub, data, env)
+  subset <- try(eval(index.sub, data, env), silent = TRUE)
+
+  if (inherits(subset, "try-error")) {
+    arg::err(c("{.arg subset} could not be evaluated.",
+               x = conditionMessage(attr(subset, "condition")),
+               i = "Variables named in {.arg subset} must be in the dataset used to fit the model. If that dataset cannot be found, supply it to {.arg data}."))
+  }
 
   if (!is.atomic(subset)) {
     arg::err("{.arg subset} must evaluate to an atomic vector")
@@ -47,29 +64,60 @@ process_subset <- function(index.sub, data, env = parent.frame(2L)) {
 
   if (is.logical(subset)) {
     if (length(subset) != fnrow(data)) {
-      arg::err("when {.arg subset} is logical, it must have the same length as the original dataset")
+      arg::err("when {.arg subset} is logical, it must have one value for each unit used to fit the model")
     }
 
-    return(which(subset))
+    return(.check_subset_nonempty(which(subset)))
+  }
+
+  if (is.factor(subset)) {
+    arg::err(c("{.arg subset} cannot be a factor.",
+               i = "Supply a logical vector (e.g., {.code subset = group == \"a\"}), row numbers, or row names."))
   }
 
   if (is.numeric(subset)) {
-    s <- alloc(FALSE, fnrow(data))
-    if (all(subset > 0)) {
-      s[subset] <- TRUE
+    subset <- subset[!is.na(subset)]
+
+    if (!all(check_if_zero(subset - round(subset)))) {
+      arg::err("when {.arg subset} is numeric, it must contain whole numbers corresponding to row numbers")
     }
-    else {
-      s <- alloc(TRUE, fnrow(data))
-      s[subset] <- FALSE
+
+    if (any(subset > 0) && any(subset < 0)) {
+      arg::err("{.arg subset} cannot contain both positive and negative row numbers")
     }
+
+    if (any(abs(subset) > fnrow(data))) {
+      arg::err("{.arg subset} contains row numbers larger than the number of units used to fit the model ({fnrow(data)})")
+    }
+
+    # Indexing the row numbers handles positive and negative indices alike
+    s <- seq_row(data) %in% seq_row(data)[subset]
   }
   else if (is.character(subset)) {
-    s <- setNames(alloc(FALSE, fnrow(data)),
-                  rownames(data))
-    s[subset] <- TRUE
+    subset <- subset[!is.na(subset)]
+
+    bad <- setdiff(subset, rownames(data))
+
+    if (!is_null(bad)) {
+      arg::err(c("When {.arg subset} is a character vector, it must contain row names of units used to fit the model.",
+                 x = "{cli::qty(length(bad))}The value{?s} {.val {bad}} {?is/are} not {?a /}row name{?s}."))
+    }
+
+    s <- rownames(data) %in% subset
+  }
+  else {
+    arg::err("{.arg subset} must be a logical vector, row numbers, or row names")
   }
 
-  which(s)
+  .check_subset_nonempty(which(s))
+}
+
+.check_subset_nonempty <- function(s) {
+  if (is_null(s)) {
+    arg::err("{.arg subset} must select at least one unit")
+  }
+
+  s
 }
 
 process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL) {
@@ -82,8 +130,8 @@ process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL)
     return(alloc(TRUE, fnrow(.by_grid)))
   }
 
-  if (is_not_null(.contrast)) {
-    arg::err("{.arg subset} cannot be specified with {.fun curve_contast}")
+  if (!is_null(.contrast)) {
+    arg::err("{.arg subset} cannot be specified with {.fun curve_contrast}")
   }
 
   if (is_null(.by_grid)) {
@@ -120,6 +168,10 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   if (length(range) > 1L) {
     range <- sort(range)
 
+    if (range[1L] == range[2L]) {
+      arg::err("the two values in {.arg range} must differ")
+    }
+
     range_t <- .range(treat_var)
 
     if (strict) {
@@ -146,6 +198,10 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   }
   else {
     arg::err("if {.arg range} is a single number, it must be a quantile (i.e., between 0 and 1)")
+  }
+
+  if (!(range[2L] > range[1L])) {
+    arg::err("the treatment values in the range requested by {.arg range} are all equal, so an effect curve cannot be computed")
   }
 
   seq(range[1L], range[2L], length.out = n)
@@ -203,11 +259,19 @@ process_model_data <- function(model, data = NULL) {
   dat <- try(insight::get_predictors(model, verbose = FALSE),
              silent = TRUE)
 
-  if (!null_or_error(dat)) {
+  recovered <- !null_or_error(dat)
+
+  if (recovered && .data_matches_model(model, dat)) {
     return(dat)
   }
 
   if (is_null(data)) {
+    if (recovered) {
+      arg::err(c("The dataset used to fit the model could not be recovered.",
+                 i = "Only the model frame was found, and it contains transformed variables (e.g., from {.fun poly}) rather than the original ones. This can happen when the model is fit inside a function.",
+                 i = "Supply the original dataset to {.arg data}."))
+    }
+
     if (insight::is_model_supported(model)) {
       arg::err("{.fun insight::get_predictors} could not extract the dataset used to fit the model. Please supply the dataset to {.arg data}")
     }
@@ -218,7 +282,171 @@ process_model_data <- function(model, data = NULL) {
 
   arg::arg_data.frame(data)
 
+  # Restrict the supplied dataset to the rows used in the fit (e.g., when the
+  # model dropped rows with missing values)
+  n_fit <- try(nrow(stats::model.frame(model)), silent = TRUE)
+
+  if (!null_or_error(n_fit) && is.numeric(n_fit) && fnrow(data) != n_fit) {
+    aligned <- .align_to_model_rows(model, data, n_fit)
+
+    if (is_null(aligned)) {
+      arg::err("the dataset supplied to {.arg data} has {fnrow(data)} rows, but the model was fit to {n_fit}, and the rows used could not be matched by row name")
+    }
+
+    data <- aligned
+  }
+
   data
+}
+
+# The original dataset, with all of its variables, for the rows used in the fit.
+# It is used to evaluate `subset`, `by`, `wts`, and `cluster`, which may refer
+# to variables that are not in the model. Candidates are the survey design's
+# variables, the user-supplied `data`, and the `data` argument of the model
+# call; each must reproduce the model frame. Falls back to `model_data` (the
+# predictors) when none does.
+process_eval_data <- function(model, model_data, data = NULL) {
+  candidates <- list(
+    if (utils::hasName(model, "survey.design")) model[["survey.design"]][["variables"]],
+    data,
+    .recover_call_data(model)
+  )
+
+  for (cand in candidates) {
+    if (!is.data.frame(cand)) {
+      next
+    }
+
+    cand <- .align_to_model_rows(model, cand, fnrow(model_data))
+
+    if (!is_null(cand) && .data_matches_model(model, cand)) {
+      return(cand)
+    }
+  }
+
+  model_data
+}
+
+# Evaluates the `data` argument of the model's call in the environment of its
+# formula
+.recover_call_data <- function(model) {
+  model_call <- try(stats::getCall(model), silent = TRUE)
+
+  if (null_or_error(model_call) || is_null(model_call[["data"]])) {
+    return(NULL)
+  }
+
+  env <- try(environment(stats::formula(model)), silent = TRUE)
+
+  if (!is.environment(env)) {
+    env <- globalenv()
+  }
+
+  dat <- try(eval(model_call[["data"]], envir = env), silent = TRUE)
+
+  if (!is.data.frame(dat)) {
+    return(NULL)
+  }
+
+  dat
+}
+
+# Restricts `data` to the rows used in the model fit, matched by row name, when
+# it has more rows than were used (e.g., because of missing values or `subset`)
+.align_to_model_rows <- function(model, data, n) {
+  if (fnrow(data) == n) {
+    return(data)
+  }
+
+  mf <- try(stats::model.frame(model), silent = TRUE)
+
+  # nrow() rather than fnrow(), which counts the columns of a matrix response
+  # (e.g., cbind(successes, failures)) as rows
+  if (null_or_error(mf) || nrow(mf) != n) {
+    return(NULL)
+  }
+
+  idx <- match(rownames(mf), rownames(data))
+
+  if (anyNA(idx)) {
+    return(NULL)
+  }
+
+  # The original row names are kept so that `subset` can refer to them
+  out <- ss(data, idx)
+  attr(out, "row.names") <- rownames(data)[idx]
+
+  out
+}
+
+# Adds variables used in the model's offsets that are missing from `model_data`
+# (e.g., from an `offset` argument rather than an offset() term), taking them
+# from `eval_data`
+add_offset_vars <- function(model, model_data, eval_data) {
+  off_vars <- try(insight::find_offset(model), silent = TRUE)
+
+  if (null_or_error(off_vars) || !is.character(off_vars)) {
+    return(model_data)
+  }
+
+  off_vars <- setdiff(intersect(off_vars, names(eval_data)), names(model_data))
+
+  if (is_null(off_vars)) {
+    return(model_data)
+  }
+
+  cbind(model_data, ss(eval_data, j = off_vars))
+}
+
+# Checks whether evaluating the model's terms on `data` reproduces the model
+# frame. When insight cannot find the original dataset, it falls back to the
+# model frame, where a term like poly(x, 2) is stored as its basis; using that
+# basis as `x` gives silently wrong counterfactual predictions. Returns TRUE
+# when the check cannot be performed.
+.data_matches_model <- function(model, data) {
+  mf <- try(stats::model.frame(model), silent = TRUE)
+
+  if (null_or_error(mf) || !is.data.frame(mf)) {
+    return(TRUE)
+  }
+
+  # The candidates are restricted to the rows used in the fit, so a different
+  # number of rows means a different dataset (e.g., an object with the same
+  # name as the model's `data` found in the environment of its formula)
+  if (nrow(mf) != fnrow(data)) {
+    return(FALSE)
+  }
+
+  tt <- try(stats::terms(mf) |> stats::delete.response(), silent = TRUE)
+
+  if (null_or_error(tt)) {
+    return(TRUE)
+  }
+
+  rebuilt <- try(stats::model.frame(tt, data = data, na.action = stats::na.pass),
+                 silent = TRUE)
+
+  if (null_or_error(rebuilt)) {
+    return(FALSE)
+  }
+
+  for (nm in intersect(names(rebuilt), names(mf))) {
+    a <- mf[[nm]]
+    b <- rebuilt[[nm]]
+
+    same <- {
+      if (is.numeric(a) && is.numeric(b))
+        isTRUE(all.equal(unname(as.matrix(a)), unname(as.matrix(b)),
+                         check.attributes = FALSE))
+      else identical(as.character(unlist(a)), as.character(unlist(b)))
+    }
+
+    if (!same) {
+      return(FALSE)
+    }
+  }
+
+  TRUE
 }
 
 process_model_data_mi <- function(model, data = NULL) {
@@ -245,7 +473,36 @@ process_model_data_mi <- function(model, data = NULL) {
   rowbind(data_list, idcol = ".imp")
 }
 
-get_data_mids <- function(x, imp = NULL) {
+# All variables in each imputed dataset, stacked, for evaluating `subset`, `by`,
+# and `cluster`; falls back to the stacked predictors when they cannot be
+# recovered with the same rows and the same values of the predictors
+process_eval_data_mi <- function(model, model_data, data = NULL) {
+  data_list <- {
+    if (inherits(data, "mids")) mice::complete(data, action = "all")
+    else get_data_mids(model, all_vars = TRUE)
+  }
+
+  if (!is.list(data_list) || anyv(vlengths(data_list), 0L)) {
+    return(model_data)
+  }
+
+  dat <- try(rowbind(data_list, idcol = ".imp"), silent = TRUE)
+
+  if (null_or_error(dat) || fnrow(dat) != fnrow(model_data) ||
+      !all(names(model_data) %in% names(dat))) {
+    return(model_data)
+  }
+
+  for (v in setdiff(names(model_data), ".imp")) {
+    if (!isTRUE(all.equal(dat[[v]], model_data[[v]], check.attributes = FALSE))) {
+      return(model_data)
+    }
+  }
+
+  dat
+}
+
+get_data_mids <- function(x, imp = NULL, all_vars = FALSE) {
   m <- length(x[["analyses"]])
 
   if (is_null(imp)) {
@@ -263,7 +520,10 @@ get_data_mids <- function(x, imp = NULL) {
     if (is.data.frame(xi[["data"]])) {
       dat <- xi[["data"]]
 
-      data_list[[.i]] <- ss(dat, j = intersect(vars, names(dat)))
+      data_list[[.i]] <- {
+        if (all_vars) dat
+        else ss(dat, j = intersect(vars, names(dat)))
+      }
     }
     else {
       dat <- try({
@@ -274,7 +534,15 @@ get_data_mids <- function(x, imp = NULL) {
         } |>
           as.list()
 
-        l[intersect(vars, names(l))] |> list2DF()
+        l_vars <- l[intersect(vars, names(l))]
+
+        if (all_vars) {
+          # Keep every variable with as many values as the predictors
+          n <- length(l_vars[[1L]])
+          l_vars <- Filter(function(v) is.atomic(v) && length(v) == n, l)
+        }
+
+        list2DF(l_vars)
       }, silent = TRUE)
 
       if (!null_or_error(dat)) {
@@ -301,7 +569,7 @@ process_treat <- function(treat, data) {
 
   treat_var <- data[[treat]]
 
-  if (!is.numeric(treat_var)) {
+  if (!is.numeric(treat_var) || !is_null(dim(treat_var))) {
     arg::err("{.arg treat} must be the name of a numeric variable in the original dataset")
   }
 
@@ -323,19 +591,22 @@ process_wts <- function(wts, model, data = NULL) {
   }
 
   if (isTRUE(wts)) {
-    wts <- insight::get_weights(model) %or% FALSE
+    # insight::get_weights() returns NULL for svyglm models fit to replicate-weight
+    # designs; prior.weights holds the (normalized) sampling weights for every svyglm
+    wts <- {
+      if (inherits(model, "svyglm")) model[["prior.weights"]]
+      else insight::get_weights(model)
+    } %or% FALSE
   }
 
   if (rlang::is_string(wts)) {
-    if (is_null(data)) {
-      if (wts %in% c("(weights)", "(s.weights)") && is_not_null(model[["model"]]) &&
-          utils::hasName(model[["model"]], wts)) {
-        data <- model[["model"]]
-      }
-      else {
-        data <- try(insight::get_data(model, verbose = FALSE),
-                    silent = FALSE)
-      }
+    if (wts %in% c("(weights)", "(s.weights)") && !is_null(model[["model"]]) &&
+        utils::hasName(model[["model"]], wts)) {
+      data <- model[["model"]]
+    }
+    else if (is_null(data)) {
+      data <- try(insight::get_data(model, verbose = FALSE),
+                  silent = TRUE)
     }
 
     if (!is.data.frame(data)) {
@@ -352,15 +623,20 @@ process_wts <- function(wts, model, data = NULL) {
       arg::err("when supplied as a string, {.arg wts} must be the name of a numeric variable")
     }
 
-    return(as.vector(wts))
+    return(.check_wts(as.vector(wts)))
   }
 
-  n <- insight::n_obs(model)
+  # The rows of the evaluation data are the units used in the fit, including
+  # any with zero model weights, which insight::n_obs() leaves out
+  n <- {
+    if (is.data.frame(data)) fnrow(data)
+    else insight::n_obs(model)
+  }
 
   if (is_null(n)) {
     if (is_null(data)) {
       data <- try(insight::get_data(model, verbose = FALSE),
-                  silent = FALSE)
+                  silent = TRUE)
 
       if (!is.data.frame(data)) {
         arg::err("no dataset could be found to process the weights supplied to {.arg wts}. Please supply a dataset to {.arg data}")
@@ -381,140 +657,47 @@ process_wts <- function(wts, model, data = NULL) {
     arg::err("when supplied as a numeric vector, {.arg wts} must have as many values as the number of observations in the original model")
   }
 
-  as.vector(wts)
+  .check_wts(as.vector(wts))
 }
 
-process_wts_mi <- function(wts, model, data = NULL) {
-  if (is_not_null(wts) && !rlang::is_string(wts) &&
-      !rlang::is_bool(wts) && !is.numeric(wts)) {
-    arg::err("{.arg wts} must be {.val {list(NULL)}}, {.val {TRUE}}, {.val {FALSE}}, a numeric vector, or a string containing the name of the variable containing weights in the original dataset")
+.check_wts <- function(wts) {
+  if (!all(is.finite(wts))) {
+    arg::err("{.arg wts} cannot contain missing or non-finite values")
   }
 
-  m <- length(model[["analyses"]])
+  if (any(wts < 0)) {
+    arg::err("{.arg wts} cannot contain negative values")
+  }
 
-  wts_list <- make_list(m)
+  if (sum(wts) <= 0) {
+    arg::err("at least one value of {.arg wts} must be positive")
+  }
 
-  if (is_null(wts)) {
-    wts <- lapply(model[["analyses"]],
-                  function(mod) {
-                    if (endsWith(class(mod)[1L], "_weightit")) "(s.weights)"
-                    else inherits(mod, "svyglm")
-                  }) |>
-      unlist()
+  wts
+}
+
+# Target weights for each model: one model, or the models fit to each imputed
+# dataset. Numeric weights for multiply imputed data may have one value per row
+# of the stacked imputed datasets or one value per row of each imputed dataset.
+process_wts_list <- function(wts, models, eval_data.list) {
+  m <- length(models)
+
+  if (m == 1L) {
+    return(list(process_wts(wts, models[[1L]], eval_data.list[[1L]])))
   }
 
   if (!is.numeric(wts)) {
-    if (length(wts) == 1L) {
-      wts <- rep.int(wts, m)
-    }
-
-    for (.i in seq_len(m)) {
-      if (isTRUE(wts[.i])) {
-        test_w <- try(insight::get_weights(model[["analyses"]][[.i]]))
-
-        if (is.numeric(test_w)) {
-          wts_list[[.i]] <- as.vector(test_w)
-          next
-        }
-
-        wts[.i] <- FALSE
-      }
-
-      if (isFALSE(wts[.i])) {
-        n.i <- insight::n_obs(model[["analyses"]][[.i]])
-
-        if (is_null(n.i)) {
-          if (is_null(data)) {
-            data.i <- try(get_data_mids(model, .i), silent = TRUE)
-
-            if (!is.data.frame(data.i)) {
-              arg::err("no dataset could be found to extract the weights named in {.arg wts}. Please supply a dataset to {.arg data}")
-            }
-          }
-          else {
-            arg::arg_is(data, "mids")
-
-            rlang::check_installed("mice")
-
-            data.i <- mice::complete(data, action = .i)
-          }
-
-          n.i <- fnrow(data.i)
-        }
-
-        wts_list[[.i]] <- alloc(1.0, n.i)
-        next
-      }
-
-      if (is_null(data)) {
-        if (wts[.i] %in% c("(weights)", "(s.weights)") && is_not_null(model[["analyses"]][[.i]][["model"]]) &&
-            utils::hasName(model[["analyses"]][[.i]][["model"]], wts[.i])) {
-          data.i <- model[["analyses"]][[.i]][["model"]]
-        }
-        else {
-          data.i <- try(get_data_mids(model, .i), silent = TRUE)
-        }
-
-        if (!is.data.frame(data.i)) {
-          arg::err("no dataset could be found to extract the weights named in {.arg wts}. Please supply a dataset to {.arg data}")
-        }
-      }
-      else {
-        arg::arg_is(data, "mids")
-
-        rlang::check_installed("mice")
-
-        data.i <- mice::complete(data, action = .i)
-      }
-
-      if (!utils::hasName(data.i, wts[.i])) {
-        arg::err("when supplied as a string, {.arg wts} must be the name of the variable in the original dataset")
-      }
-
-      test_w <- data.i[[wts[.i]]]
-
-      if (!is.numeric(test_w)) {
-        arg::err("when supplied as a string, {.arg wts} must be the name of a numeric variable")
-      }
-
-      wts_list[[.i]] <- as.vector(test_w)
-    }
-
-    return(unlist(wts_list))
+    return(lapply(seq_len(m), function(.i) {
+      process_wts(wts, models[[.i]], eval_data.list[[.i]])
+    }))
   }
 
-  ns <- integer(m)
-
-  for (.i in seq_len(m)) {
-    n.i <- try(insight::n_obs(model[["analyses"]][[.i]]),
-               silent = TRUE)
-
-    if (is_count(n.i)) {
-      ns[.i] <- n.i
-      next
-    }
-
-    if (is_not_null(data)) {
-      arg::arg_is(data, "mids")
-
-      rlang::check_installed("mice")
-
-      ns[] <- vapply(mice::complete(data, action = "all"),
-                     fnrow, integer(1L))
-      break
-    }
-
-    data.i <- try(get_data_mids(model, .i), silent = TRUE)
-
-    if (!is.data.frame(data.i)) {
-      arg::err("no dataset could be found to process the weights supplied to {.arg wts}. Please supply a dataset to {.arg data}")
-    }
-
-    ns[.i] <- fnrow(data.i)
-  }
+  ns <- vapply(eval_data.list, fnrow, integer(1L))
 
   if (length(wts) == sum(ns)) {
-    return(as.vector(wts))
+    return(as.vector(wts) |>
+             split(rep.int(seq_len(m), ns)) |>
+             unname())
   }
 
   if (!all_the_same(ns)) {
@@ -525,21 +708,18 @@ process_wts_mi <- function(wts, model, data = NULL) {
     arg::err("when {.arg wts} is supplied as a numeric vector with multiply imputed data, it must have length equal to the sum of the number of observations across all imputed datasets or to the number of observations in each imputed dataset")
   }
 
-  rep.int(as.vector(wts), m)
+  rep.int(list(as.vector(wts)), m)
 }
 
 process_transform <- function(transform, x = NULL, .est = NULL) {
-  inv_transform <- NULL
-  d_transform <- NULL
-
   if (inherits(x, "effect_curve")) {
     if (!.is_pure_adrf(x)) {
       transform <- FALSE
     }
   }
   else if (!identical(get_curve_type(x), "ADRF") ||
-           is_not_null(.attr(x, ".contrast")) ||
-           is_not_null(.attr(x, ".reference"))) {
+           !is_null(.attr(x, ".contrast")) ||
+           !is_null(.attr(x, ".reference"))) {
     transform <- FALSE
   }
 
@@ -549,71 +729,78 @@ process_transform <- function(transform, x = NULL, .est = NULL) {
   else if (isTRUE(transform)) {
     .family <- .attr(x, ".family") %or% stats::quasi("identity")
   }
-  else if (inherits(transform, "family")) {
+  else if (inherits(transform, c("family", "link-glm")) &&
+           all(c("linkfun", "linkinv", "mu.eta") %in% names(transform))) {
     .family <- transform
   }
-  else if (inherits(transform, "link-glm")) {
-    .family <- stats::quasi(transform)
-  }
-  else if (is.function(transform)) {
-    if (identical(transform, log)) {
-      .family <- stats::quasi("log")
-    }
-    else if (identical(transform, sqrt)) {
-      .family <- stats::quasi("sqrt")
-    }
-    else if (identical(transform, qlogis)) {
-      .family <- stats::quasi("logit")
-    }
-    else if (identical(transform, qnorm)) {
-      .family <- stats::quasi("probit")
-    }
-    else if (identical(transform, exp)) {
-      .family <- list(linkfun = exp,
-                      linkinv = log,
-                      dlinkfun = exp)
-    }
-    else {
-      .family <- list(linkfun = transform)
-    }
-  }
-  else if (is.list(transform) && is_not_null(names(transform)) &&
-           utils::hasName(transform, "transform") &&
-           all(names(transform) %in% c("transform", "inv_transform", "d_transform"))) {
-
-    .family <- list(linkfun = transform[["transform"]],
-                    linkinv = transform[["inv_transform"]],
-                    dlinkfun = transform[["d_transform"]])
+  else if (is.function(transform) && !is_null(.known_transform(transform))) {
+    .family <- .known_transform(transform)
   }
   else {
-    arg::err("{.arg transform} must be {.val {TRUE}}, {.val {FALSE}}, a family, or a function")
+    arg::err("{.arg transform} must be {.val {TRUE}}, {.val {FALSE}}, a family, a link object (e.g., from {.fun make.link}), or one of {.fun log}, {.fun sqrt}, {.fun exp}, {.fun qlogis}, or {.fun qnorm}")
   }
 
-  transform <- .family$linkfun
-
-  inv_transform <- .family$linkinv %or% make_inverse(transform, .est)
-
-  d_transform <- {
-    if (is_not_null(.family$mu.eta)) {
-      function(mu) {1 / .family$mu.eta(.family$linkfun(mu))}
-    }
-    else {
-      .family$dlinkfun %or% function(mu) {
-        eps <- 1e-5
-        (transform(mu + eps) - transform(mu - eps)) / (2 * eps)
-      }
-    }
+  # Use the identity when the transformation cannot be applied to the
+  # estimates and reversed, so estimates and standard errors stay on the same
+  # scale
+  if (!is_null(.est) && !.transform_is_valid(.family, .est)) {
+    .family <- stats::quasi("identity")
   }
 
-  d_inv_transform <- .family$mu.eta %or% function(eta) {
-    eps <- 1e-5
-    (inv_transform(eta + eps) - inv_transform(eta - eps)) / (2 * eps)
+  linkfun <- .family$linkfun
+  mu.eta <- .family$mu.eta
+
+  list(transform = linkfun,
+       inv_transform = .family$linkinv,
+       d_transform = function(mu) 1 / mu.eta(linkfun(mu)),
+       d_inv_transform = mu.eta)
+}
+
+# Families for the transformations that can be supplied as functions; each has
+# a closed-form inverse and derivative
+.known_transform <- function(transform) {
+  if (identical(transform, log)) {
+    stats::quasi("log")
+  }
+  else if (identical(transform, sqrt)) {
+    stats::quasi("sqrt")
+  }
+  else if (identical(transform, qlogis)) {
+    stats::quasi("logit")
+  }
+  else if (identical(transform, qnorm)) {
+    stats::quasi("probit")
+  }
+  else if (identical(transform, exp)) {
+    list(linkfun = exp,
+         linkinv = log,
+         mu.eta = function(eta) 1 / eta)
+  }
+}
+
+.transform_is_valid <- function(.family, .est) {
+  if (!all(is.finite(.est))) {
+    return(FALSE)
   }
 
-  list(transform = transform,
-       inv_transform = inv_transform,
-       d_transform = d_transform,
-       d_inv_transform = d_inv_transform)
+  .t_est <- try(suppressWarnings(.family$linkfun(.est)), silent = TRUE)
+
+  if (null_or_error(.t_est) || length(.t_est) != length(.est) ||
+      !all(is.finite(.t_est))) {
+    return(FALSE)
+  }
+
+  .back <- try(suppressWarnings(.family$linkinv(.t_est)), silent = TRUE)
+
+  if (null_or_error(.back) || length(.back) != length(.est) ||
+      !all(is.finite(.back))) {
+    return(FALSE)
+  }
+
+  # Tolerance relative to the scale of the estimates
+  tol <- sqrt(.Machine$double.eps) * max(abs(.est), .Machine$double.eps)
+
+  all(abs(.back - .est) <= tol)
 }
 
 process_family <- function(model, type = "response") {
@@ -621,11 +808,9 @@ process_family <- function(model, type = "response") {
     .family <- stats::quasi("identity")
   }
   else if (inherits(model, "bart")) {
-    if (is_null(model[["sigma"]])) {
-      .family <- stats::binomial("probit")
-    }
-    else {
-      .family <- stats::gaussian()
+    .family <- {
+      if (is_null(model[["sigma"]])) stats::binomial("probit")
+      else stats::gaussian()
     }
   }
   else {
@@ -633,6 +818,19 @@ process_family <- function(model, type = "response") {
                    silent = TRUE)
 
     if (!inherits(.family, "family")) {
+      .family <- stats::quasi("identity")
+    }
+  }
+
+  # Some families (e.g., from bartisan) store only the name of the link;
+  # rebuild the link functions from it when possible
+  if (!all(c("linkfun", "linkinv", "mu.eta") %in% names(.family))) {
+    link_obj <- try(stats::make.link(.family[["link"]]), silent = TRUE)
+
+    if (inherits(link_obj, "link-glm")) {
+      .family[c("linkfun", "linkinv", "mu.eta")] <- link_obj[c("linkfun", "linkinv", "mu.eta")]
+    }
+    else {
       .family <- stats::quasi("identity")
     }
   }
@@ -651,7 +849,7 @@ process_response <- function(model) {
 process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FALSE,
                                      data = NULL) {
   if (is_null(vcov) || isFALSE(vcov) || identical(vcov, "none")) {
-    if (is_not_null(cluster)) {
+    if (!is_null(cluster)) {
       .v <- if (is_null(vcov)) list(NULL) else vcov
 
       arg::wrn("{.arg cluster} is ignored when {.code vcov = {.val {(.v)}}}")
@@ -675,7 +873,7 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
       }
     }
 
-    if (is_not_null(cluster)) {
+    if (!is_null(cluster)) {
       arg::wrn("{.arg cluster} is ignored with Bayesian models")
     }
 
@@ -694,13 +892,19 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
       }
 
       if (builtin_vcovs[p] %in% c("boot", "fwb")) {
-        rlang::check_installed("fwb (>= 0.5.0)")
+        if (inherits(model, "svyglm")) {
+          arg::err(c("Bootstrapping cannot be used with {.cls svyglm} models because resampling units ignores the survey design.",
+                     i = "Use {.code vcov = \"unconditional\"}, which uses the survey design, or fit the model to a replicate-weight design."))
+        }
 
-        if (is_not_null(cluster)) {
+        rlang::check_installed("fwb (>= 1.0.0)")
+
+        if (!is_null(cluster)) {
           cl <- process_cluster(cluster, model, data)
 
           if (length(cl[["cluster"]]) > 1L) {
-            arg::err("only one level of clustering is allowed with {.code vcov = {.val {builtin_vcovs[p]}}}")
+            arg::err(c("Only one clustering variable can be supplied to {.arg cluster} with {.code vcov = {.val {builtin_vcovs[p]}}}.",
+                       i = "For multiway clustering, use {.code vcov = \"unconditional\"} with {.arg cluster}, or supply a multiway cluster bootstrap covariance matrix of the model coefficients (e.g., {.code vcov = fwb::vcovFWB(fit, cluster = ~a + b)}), which uses Wald inference."))
           }
 
           return(c(list(vcov = builtin_vcovs[p]),
@@ -719,29 +923,41 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
                         is_bayes = is_bayes, data = data))
         }
 
+        if (inherits(model, "svyglm") && !is_null(cluster)) {
+          arg::wrn("{.arg cluster} is ignored with {.cls svyglm} models when {.code vcov = \"unconditional\"}; the survey design is used instead")
+          cluster <- NULL
+        }
+
         return(c(list(vcov = builtin_vcovs[p]),
                  process_cluster(cluster, model, data)))
+      }
+
+      if (!is_null(cluster)) {
+        # The default type of sandwich::vcovCL()
+        return(.cluster_vcov(model, cluster, data, type = NULL))
       }
 
       # Use default get_vcov() below
       vcov <- NULL
     }
-    else if (is_not_null(cluster) && vcov %in% c("HC0", "HC1", "HC2")) {
-      cl <- process_cluster(cluster, model, data)
+    else if (!is_null(cluster)) {
+      cl_types <- c("HC0", "HC1", "HC2", "HC3")
 
-      vcov_try <- try(sandwich::vcovCL(model, type = vcov, cluster = cluster),
-                      silent = TRUE)
-
-      if (null_or_error(vcov_try)) {
-        arg::err("the cluster covariance couldn't be calculated")
+      if (vcov %!in% cl_types) {
+        arg::err(c("{.arg vcov} cannot be {.val {vcov}} when {.arg cluster} is supplied.",
+                   i = "With {.arg cluster}, {.arg vcov} can be {.or {.val {c(builtin_vcovs[2:3], cl_types)}}}, or a cluster-robust covariance matrix of the model coefficients."))
       }
 
-      return(c(list(vcov = vcov_try),
-               cl))
+      return(.cluster_vcov(model, cluster, data, type = vcov))
     }
   }
 
-  if (is.numeric(vcov) && is_not_null(cluster)) {
+  if ((is.function(vcov) || rlang::is_formula(vcov)) && !is_null(cluster)) {
+    arg::err(c("{.arg cluster} cannot be supplied when {.arg vcov} is a function or formula.",
+               i = "Supply the clustering variables to {.arg cluster} with a string for {.arg vcov}, or include them in the function or formula."))
+  }
+
+  if (is.numeric(vcov) && !is_null(cluster)) {
     arg::wrn("{.arg cluster} is ignored when {.arg vcov} is supplied as a numeric matrix")
     cluster <- NULL
   }
@@ -757,126 +973,81 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
     process_cluster(cluster, model, data))
 }
 
-process_vcov_and_cluster_mi <- function(vcov, models, cluster = NULL, is_bayes = FALSE,
-                                        data_complete = NULL, imp_split) {
-  if (is_null(vcov) || isFALSE(vcov) || identical(vcov, "none")) {
-    if (is_not_null(cluster)) {
-      .v <- if (is_null(vcov)) list(NULL) else vcov
+# Cluster-robust covariance matrix of the model coefficients from
+# sandwich::vcovCL(), using the clustering variables as processed by
+# process_cluster(), so formulas with transformations and data with missing
+# values work. `type = NULL` uses vcovCL()'s default type.
+# Sets negative eigenvalues of a symmetric matrix to 0, as
+# sandwich::vcovCL(fix = TRUE) does for multiway clustering
+.clip_psd <- function(V) {
+  e <- eigen(V, symmetric = TRUE)
 
-      arg::wrn("{.arg cluster} is ignored when {.code vcov = {.val {(.v)}}}")
-    }
-
-    return(rep_with(list(vcov = "none"),
-                    models))
+  if (all(e$values >= 0)) {
+    return(V)
   }
 
-  if (is_bayes) {
-    if (identical(vcov, "unconditional")) {
-      vcov <- "posterior"
-    }
-    else {
-      builtin_vcovs <- c("none", "posterior")
+  tcrossprod(e$vectors %*% diag(pmax(e$values, 0), nrow = length(e$values)), e$vectors)
+}
 
-      vcov <- arg::match_arg(vcov, builtin_vcovs, .context = "with multiply imputed Bayesian models,")
+.cluster_vcov <- function(model, cluster, data, type = NULL) {
+  cl <- process_cluster(cluster, model, data)
 
-      if (vcov == "none") {
-        return(Recall(vcov = "none", models = models, cluster = cluster,
-                      is_bayes = is_bayes, data_complete = data_complete,
-                      imp_split = imp_split))
-      }
-    }
+  # With multiway clustering, negative eigenvalues are set to 0
+  vcov_try <- try(sandwich::vcovCL(model, type = type, cluster = cl[["vars"]],
+                                   fix = fncol(cl[["vars"]]) > 1L),
+                  silent = TRUE)
 
-    if (is_not_null(cluster)) {
-      arg::wrn("{.arg cluster} is ignored with Bayesian models")
-    }
+  if (null_or_error(vcov_try)) {
+    .type <- type %or% "conditional"
 
-    return(rep_with(list(vcov = vcov),
-                    models))
+    arg::err(c("The cluster-robust covariance matrix could not be computed with {.code vcov = {.val {(.type)}}}.",
+               x = conditionMessage(attr(vcov_try, "condition")),
+               i = if (.type %in% c("HC2", "HC3")) "{.val {(.type)}} with {.arg cluster} is available only for {.cls lm} and {.cls glm} models."))
   }
 
-  builtin_vcovs <- c("none", "unconditional", "conditional", "boot", "fwb")
+  c(list(vcov = vcov_try), cl)
+}
 
-  if (rlang::is_string(vcov)) {
+# The covariance specification for each model: one model, or the models fit to
+# each imputed dataset. With multiply imputed data, `vcov` may be a list with
+# one entry per imputed dataset, and bootstrapping is not allowed.
+process_vcov_and_cluster_list <- function(vcov, models, cluster = NULL, is_bayes = FALSE,
+                                          data_list) {
+  m <- length(models)
+
+  if (m == 1L) {
+    return(list(process_vcov_and_cluster(vcov, models[[1L]], cluster,
+                                         is_bayes, data_list[[1L]])))
+  }
+
+  if (rlang::is_string(vcov) && !is_bayes) {
+    builtin_vcovs <- c("none", "unconditional", "conditional", "boot", "fwb")
     p <- pmatch(vcov, builtin_vcovs, nomatch = 0L)
 
-    if (p != 0L) {
-      if (builtin_vcovs[p] == "none") {
-        return(Recall(vcov = "none", models = models, cluster = cluster,
-                      is_bayes = is_bayes, data_complete = data_complete,
-                      imp_split = imp_split))
-      }
-
-      if (builtin_vcovs[p] %in% c("boot", "fwb")) {
-        arg::err("{.arg vcov} cannot be {.val {builtin_vcovs[p]}} with multiply imputed data")
-      }
-
-      if (builtin_vcovs[p] == "unconditional") {
-        for (model in models) {
-          if (null_or_error(try(sandwich::bread(model), silent = TRUE)) ||
-              null_or_error(try(sandwich::estfun(model), silent = TRUE))) {
-            arg::wrn('{.arg vcov} cannot be {.val unconditional} with this type of model. Using {.val conditional}')
-
-            return(Recall(vcov = "conditional", models = models, cluster = cluster,
-                          is_bayes = is_bayes, data_complete = data_complete,
-                          imp_split = imp_split))
-          }
-        }
-
-        out_list <- lapply(seq_along(models), function(.i) {
-          c(list(vcov = builtin_vcovs[p]),
-            process_cluster(cluster, models[[.i]], ss(data_complete, imp_split[[.i]])))
-        })
-
-        return(out_list)
-      }
-
-      # Use default get_vcov() below
-      vcov <- NULL
-    }
-    else if (is_not_null(cluster) && vcov %in% c("HC0", "HC1", "HC2")) {
-      vcov_try_list <- lapply(models, function(model) {
-        try(sandwich::vcovCL(model, type = vcov, cluster = cluster),
-            silent = TRUE)
-      })
-
-      if (any_apply(vcov_try_list, null_or_error)) {
-        bad_imps <- which(vapply(vcov_try_list, null_or_error, logical(1L)))
-        arg::err("the cluster covariance could not be calculated for imputation{?s} {.or {bad_imps}}")
-      }
-
-      out_list <- lapply(seq_along(models), function(.i) {
-        c(list(vcov = vcov_try_list[[.i]]),
-          process_cluster(cluster, models[[.i]], ss(data_complete, imp_split[[.i]])))
-      })
-
-      return(out_list)
+    if (p %in% 4:5) {
+      arg::err("{.arg vcov} cannot be {.val {builtin_vcovs[p]}} with multiply imputed data")
     }
   }
 
-  if (!is.list(vcov)) {
-    vcov <- rep_with(list(vcov), models)
+  vcov.list <- {
+    if (is.list(vcov)) vcov
+    else rep.int(list(vcov), m)
   }
-  else if (length(vcov) != length(models)) {
+
+  if (length(vcov.list) != m) {
     arg::err("{.arg vcov} must have length equal to the number of imputed datasets")
   }
 
-  if (any_apply(vcov, is.numeric) && is_not_null(cluster)) {
-    arg::wrn("{.arg cluster} is ignored when {.arg vcov} is supplied as a numeric matrix or list thereof")
-    cluster <- NULL
-  }
-
-  for (.i in seq_along(models)) {
-    vcov[[.i]] <- try(marginaleffects::get_vcov(models[[.i]], vcov = cluster %or% vcov[[.i]]),
-                      silent = TRUE)
-
-    if (null_or_error(vcov[[.i]])) {
-      arg::err("{.arg vcov} must be one of {.or {c(add_quotes(setdiff(builtin_vcovs, c('bs', 'fwb'))), 'one of the allowed arguments to')}} {.fun marginaleffects::get_vcov} or a list thereof")
+  # Warnings would be the same for every imputed dataset, so they are given
+  # only for the first
+  lapply(seq_len(m), function(.i) {
+    out <- function() {
+      process_vcov_and_cluster(vcov.list[[.i]], models[[.i]], cluster,
+                               is_bayes, data_list[[.i]])
     }
-  }
 
-  lapply(seq_along(models), function(.i) {
-    c(list(vcov[[.i]]),
-      process_cluster(cluster, models[[.i]], ss(data_complete, imp_split[[.i]])))
+    if (.i == 1L) out()
+    else suppressWarnings(out())
   })
 }
 
@@ -886,9 +1057,13 @@ process_cluster <- function(.cluster, model, data) {
   }
 
   if (rlang::is_formula(.cluster)) {
+    # Retrieve the variables named in the formula for exactly the rows used in
+    # the fit (na.expand = TRUE), then evaluate its terms (e.g.,
+    # interaction(a, b)) using them
     cluster <- try({
       model |>
-        expand.model.frame(extras = .cluster) |>
+        expand.model.frame(extras = reformulate(all.vars(.cluster)),
+                           na.expand = TRUE) |>
         model.frame(formula = .cluster, na.action = na.pass)
     }, silent = TRUE)
 
@@ -913,14 +1088,23 @@ process_cluster <- function(.cluster, model, data) {
     arg::err("{.val {NA}}s are not allowed in the {cli::qty(fncol(cluster))} clustering variable{?s}")
   }
 
-  cluster[] <- lapply(cluster, qF)
+  # Levels with no units (e.g., because of missing values or `subset`) would
+  # count as clusters
+  cluster[] <- lapply(cluster, qF, drop = TRUE)
+
+  if (any(vapply(cluster, fnlevels, numeric(1L)) < 2)) {
+    arg::err("each clustering variable must have at least 2 clusters among the units used to fit the model")
+  }
+
+  # The clustering variables themselves, for sandwich::vcovCL()
+  cluster_vars <- cluster
 
   p <- length(cluster)
   if (p > 1L) {
     clu <- lapply(seq_len(p), function(i) utils::combn(seq_len(p), i, simplify = FALSE)) |>
       unlist(recursive = FALSE)
     sgn <- (-1L)^(vlengths(clu) + 1L)
-    cluster <- lapply(clu, function(i) finteraction(cluster[i]))
+    cluster <- lapply(clu, function(i) fdroplevels(finteraction(cluster[i])))
   }
   else {
     sgn <- 1
@@ -930,7 +1114,8 @@ process_cluster <- function(.cluster, model, data) {
   g <- vapply(cluster, fnlevels, numeric(1L))
 
   list(cluster = cluster,
-       adj = sgn * g / (g - 1))
+       adj = sgn * g / (g - 1),
+       vars = cluster_vars)
 }
 
 get_tt <- function(model, model_data = NULL) {
@@ -1011,7 +1196,7 @@ process_df <- function(fit) {
 }
 
 process_null <- function(null = NULL, x = NULL) {
-  if (is_not_null(null)) {
+  if (!is_null(null)) {
     if (length(null) == 1L && allNA(null)) {
       return(NA_real_)
     }
@@ -1036,7 +1221,7 @@ process_null <- function(null = NULL, x = NULL) {
 }
 
 check_proj <- function(x, proj = NULL) {
-  if (is_not_null(proj)) {
+  if (!is_null(proj)) {
     arg::arg_is(proj, "curve_projection")
 
     if (any_apply(c(".values", ".treat", ".vcov_type", ".curve_type", ".response",
@@ -1050,7 +1235,7 @@ check_proj <- function(x, proj = NULL) {
 get_curve_type <- function(x) {
   .curve_type <- .attr(x, ".curve_type")
 
-  if (is_not_null(.curve_type)) {
+  if (!is_null(.curve_type)) {
     return(.curve_type)
   }
 
@@ -1093,15 +1278,20 @@ process_bw <- function(bw, v, constant = .5) {
     spacing <- NULL
     diff_v <- diff1(v)
 
-    if (all_the_same(diff_v)) {
+    # Spacings are compared relative to the largest one, so that the check does
+    # not depend on the scale of the treatment
+    max_diff <- max(abs(diff_v))
+    tol <- sqrt(.Machine$double.eps)
+
+    if (max_diff > 0 && all(abs(diff_v - mean(diff_v)) <= tol * max_diff)) {
       spacing <- mean(diff_v)
     }
-    else {
-      spacing_table <- table(round(diff_v, 8L))
+    else if (max_diff > 0) {
+      spacing_table <- table(round(diff_v / max_diff, 8L))
 
-      spacing <- as.numeric(names(spacing_table)[which.max(spacing_table)])
+      spacing <- as.numeric(names(spacing_table)[which.max(spacing_table)]) * max_diff
 
-      if (mean(check_if_zero(diff_v - spacing)) < .7) {
+      if (mean(abs(diff_v - spacing) <= tol * max_diff) < .7) {
         spacing <- NULL
       }
     }
@@ -1137,27 +1327,164 @@ process_bw <- function(bw, v, constant = .5) {
 }
 
 get_n_by <- function(.contrast = NULL, .by_grid = NULL) {
-  if (is_not_null(.contrast)) {
+  if (!is_null(.contrast)) {
     return(length(.contrast))
   }
 
-  if (is_not_null(.by_grid)) {
+  if (!is_null(.by_grid)) {
     return(fnrow(.by_grid))
   }
 
   1L
 }
 
+# Returns a function that refits `x` with bootstrap weights `w` (one per unit
+# used in the fit). The model is refit through its own call, on the rows used in
+# the original fit, so that missing values, `subset`, and the environment the
+# model was fit in do not matter. The model's own weights are multiplied by the
+# bootstrap weights. For models fit with a weightit object, the weights are
+# re-estimated in each replicate by refitting the weighting model with its
+# sampling weights multiplied by the bootstrap weights, as WeightIt does.
+.make_boot_refit <- function(x, data = NULL) {
+  fit_data <- try(insight::get_data(x, verbose = FALSE), silent = TRUE)
+
+  if (null_or_error(fit_data) || !is.data.frame(fit_data) ||
+      !.data_matches_model(x, fit_data)) {
+    if (is_null(data)) {
+      arg::err("the dataset used to fit the model could not be recovered for bootstrapping. Supply it to {.arg data}")
+    }
+
+    arg::arg_data.frame(data)
+    fit_data <- data
+  }
+
+  model_call <- stats::getCall(x)
+
+  if (is_null(model_call)) {
+    arg::err("bootstrapping requires a model object that stores the call used to fit it")
+  }
+
+  genv <- environment(stats::formula(x)) %or% globalenv()
+
+  fn <- try(eval(model_call[[1L]], envir = genv), silent = TRUE)
+
+  if (is.function(fn)) {
+    model_call <- match.call(fn, model_call)
+  }
+
+  if (utils::hasName(as.list(model_call), "formula")) {
+    model_call$formula <- stats::formula(x)
+  }
+
+  model_call$data <- quote(.adrftools_data)
+  model_call$subset <- NULL
+
+  weightit <- x[["weightit"]]
+
+  if (!is_null(weightit)) {
+    wcall <- weightit[["call"]]
+
+    # weightit() stores its calling environment only for top-level calls
+    wenv <- weightit[["env"]] %or% environment(weightit[["formula"]]) %or% globalenv()
+
+    if (is_null(wcall) || !is.environment(wenv)) {
+      arg::err("bootstrapping cannot be used because the {.cls weightit} object supplied to the model cannot be re-estimated")
+    }
+
+    sw <- weightit[["s.weights"]] %or% 1
+
+    model_call$weightit <- quote(.adrftools_weightit)
+    model_call$vcov <- "none"
+
+    return(function(w) {
+      wcall$s.weights <- sw * w
+
+      weightit_boot <- suppressMessages(suppressWarnings(eval(wcall, wenv)))
+
+      list(.adrftools_data = fit_data,
+           .adrftools_weightit = weightit_boot) |>
+        list2env(parent = genv) |>
+        eval(expr = model_call)
+    })
+  }
+
+  v <- try(stats::weights(x), silent = TRUE)
+
+  if (null_or_error(v) || !is.numeric(v)) {
+    v <- 1
+  }
+  else if (!is_null(x[["na.action"]]) &&
+           length(v) == fnrow(fit_data) + length(x[["na.action"]])) {
+    # With na.action = na.exclude, weights() pads the dropped rows with NAs
+    v <- v[-x[["na.action"]]]
+  }
+
+  # Weights are passed as a column of the data so that model.frame() finds them
+  model_call$weights <- quote(.adrftools_w)
+
+  function(w) {
+    fit_data$.adrftools_w <- v * w
+
+    list(.adrftools_data = fit_data) |>
+      list2env(parent = genv) |>
+      eval(expr = model_call)
+  }
+}
+
+# Design-based variance of estimates from a svyglm model, given the matrix `S`
+# of their influence values (one row per unit, scaled so that
+# crossprod(S / nrow(S)) is the i.i.d. variance). Following Binder (1983), the
+# estimates are linearized as totals of the influence values; dividing by the
+# sampling weights and totaling them as design variables with svytotal() lets
+# survey apply the variance estimator appropriate to the design (clusters,
+# strata, finite-population corrections, calibration, or replicate weights).
+.svyglm_vcov <- function(x, S) {
+  des <- x[["survey.design"]]
+
+  w_d <- {
+    if (inherits(des, "svyrep.design")) stats::weights(des, "sampling")
+    else stats::weights(des)
+  }
+
+  if (length(w_d) != fnrow(S)) {
+    arg::err("the survey design and the fitted model have different numbers of observations")
+  }
+
+  z <- S / fnrow(S) / w_d
+  z[w_d == 0, ] <- 0
+
+  z_names <- sprintf(".adrftools_z%s", seq_len(fncol(z)))
+  colnames(z) <- z_names
+
+  des$variables <- cbind(des$variables, z)
+
+  v <- reformulate(z_names) |>
+    survey::svytotal(design = des) |>
+    stats::vcov()
+
+  matrix(v, nrow = fncol(z), ncol = fncol(z))
+}
+
+# Column order that turns estimates stored value-major (every subgroup at the
+# first treatment value, then every subgroup at the second, ...) into the
+# subgroup-major order used for `.est` throughout (every treatment value in the
+# first subgroup, then the second, ...)
+.value_major_to_by_major <- function(n_values, n_by = 1L) {
+  matrix(seq_len(n_values * n_by), nrow = n_by) |>
+    t() |>
+    as.vector()
+}
+
 add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = NULL) {
 
-  add_values <- is_not_null(.values)
+  add_values <- !is_null(.values)
 
   if (!add_values) {
     .values <- NA
   }
 
   # Apply by_grid and contrast labels if necessary
-  if (is_not_null(.contrast)) {
+  if (!is_null(.contrast)) {
     contrast <- factor(rep(.contrast, each = length(.values)),
                        levels = .contrast)
 
@@ -1167,7 +1494,7 @@ add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = 
 
     res <- cbind(contrast = contrast, res)
   }
-  else if (is_not_null(.by_grid)) {
+  else if (!is_null(.by_grid)) {
     res_names <- names(res)
     val_id <- seq_along(.values)
     by_id <- seq_row(.by_grid)
@@ -1228,7 +1555,7 @@ add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = 
     return(insight::is_bayesian_model(x))
   }
 
-  if (inherits(x, c("bart", "stan4bartFit"))) {
+  if (inherits(x, c("bart", "stan4bartFit", "bartisan_fit"))) {
     return(TRUE)
   }
 
@@ -1239,36 +1566,7 @@ add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = 
   p <- try(marginaleffects::get_predict(x, newdata = ss(data, seq_len(min(fnrow(data), 2L)))),
            silent = TRUE)
 
-  is_not_null(.attr(p, "posterior_draws"))
-}
-
-# Make a function that yields its input when fun is applied to its output
-make_inverse <- function(fun, original) {
-  if (all(original == fun(original))) {
-    return(identity)
-  }
-
-  function(x) {
-    # length 1 x doesn't always play nice, so repeat it
-    d <- length(x) == 1L
-    if (d) {
-      x <- x[c(1L, 1L)]
-    }
-
-    # Get starter closest to transformed x
-    .start <- original[vapply(x, function(y) which.min(abs(fun(original) - y)),
-                              integer(1L))]
-
-    out <- optim(function(y) mean((fun(y) - x)^2),
-                 par = .start,
-                 control = list(maxit = 1e3,
-                                reltol = 1e-12))$par
-    if (d) {
-      out <- mean(out)
-    }
-
-    out
-  }
+  !is_null(.attr(p, "posterior_draws"))
 }
 
 make_rmvt <- function(mu, Sigma, df = Inf, tol = 1e-7) {
@@ -1347,17 +1645,19 @@ make_rmvt <- function(mu, Sigma, df = Inf, tol = 1e-7) {
 #' @param v the values on the existing grid
 #' @param kernel the name of kernel; `"gaussian"`, `"epanechnikov"`, or `"triangular"`
 #' @param constant when `bw` is `NULL` and `v` is on a regularly spaced grid, `constant` times the spacing is used as the bandwidth.
-#' @param bw the bandwidth (function or value) to use. If `NULL` and the grid of `v` is not regularly space, `bw.nrd()` is used.
+#' @param bw the bandwidth (function or value) to use. If `NULL` and the grid of `v` is not regularly spaced, `bw.nrd()` is used.
 #' @param ... ignored.
 get_kernel_w <- function(x, v = x, kernel = "gaussian", constant = .5, bw = NULL, ...) {
 
   n <- length(v)
-  if (length(x) == n && all(check_if_zero(x - v))) {
+  tol <- .grid_tol(v)
+
+  if (length(x) == n && all(abs(x - v) <= tol)) {
     return(diag(1, n, n))
   }
 
   if (all(x %in% v)) {
-    w <- outer(x, v, check_if_zero)
+    w <- outer(x, v, function(a, b) abs(a - b) <= tol)
 
     return(w / rowSums(w))
   }
@@ -1367,24 +1667,25 @@ get_kernel_w <- function(x, v = x, kernel = "gaussian", constant = .5, bw = NULL
   kernel <- arg::match_arg(kernel, c("gaussian", "epanechnikov",
                                      "triangular"))
 
+  # Kernels are evaluated on standardized distances, and the normalizing
+  # constants are omitted because each row is normalized below, so the weights
+  # do not depend on the scale of the treatment
   k <- switch(kernel,
               gaussian = function(a, b) {
-                dnorm(a - b, sd = bw)
+                dnorm((a - b) / bw)
               },
               epanechnikov = function(a, b) {
-                bw_a <- bw * sqrt(5)
-                ax <- abs(a - b)
-                o <- alloc(0, length(ax))
-                in_window <- ax < bw_a
-                o[in_window] <- .75 * (1 - (ax[in_window] / bw_a)^2) / bw_a
+                az <- abs(a - b) / (bw * sqrt(5))
+                o <- alloc(0, length(az))
+                in_window <- az < 1
+                o[in_window] <- .75 * (1 - az[in_window]^2)
                 o
               },
               triangular = function(a, b) {
-                bw_a <- bw * sqrt(6)
-                ax <- abs(a - b)
-                o <- alloc(0, length(ax))
-                in_window <- ax < bw_a
-                o[in_window] <- (1 - (ax[in_window] / bw_a)) / bw_a
+                az <- abs(a - b) / (bw * sqrt(6))
+                o <- alloc(0, length(az))
+                in_window <- az < 1
+                o[in_window] <- 1 - az[in_window]
                 o
               })
 
@@ -1392,7 +1693,7 @@ get_kernel_w <- function(x, v = x, kernel = "gaussian", constant = .5, bw = NULL
 
   rs <- rowSums(w)
 
-  zeros <- check_if_zero(rs)
+  zeros <- rs <= 0
 
   if (any(zeros)) {
     w[zeros, ] <- 0
@@ -1431,6 +1732,9 @@ get_locpoly_w <- function(x, v = x, w = NULL, p = 3, ...) {
 
   v0 <- c(v, x)
 
+  # poly() requires fewer degrees than unique points
+  p <- min(p, length(funique(v0)) - 1L)
+
   dv0 <- cbind(1, poly(v0, degree = p, raw = FALSE, simple = TRUE))
 
   dx <- ss(dv0, -ind)
@@ -1448,7 +1752,19 @@ get_locpoly_w <- function(x, v = x, w = NULL, p = 3, ...) {
     wi <- wi[pos]
     wi <- wi / sum(wi)
 
-    lw[i, pos] <- drop(ss(dx, i) %*% solve(.to_psd(crossprod(ss(dv0, pos) * sqrt(wi))), t(ss(dv0, pos) * wi)))
+    # A local polynomial of degree p needs at least p + 1 grid points; the
+    # columns of the orthogonal basis are nested, so the first p_i + 1 columns
+    # span polynomials of degree p_i
+    cols <- seq_len(min(p, length(pos) - 1L) + 1L)
+
+    # Weighted least squares through the QR decomposition of sqrt(w) X. The
+    # kernel weights can span many orders of magnitude, so solving the normal
+    # equations (X'WX)^-1 X'W loses precision, which numerical derivatives of
+    # the interpolated curve amplify
+    sw <- sqrt(wi)
+    qr_i <- qr(ss(dv0, pos, cols) * sw)
+
+    lw[i, pos] <- drop(ss(dx, i, cols) %*% qr.coef(qr_i, diag(sw, nrow = length(pos))))
   }
 
   lw
@@ -1460,7 +1776,7 @@ pool_est <- function(est.list, vcov.list = NULL) {
 
   out <- list(est = colMeans(est.mat))
 
-  if (is_not_null(vcov.list)) {
+  if (!is_null(vcov.list)) {
     m <- length(vcov.list)
 
     v_w <- Reduce("+", vcov.list) / m
@@ -1468,9 +1784,73 @@ pool_est <- function(est.list, vcov.list = NULL) {
     v_b <- cov(est.mat)
 
     out$vcov <- v_w + (1 + 1 / m) * v_b
+    out$vcov_w <- v_w
+    out$vcov_b <- v_b
   }
 
   out
+}
+
+# Denominator degrees of freedom for joint inference on estimates pooled from
+# m imputed datasets: Reiter (2007) when the complete-data degrees of freedom
+# `df_com` are finite, and Li, Raghunathan, and Rubin (1991) otherwise. These
+# assume the fraction of missing information is the same for every estimate,
+# so the same degrees of freedom apply to any linear combination of them.
+.mi_df <- function(v_w, v_b, m, df_com = Inf) {
+  # The within-imputation covariance of points along a curve is rank deficient
+  # when there are more points than model coefficients, so the average relative
+  # increase in variance is computed in its span
+  e <- eigen(v_w, symmetric = TRUE)
+  keep <- e$values > sqrt(.Machine$double.eps) * max(e$values, 0)
+
+  if (!any(keep)) {
+    return(df_com)
+  }
+
+  Q <- e$vectors[, keep, drop = FALSE]
+  k <- sum(keep)
+
+  r <- (1 + 1 / m) * sum(diag(crossprod(Q, v_b %*% Q)) / e$values[keep]) / k
+
+  if (r <= sqrt(.Machine$double.eps)) {
+    return(df_com)
+  }
+
+  t <- k * (m - 1)
+
+  df_li <- {
+    if (t > 4) 4 + (t - 4) * (1 + (1 - 2 / t) / r)^2
+    else t * (1 + 1 / k) * (1 + 1 / r)^2 / 2
+  }
+
+  if (!is.finite(df_com)) {
+    return(df_li)
+  }
+
+  v_star <- (df_com + 1) / (df_com + 3) * df_com
+
+  if (t > 4) {
+    a <- r * t / (t - 2)
+    c0 <- 1 / (t - 4)
+    c1 <- v_star - 2 * (1 + a)
+    c2 <- v_star - 4 * (1 + a)
+
+    z <- 1 / c2 +
+      c0 * (a^2 * c1 / ((1 + a)^2 * c2)) +
+      c0 * (8 * a^2 * c1 / ((1 + a) * c2^2) + 4 * a^2 / ((1 + a) * c2)) +
+      c0 * (4 * a^2 / (c2 * c1) + 16 * a^2 * c1 / c2^3) +
+      c0 * (8 * a^2 / c2^2)
+
+    df_reiter <- 4 + 1 / z
+
+    if (is.finite(df_reiter) && df_reiter > 0) {
+      return(df_reiter)
+    }
+  }
+
+  # With few estimates or imputations, combine the large-sample degrees of
+  # freedom with those of the observed data, as in Barnard and Rubin (1999)
+  1 / (1 / df_li + (1 + r) / v_star)
 }
 
 # Get quadrature weights for trapezoidal Riemann sum along given grid
@@ -1508,7 +1888,17 @@ get_by_grid_labels <- function(.by_grid, sep = ", ") {
                                       digits = digits)
   }
 
-  if (is_not_null(head_ind)) {
+  if (is_null(head_ind)) {
+    tmp <- utils::capture.output({
+      ss(x, 1L) |>
+        round_df_char(digits = digits, na_vals = ".") |>
+        print.data.frame(row.names = rownames,
+                         ...)
+    })
+
+    out <- character(0L)
+  }
+  else {
     colnames(x) <- vapply(colnames(x),
                           function(nm)
                             switch(nm,
@@ -1539,16 +1929,6 @@ get_by_grid_labels <- function(.by_grid, sep = ", ") {
 
     out <- tmp[seq_along(c(1L, head_ind))]
   }
-  else {
-    tmp <- utils::capture.output({
-      ss(x, 1L) |>
-        round_df_char(digits = digits, na_vals = ".") |>
-        print.data.frame(row.names = rownames,
-                         ...)
-    })
-
-    out <- character(0L)
-  }
 
   to_it <- NULL
 
@@ -1566,18 +1946,18 @@ get_by_grid_labels <- function(.by_grid, sep = ", ") {
 
     out <- c(out, center_just(msg, wrt = tmp))
 
-    if (is_not_null(tail_ind)) {
+    if (!is_null(tail_ind)) {
       out <- c(out, tmp[-seq_along(c(1L, head_ind))])
     }
   }
 
   nc <- max(nchar(out))
 
-  if (is_not_null(to_it)) {
+  if (!is_null(to_it)) {
     out[to_it] <- .it(out[to_it])
   }
 
-  if (is_not_null(main)) {
+  if (!is_null(main)) {
     #Add title
     out <- c(center_just(main, wrt = space(nc)),
              txtbar(nc),

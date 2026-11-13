@@ -153,7 +153,7 @@
       fwb.args[["wtype"]] <- "multinom"
     }
 
-    if (is_not_null(cluster)) {
+    if (!is_null(cluster)) {
       fwb.args[["cluster"]] <- cl_list[["cluster"]]
     }
 
@@ -173,7 +173,7 @@
     .est <- .fmean(phat, g = cross_id, w = wi)
 
     gr <- {
-      if (is_null(grad_fun) || is_not_null(pred_fun)) {
+      if (is_null(grad_fun) || !is_null(pred_fun)) {
         .gradient(function(b) {
           est_fun(x, b) |>
             .fmean(g = cross_id, w = wi) |>
@@ -226,7 +226,7 @@
     V <- marginaleffects::get_vcov(x, vcov = vcov)
 
     gr <- {
-      if (is_null(grad_fun) || is_not_null(pred_fun)) {
+      if (is_null(grad_fun) || !is_null(pred_fun)) {
         .gradient(function(b) {
           est_fun(x, b) |>
             .fmean(g = cross_id, w = wi) |>
@@ -242,7 +242,7 @@
     .vcov <- quad_mult(gr, V)
   }
 
-  attr(vcov_type, "clustered") <- is_not_null(cl_list[["cluster"]])
+  attr(vcov_type, "clustered") <- !is_null(cl_list[["cluster"]])
 
   .make_fun_mv(.est = drop(unname(.est)),
                .vcov = .vcov,
@@ -361,7 +361,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
                          .curve_type, .family, .df, .response, .call,
                          .by_grid, .contrast, .reference) {
 
-  if (missing(.curve_type) && is_not_null(fn)) {
+  if (missing(.curve_type) && !is_null(fn)) {
     if (inherits(fn, "adrf_curve")) {
       .curve_type <- "ADRF"
     }
@@ -381,7 +381,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
     }
   }
 
-  if (is_not_null(.contrast_mat)) {
+  if (!is_null(.contrast_mat)) {
     # est is the contrast estimates
     .est <- drop(tcrossprod(.est, .contrast_mat))
 
@@ -511,7 +511,7 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
 
   # rlang::fn_fmls_names(fn)[1L] <- .treat
 
-  if (is_null(.by_grid) || is_not_null(.contrast)) {
+  if (is_null(.by_grid) || !is_null(.contrast)) {
     rlang::fn_fmls(fn)[length(rlang::fn_fmls(fn))] <- NULL
   }
 
@@ -541,11 +541,11 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
     classes <- c("amef_curve", classes)
   }
 
-  if (is_not_null(.reference)) {
+  if (!is_null(.reference)) {
     classes <- c("reference_curve", classes)
   }
 
-  if (is_not_null(.contrast)) {
+  if (!is_null(.contrast)) {
     classes <- c("contrast_curve", classes)
   }
 
@@ -556,14 +556,14 @@ process_range_mv <- function(ranges = .95, n, treat_vars, w = NULL, strict = FAL
 
 add_est_labels_mv <- function(res, .contrast, .by_grid, .values = NULL, est_names = NULL) {
 
-  add_values <- is_not_null(.values) && is_not_null(est_names)
+  add_values <- !is_null(.values) && !is_null(est_names)
 
   if (!add_values) {
     .values <- data.frame(NA)
   }
 
   # Apply by_grid and contrast labels if necessary
-  if (is_not_null(.contrast)) {
+  if (!is_null(.contrast)) {
     contrast <- factor(rep(.contrast, each = nrow(.values)),
                        levels = .contrast)
 
@@ -573,7 +573,7 @@ add_est_labels_mv <- function(res, .contrast, .by_grid, .values = NULL, est_name
 
     res <- cbind(contrast = contrast, res)
   }
-  else if (is_not_null(.by_grid)) {
+  else if (!is_null(.by_grid)) {
     res_names <- names(res)
     val_id <- seq_row(.values)
     by_id <- seq_row(.by_grid)
@@ -826,7 +826,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                                     .by_grid = .by_grid,
                                     .contrast = .contrast)
 
-  if (is_null(.by_grid) || is_not_null(.contrast)) {
+  if (is_null(.by_grid) || !is_null(.contrast)) {
     .s <- seq_along(.est0)
   }
   else {
@@ -841,7 +841,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .est <- transform(.est0)
 
   do_inference <- (.vcov_type != "none") &&
-    is_not_null(.vcov) && (conf_level > 0)
+    !is_null(.vcov) && (conf_level > 0)
 
   if (do_inference) {
     simultaneous <- process_simultaneous(simultaneous, .est)
@@ -938,7 +938,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
       }
     }
 
-    if (is_not_null(t_crit)) {
+    if (!is_null(t_crit)) {
       attr(t_crit, "df") <- df
       attr(conf_level, "crit") <- t_crit
     }
@@ -951,14 +951,14 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   # Use original estimate in output
   res$estimate <- inv_transform(.est)
 
-  if (is_not_null(proj)) {
+  if (!is_null(proj)) {
     res$proj_estimate <- .attr(proj, ".est")[.s]
 
     proj_lt <- "55"
   }
 
   # Apply by_grid and contrast labels if necessary
-  if (is_not_null(.contrast)) {
+  if (!is_null(.contrast)) {
     contrast <- factor(rep(.contrast, each = nrow(.values)),
                        levels = .contrast)
 
@@ -980,7 +980,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
         labs(fill = "Contrast")
     }
 
-    if (is_not_null(proj)) {
+    if (!is_null(proj)) {
       p <- p + geom_line(aes(y = .data$proj_estimate,
                              color = .data$contrast),
                          linetype = proj_lt,
@@ -992,7 +992,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                          breaks = .contrast,
                          limits = .contrast)
   }
-  else if (is_not_null(.by_grid)) {
+  else if (!is_null(.by_grid)) {
     res_names <- names(res)
     val_id <- seq_row(.values)
     by_id <- seq_row(.by_grid)
@@ -1029,7 +1029,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
         labs(fill = "Subgroup")
     }
 
-    if (is_not_null(proj)) {
+    if (!is_null(proj)) {
       p <- p + geom_line(aes(y = .data$proj_estimate,
                              color = .data$.by_id),
                          linetype = proj_lt,
@@ -1053,7 +1053,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                     alpha = .2)
     }
 
-    if (is_not_null(proj)) {
+    if (!is_null(proj)) {
       p <- p + geom_line(aes(y = .data$proj_estimate),
                          linetype = proj_lt,
                          show.legend = FALSE)

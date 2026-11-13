@@ -9,8 +9,8 @@
 #' @param null the value at which to plot a horizontal reference line. Default is to plot a line with a y-intercept of 0 when the effect curve is an AMEF, a curve contrast, or a reference effect curve, and to omit a line otherwise. Set to `NA` to manually omit the line.
 #' @param subset an optional logical expression indicating the subset of the subgroups to plot. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param proj an optional `curve_projection` object, the output of a call to [curve_projection()]. Supplying this adds the projection curve to the effect curve plot.
-#' @param transform whether to compute intervals on the transformed estimates. Allowable options include `TRUE`, `FALSE`, or a function specifying a transformation. Ignored unless `x` is an ADRF. See Details.
-#' @param df the "denominator" degrees of freedom to use for the critical test statistics for confidence bands. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise.
+#' @param transform whether to compute intervals on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `x` is an ADRF. See Details.
+#' @param df the "denominator" degrees of freedom to use for the critical test statistics for confidence bands. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
 #' @param ci.type string; when bootstrapping is used in the original effect curve, what type of confidence interval is to be computed. Allowable options include `"perc"` for percentile intervals, `"wald"` for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed. Default is `"perc"`. Ignored when bootstrapping is not used.
 #' @param ... ignored.
 #'
@@ -50,11 +50,14 @@
 #'
 #' ## Transform
 #'
-#' The usual confidence bands assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simple a transformation of the estimated points along the curve already computed. Confidence bands are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome.
+#' The usual confidence bands assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. Confidence bands are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome.
 #'
 #' ## Simultaneous confidence bands
 #'
-#' Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `plot()` uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate.
+#' Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `plot()` uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate. With bootstrapping or Bayesian models and `ci.type = "perc"`, the simultaneous band is the product of the equal-tailed percentile intervals with the tail probability calibrated so that it contains the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
+#'
+#' @references
+#' Montiel Olea, J. L., & Plagborg-Møller, M. (2019). Simultaneous confidence bands: Theory, implementation, and an application to SVARs. *Journal of Applied Econometrics*, 34(1), 1–17. \doi{10.1002/jae.2656}
 #'
 #' @seealso
 #' * [adrf()] for computing the ADRF
@@ -136,7 +139,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                                     .by_grid = .by_grid,
                                     .contrast = .contrast)
 
-  if (is_null(.by_grid) || is_not_null(.contrast)) {
+  if (is_null(.by_grid) || !is_null(.contrast)) {
     .s <- seq_along(.est0)
   }
   else {
@@ -151,7 +154,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .est <- transform(.est0)
 
   do_inference <- (.vcov_type != "none") &&
-    is_not_null(.vcov) && (conf_level > 0)
+    !is_null(.vcov) && (conf_level > 0)
 
   if (do_inference) {
     simultaneous <- process_simultaneous(simultaneous, .est)
@@ -163,9 +166,10 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
     res <- make_df(res_names, length(.est))
 
+    # process_transform() has already replaced a transformation that cannot
+    # be reversed with the identity
     do_transform <- ci.type != "perc" &&
-      !all(check_if_zero(.est - .est0)) &&
-      all(check_if_zero(inv_transform(.est) - .est0))
+      !all(check_if_zero(.est - .est0))
 
     t_crit <- vp <- NULL
 
@@ -173,7 +177,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
     if (conf_level > 0) {
       if (ci.type == "wald") {
         # Process df
-        df <- df %or% .attr(x, ".df")
+        df <- df %or% .attr(x, ".df") %or% Inf
 
         arg::arg_number(df)
         arg::arg_gt(df, 0)
@@ -194,7 +198,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
         }
         else if (do_transform) {
           d_transform <- transform_list$d_transform
-          .vcov <- quad_mult(diag(d_transform(.est0)), ss(.vcov, .s, .s))
+          .vcov <- quad_mult(diag(d_transform(.est0), nrow = length(.est0)), ss(.vcov, .s, .s))
         }
         else {
           .vcov <- ss(.vcov, .s, .s)
@@ -210,7 +214,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
           t_crit <- try(mvtnorm::qmvt(conf_level,
                                       tail = "both.tails",
-                                      df = df, corr = vp,
+                                      df = .mvt_df(df), corr = vp,
                                       keepAttr = FALSE,
                                       maxiter = 1e5,
                                       abseps = 1e-5)$quantile,
@@ -249,7 +253,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
       }
     }
 
-    if (is_not_null(t_crit)) {
+    if (!is_null(t_crit)) {
       attr(t_crit, "df") <- df
       attr(conf_level, "crit") <- t_crit
     }
@@ -262,14 +266,14 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   # Use original estimate in output
   res$estimate <- inv_transform(.est)
 
-  if (is_not_null(proj)) {
+  if (!is_null(proj)) {
     res$proj_estimate <- .attr(proj, ".est")[.s]
 
     proj_lt <- "55"
   }
 
   # Apply by_grid and contrast labels if necessary
-  if (is_not_null(.contrast)) {
+  if (!is_null(.contrast)) {
     contrast <- factor(rep(.contrast, each = length(.values)),
                        levels = .contrast)
 
@@ -291,7 +295,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
         labs(fill = "Contrast")
     }
 
-    if (is_not_null(proj)) {
+    if (!is_null(proj)) {
       p <- p + geom_line(aes(y = .data$proj_estimate,
                              color = .data$contrast),
                          linetype = proj_lt,
@@ -304,7 +308,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                          breaks = .contrast,
                          limits = .contrast)
   }
-  else if (is_not_null(.by_grid)) {
+  else if (!is_null(.by_grid)) {
     res_names <- names(res)
     val_id <- seq_along(.values)
     by_id <- seq_row(.by_grid)
@@ -341,7 +345,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
         labs(fill = "Subgroup")
     }
 
-    if (is_not_null(proj)) {
+    if (!is_null(proj)) {
       p <- p + geom_line(aes(y = .data$proj_estimate,
                              color = .data$.by_id),
                          linetype = proj_lt,
@@ -366,7 +370,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                     alpha = .2)
     }
 
-    if (is_not_null(proj)) {
+    if (!is_null(proj)) {
       p <- p + geom_line(aes(y = .data$proj_estimate),
                          linetype = proj_lt,
                          show.legend = FALSE)
@@ -403,11 +407,11 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
   label <- curve_atom
 
-  if (is_not_null(.reference)) {
+  if (!is_null(.reference)) {
     label <- bquote(.(label) ~ .(bquote(~ - ~ .(curve_atom) * group("(", .(.reference), ")"))))
   }
 
-  if (is_not_null(.contrast)) {
+  if (!is_null(.contrast)) {
     label <- bquote(.(label) ~ .("Difference"))
   }
 
@@ -419,8 +423,8 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .contrast <- .attr(x, ".contrast")
 
   paste(c(get_curve_type(x),
-          if (is_not_null(.reference)) "Reference",
-          if (is_not_null(.contrast)) "Contrast",
+          if (!is_null(.reference)) "Reference",
+          if (!is_null(.contrast)) "Contrast",
           if (inherits(x, "curve_projection")) "Projection"),
         collapse = " ")
 }
@@ -429,7 +433,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .vcov_type <- .attr(x, ".vcov_type")
 
   do_inference <- (.vcov_type != "none") &&
-    is_not_null(conf_level) && conf_level > 0
+    !is_null(conf_level) && conf_level > 0
 
   if (!do_inference) {
     return(NULL)

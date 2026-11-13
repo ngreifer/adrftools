@@ -32,26 +32,26 @@ adrf(x, ...)
 
 \item{vcov}{how the covariance matrix of the estimates should be computed. If \code{"unconditional"} (the default for frequentist models), use the sandwich estimator including sampling uncertainty. If \code{"boot"} or \code{"fwb"}, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the \code{vcov} argument of \code{\link[marginaleffects:get_vcov]{marginaleffects::get_vcov()}}. Can also be \code{"none"} to avoid computing the uncertainty. For Bayesian models, only \code{"posterior"}, which uses the posterior of the estimates, and \code{"none"} are allowed. For models fit to multiply imputed data, \code{"boot"} and \code{"fwb"} are not allowed.}
 
-\item{cluster}{an optional data frame or one-sided formula with the clustering terms for cluster-robust inference.}
+\item{cluster}{an optional data frame or one-sided formula with the clustering terms for cluster-robust inference. When \code{vcov} is \code{"conditional"}, the covariance matrix of the model coefficients is computed using \code{\link[sandwich:vcovCL]{sandwich::vcovCL()}} with its default type; \code{vcov} can also be \code{"HC0"}, \code{"HC1"}, \code{"HC2"}, or \code{"HC3"} to request that type from \code{\link[sandwich:vcovCL]{sandwich::vcovCL()}} (\code{"HC2"} and \code{"HC3"} are available only for \code{lm()} and \code{glm()} models). Other strings and functions supplied to \code{vcov} cannot be used with \code{cluster}.}
 
 \item{type}{character string indicating the type of prediction. Passed to \code{\link[marginaleffects:get_predict]{marginaleffects::get_predict()}}. Default is \code{"response"} for predictions on the scale of the outcome variable. Other options might include \code{"link"} for the linear predictor. This argument is ignored for \code{lm} objects.}
 
 \item{data}{an optional data frame containing the observations originally used to fit the outcome model supplied to \code{x}. This should only be used if the supplied model is not supported by \pkg{insight}. In most cases, this should not need to be supplied.}
 
-\item{subset}{an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function.}
+\item{subset}{an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function. Can also be a vector of row numbers or row names; logical vectors and row numbers refer to the units used to fit the model (i.e., excluding any dropped because of missing values), and row names refer to the original dataset.}
 
 \item{by}{optional variable(s) over which to group the estimation. Can be a character vector or one-sided formula.}
 
-\item{wts}{optional numeric vector of weights to generalize the effect curve to a weighted population.}
+\item{wts}{optional weights used to generalize the effect curve to a weighted population. Can be a numeric vector, the name of a variable in the original dataset, \code{TRUE} to use the weights used to fit the model, or \code{FALSE} for no weights. The default depends on the model; see Details.}
 
-\item{range}{numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the affect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.}
+\item{range}{numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the effect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.}
 
 \item{n}{integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.}
 
 \item{fwb.args}{an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}.}
 }
 \value{
-An object of class \code{effect_curve}. This object is a function with attributes. See \code{\linkS4class{effect_curve}} for details on this function and its outputs.
+An object of class \verb{<effect_curve>}. This object is a function with attributes. See \code{\link[=effect_curve-class]{effect_curve}} for details on this function and its outputs.
 }
 \description{
 Estimates the average dose-response function (ADRF) for a fitted model object.
@@ -59,14 +59,19 @@ Estimates the average dose-response function (ADRF) for a fitted model object.
 \details{
 \code{adrf()} estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When \code{vcov = "unconditional"}, the variance is computed using the formulas in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires \code{\link[sandwich:estfun]{sandwich::estfun()}} and \code{\link[sandwich:bread]{sandwich::bread()}} methods for the supplied object to be available.
 
-When a \code{mira} object from \pkg{mice} or a \code{mimira} object from \pkg{MatchThem} is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. Bootstrapping is not allowed with such objects.
-
-When a \code{svyglm} object from \pkg{survey} is supplied, \code{adrf()} automatically incorporates the survey weights extracted from the object. The same is true for \code{glm_weightit} objects, etc., from \pkg{WeightIt} when \code{s.weights} are supplied in the original call to \code{weightit()}. See \code{vignette("adrftools")} for more details on using the \code{wts} argument.
+When a \verb{<mira>} object from \pkg{mice} or a \verb{<mimira>} object from \pkg{MatchThem} is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. The degrees of freedom used for tests and confidence intervals are those of Reiter (2007), or of Li, Raghunathan, and Rubin (1991) when the complete-data degrees of freedom are infinite (e.g., for generalized linear models). These account for the number of imputations and the fraction of missing information, which is assumed to be the same for all points on the curve, so a single value is used for every point and for joint inference. Bootstrapping is not allowed with such objects.
 \subsection{\code{range}}{
 
 The \code{range} argument controls for which range of the treatment the effect curve is to be evaluated. It can be supplied either as two numbers corresponding to the lower and upper bounds for the treatment (e.g., \code{range = c(0, 10)}) or as a single number corresponding to the middle quantile of the treatment (e.g., \code{range = .9}, which uses the .05 and .95 quantiles of the treatment as the bounds). The default is .95 to use the .025 and .975 quantiles of the treatment. When supplied as a quantile, the quantiles are evaluated incorporating the weights supplied to \code{wts}.
 
 A reason not to use the full treatment range (e.g., by setting \code{range = 1}) is that there is likely very little certainty about the effect curve at the treatment extremes. This uncertainty can muddy tests of the effect curve. However, limiting the treatment range means inferences about the effect curve are less generalizable to more extreme values of the treatment. Note that this does not change the data used to fit the effect curve, just the points along the effect curve for which inference and estimation are to take place.
+}
+
+\subsection{\code{wts}}{
+
+The \code{wts} argument supplies weights that define the population over which the predicted outcomes are averaged, such as sampling weights. When supplied as a numeric vector, it must have one value for each unit used to fit the model (or, with multiply imputed data, either one value for each unit in each imputed dataset or one value for each row of the imputed datasets stacked together). When supplied as a string, it is the name of a variable in the original dataset. \code{wts = TRUE} uses the weights used to fit the model, as extracted by \code{\link[insight:get_weights]{insight::get_weights()}}, and \code{wts = FALSE} weights all units equally.
+
+When \code{wts} is not supplied, the default depends on the model. When a \verb{<svyglm>} object from \pkg{survey} is supplied, the survey weights are used. When a \verb{<glm_weightit>} object, etc., from \pkg{WeightIt} is supplied, the sampling weights are used if \code{s.weights} were supplied in the original call to \code{weightit()}; the balancing weights are not, because they are used to fit the outcome model rather than to define the target population. For other models, all units are weighted equally, even when the model was fit with weights. See \code{vignette("adrftools")} for more details on using the \code{wts} argument.
 }
 }
 \examples{
@@ -120,6 +125,11 @@ adrf_by <- adrf(fit, treat = "logBLL",
 
 adrf_by
 }
+\references{
+Li, K. H., Raghunathan, T. E., & Rubin, D. B. (1991). Large-sample significance levels from multiply imputed data using moment-based statistics and an \emph{F} reference distribution. \emph{Journal of the American Statistical Association}, 86(416), 1065–1073. \doi{10.1080/01621459.1991.10475152}
+
+Reiter, J. P. (2007). Small-sample degrees of freedom for multi-component significance tests with multiple imputation for missing data. \emph{Biometrika}, 94(2), 502–508. \doi{10.1093/biomet/asm028}
+}
 \seealso{
 \itemize{
 \item \code{\link[=plot.effect_curve]{plot.effect_curve()}} for plotting the ADRF
@@ -129,6 +139,6 @@ adrf_by
 \item \code{\link[=reference_curve]{reference_curve()}} for computing the difference between each point on the ADRF and a specific reference point
 \item \code{\link[=curve_contrast]{curve_contrast()}} for contrasting ADRFs computed within subgroups
 \item \code{\link[=amef]{amef()}} for computing the average marginal effect function (AMEF), the derivative of the ADRF
-\item \code{\link[marginaleffects:predictions]{marginaleffects::avg_predictions()}} for computing average adjusted predictions for fitted models (similar to the ADRF)
+\item \code{\link[marginaleffects:avg_predictions]{marginaleffects::avg_predictions()}} for computing average adjusted predictions for fitted models (similar to the ADRF)
 }
 }

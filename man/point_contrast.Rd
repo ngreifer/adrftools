@@ -28,7 +28,7 @@ point_contrast(object)
 
 \item{ci.type}{string; when bootstrapping or Bayesian inference is used in the original effect curve, which type of confidence interval is to be computed. For bootstrapping, allowable options include \code{"perc"} for percentile intervals, \code{"wald"} for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When \code{simultaneous = TRUE}, only \code{"perc"} and \code{"wald"} are allowed. For Bayesian models, allowable options include \code{"perc"} for equi-tailed intervals and \code{"wald"} for Wald intervals. Default is \code{"perc"}. Ignored when bootstrapping is not used and the model is not Bayesian.}
 
-\item{df}{the "denominator" degrees of freedom to use for the tests and critical test statistics for confidence intervals. Default is to use the residual degrees of freedom from the original model if it is a linear model and \code{Inf} otherwise.}
+\item{df}{the "denominator" degrees of freedom to use for the tests and critical test statistics for confidence intervals. Default is to use the residual degrees of freedom from the original model if it is a linear model and \code{Inf} otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see \code{\link[=adrf]{adrf()}}).}
 
 \item{...}{ignored.}
 }

@@ -1,29 +1,95 @@
-.get_model_type <- function(x, type = "response") {
-  if (.is_bayesian(x)) {
+# Determines how predictions are computed: from the model matrix and the
+# coefficients with an identity link ("lm") or an inverse link ("glm"), which is
+# fast and gives analytic gradients, or with marginaleffects::get_predict()
+# ("default"). Rather than relying on the class of the model, the model-matrix
+# predictions are compared with get_predict() on a sample of rows of the
+# counterfactual data, so that models whose predictions involve more than the
+# model matrix, the coefficients, and any offsets (auxiliary parameters, fixed
+# effects, thresholds, random effects) take the general path.
+.get_model_type <- function(x, type = "response", data_grid, model_data = NULL,
+                            is_bayes = FALSE, ...) {
+  if (is_bayes) {
     return("default")
   }
 
-  if (class(x)[1L] %in% "ordinal_weightit" && type %in% c("link", "lp")) {
-    return("lm")
+  .family <- process_family(x, type)
+
+  rows <- seq(1, fnrow(data_grid), length.out = min(fnrow(data_grid), 20L)) |>
+    round() |>
+    funique()
+
+  nd <- ss(data_grid, rows)
+
+  fast_ok <- try({
+    beta <- marginaleffects::get_coef(x)
+    aliased <- is.na(beta)
+
+    X <- get_tt(x, model_data) |>
+      model.matrix(data = nd)
+
+    if (fncol(X) != length(beta) ||
+        (!is_null(names(beta)) && !identical(colnames(X), names(beta)))) {
+      FALSE
+    }
+    else {
+      off <- .grid_offset(x, nd, model_data)
+
+      fast <- (drop(ss(X, j = !aliased) %*% beta[!aliased]) + off) |>
+        .family$linkinv()
+
+      p <- marginaleffects::get_predict(x, newdata = nd, type = type, ...)[["estimate"]]
+
+      length(p) == length(fast) &&
+        isTRUE(all.equal(unname(p), unname(fast), tolerance = 1e-8,
+                         check.attributes = FALSE))
+    }
+  }, silent = TRUE)
+
+  if (!isTRUE(fast_ok)) {
+    return("default")
   }
 
-  if (class(x)[1L] %in% c("lm", "lm_robust")) {
-    return("lm")
+  if (identical(.family[["link"]], "identity")) "lm"
+  else "glm"
+}
+
+# The offset for each row of `data`: offset() terms in the formula and an
+# `offset` argument in the model call, evaluated on `data`. Returns 0 when the
+# model has no offset.
+.grid_offset <- function(x, data, model_data = NULL) {
+  off <- 0
+
+  mf <- try(stats::model.frame(get_tt(x, model_data), data = data,
+                               na.action = stats::na.pass),
+            silent = TRUE)
+
+  if (!null_or_error(mf)) {
+    o <- stats::model.offset(mf)
+
+    if (!is_null(o)) {
+      off <- off + o
+    }
   }
 
-  if (class(x)[1L] %in% c("glm", "glm_weightit", "svyglm", "negbin", "fixest")) {
-    .family <- insight::get_family(x)
+  call_off <- try(stats::getCall(x)[["offset"]], silent = TRUE)
 
-    if (identical(.family[["link"]], "identity")) {
-      return("lm")
+  if (!null_or_error(call_off) && !is_null(call_off)) {
+    env <- try(environment(stats::formula(x)), silent = TRUE)
+
+    if (!is.environment(env)) {
+      env <- globalenv()
     }
 
-    if (type == "response") {
-      return("glm")
+    o <- eval(call_off, data, env)
+
+    if (!is.numeric(o) || length(o) != fnrow(data)) {
+      stop("the offset could not be evaluated")
     }
+
+    off <- off + o
   }
 
-  "default"
+  off
 }
 
 .get_estimator <- function(.x, ...) {
@@ -32,28 +98,26 @@
 
 #' @exportS3Method NULL
 .get_estimator.lm <- function(.x, ...) {
-  function(mm, beta0 = NULL, model = NULL, ...) {
+  function(mm, beta0 = NULL, model = NULL, offset = 0, ...) {
     if (is_null(beta0)) {
       beta0 <- marginaleffects::get_coef(model)
     }
 
-    tcrossprod(na_rm(beta0), mm) |>
-      drop()
+    drop(tcrossprod(na_rm(beta0), mm)) + offset
   }
 }
 
 #' @exportS3Method NULL
 .get_estimator.glm <- function(.x, ...) {
-  .linkfun <- process_family(.x)$linkinv
+  .linkinv <- process_family(.x)$linkinv
 
-  function(mm, beta0 = NULL, model = NULL, ...) {
+  function(mm, beta0 = NULL, model = NULL, offset = 0, ...) {
     if (is_null(beta0)) {
       beta0 <- marginaleffects::get_coef(model)
     }
 
-    tcrossprod(na_rm(beta0), mm) |>
-      drop() |>
-      .linkfun()
+    (drop(tcrossprod(na_rm(beta0), mm)) + offset) |>
+      .linkinv()
   }
 }
 
@@ -120,7 +184,7 @@
   }
   else {
     function(data_grid, beta0 = NULL, model, ...) {
-      if (is_not_null(beta0)) {
+      if (!is_null(beta0)) {
         model <- marginaleffects::set_coef(model, beta0)
       }
 

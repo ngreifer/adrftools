@@ -44,7 +44,7 @@
            })
 
 
-    if (j == 1L) {
+    if (jj == 1L) {
       jacob <- matrix(0, nrow = length(f_new_r), ncol = length(.parm),
                       dimnames = list(names(f_new_r), names(.x)[.parm]))
     }

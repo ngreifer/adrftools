@@ -1,7 +1,7 @@
 #' Estimate the average marginal effect function (AMEF)
 #'
 #' @description
-#' `amef()` computes the average marginal effect function (AMEF), the derivative of the average dose-response function (ADRF). This computed from an `adrf_curve` object or from a fitting outcome model directly.
+#' `amef()` computes the average marginal effect function (AMEF), the derivative of the average dose-response function (ADRF), from an `adrf_curve` object.
 #'
 #' @param x an `adrf_curve` object; the output of a call to [adrf()].
 #' @param eps numeric; the step size to use when calculating numerical derivatives. Default is `1e-5` (.00001). See Details.
@@ -15,6 +15,8 @@
 #'  \deqn{\frac{df(x)}{dx} \approx \frac{f(x + e) - f(x - e)}{2e}}
 #'
 #' The values of the ADRF at the evaluation points are computed using a local polynomial regression as described at [`effect_curve`]. At the boundaries of the ADRF, one-sided derivatives are used.
+#'
+#' Because subtracting a reference value does not change the derivative, `amef()` applied to the output of [reference_curve()] returns the AMEF of the original ADRF. To compute the difference between each point on the AMEF and the AMEF at a reference point, apply [reference_curve()] to the output of `amef()`.
 #'
 #' @seealso
 #' * [adrf()] for computing the ADRF
@@ -87,6 +89,9 @@ amef <- function(x, eps = 1e-5) {
 
   contrast_mat <- block_diag(contrast_mat %*% val_mat, n_by)
 
+  # Subtracting a reference value does not change the derivative, so the AMEF
+  # of a reference curve is the AMEF of the original curve
   .make_fun(x, .contrast_mat = contrast_mat,
-            .curve_type = "AMEF")
+            .curve_type = "AMEF",
+            .reference = NULL)
 }

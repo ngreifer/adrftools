@@ -28,7 +28,7 @@ $$
 \mu(a)=E[Y(a)]
 $$
 
-The potential outcomes are fundemtnally unobservable, so this quantity cannot be estimated directly. However, under certain causal assumptions, the ADRF can be represented as the expected value of the observed outcome $Y$ conditional on a set of adjustment variables $X$, with the expectation taken over $X$, i.e.,
+The potential outcomes are fundamentally unobservable, so this quantity cannot be estimated directly. However, under certain causal assumptions, the ADRF can be represented as the expected value of the observed outcome $Y$ conditional on a set of adjustment variables $X$, with the expectation taken over $X$, i.e.,
 
 $$
 \mu(a)=E[Y(a)]=E\left[E[Y|A=a,X]\right]

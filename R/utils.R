@@ -96,8 +96,23 @@ round_df_char <- function(df, digits, pad = "0", na_vals = "") {
     }
   }
 
-  o.negs[, nums] <- !nas[, nums] & df[nums] < 0 & round(df[nums], digits) == 0
-  df[nums] <- round(df[nums], digits = digits)
+  # A column whose values would all round to 0 gets enough digits to show
+  # them (e.g., estimates of an outcome on a very small scale)
+  col_digits <- rep.int(digits, length(df))
+
+  for (i in which(nums)) {
+    fin <- df[[i]][is.finite(df[[i]])]
+    m <- if (length(fin) > 0L) max(abs(fin)) else 0
+
+    if (m > 0 && m < .5 * 10^-digits) {
+      col_digits[i] <- digits - 1 + ceiling(-log10(m))
+    }
+  }
+
+  for (i in which(nums)) {
+    o.negs[, i] <- !nas[, i] & df[[i]] < 0 & round(df[[i]], col_digits[i]) == 0
+    df[[i]] <- round(df[[i]], digits = col_digits[i])
+  }
 
   for (i in which(nums)) {
     df[[i]] <- format(df[[i]], scientific = FALSE, justify = "none", trim = TRUE,
@@ -123,13 +138,25 @@ round_df_char <- function(df, digits, pad = "0", na_vals = "") {
   df[nas] <- na_vals
   df[infs] <- "N/A"
 
-  if (is_not_null(rn)) rownames(df) <- rn
-  if (is_not_null(cn)) names(df) <- cn
+  if (!is_null(rn)) rownames(df) <- rn
+  if (!is_null(cn)) names(df) <- cn
 
   df
 }
 
 #Numbers
+# Tolerance for treating a treatment value as a point on the grid `v`,
+# relative to the width of the grid so that it does not depend on the scale of
+# the treatment
+.grid_tol <- function(v) {
+  width <- diff1(.range(v))
+
+  sqrt(.Machine$double.eps) * {
+    if (width > 0) width
+    else max(abs(v), 1)
+  }
+}
+
 check_if_zero <- function(x, tolerance = sqrt(.Machine$double.eps)) {
   # this is the default tolerance used in all.equal
   abs(x) < tolerance
@@ -250,7 +277,6 @@ rep_with <- function(x, y) {
   setNames(rep.int(x, length(y)), names(y))
 }
 is_null <- function(x) {length(x) == 0L}
-is_not_null <- function(x) {!is_null(x)}
 is_number <- function(x) {
   length(x) == 1L && is.numeric(x) && !anyNA(x)
 }
@@ -313,12 +339,6 @@ get_varnames <- function(expr) {
   recurse(expr)
 }
 
-len <- function(x, recursive = TRUE) {
-  if (is_null(x)) 0L
-  else if (length(dim(x)) > 1L) nrow(x)
-  else if (is.list(x) && recursive) vapply(x, len, numeric(1L), recursive = FALSE)
-  else length(x)
-}
 diff1 <- function(x) {
   x[-1L] - x[-length(x)]
 }
@@ -387,4 +407,11 @@ all_apply <- function(X, FUN, ...) {
 
 #-------#cli utilities-------
 .it <- function(...) cli::style_italic(...)
-.ul <- function(...) cli::style_underline(...)
+
+# mvtnorm::pmvt() and mvtnorm::qmvt() require integer degrees of freedom (and
+# treat 0 as infinite), so finite degrees of freedom are rounded down, which is
+# conservative
+.mvt_df <- function(df) {
+  if (is.finite(df)) max(1, floor(df))
+  else Inf
+}

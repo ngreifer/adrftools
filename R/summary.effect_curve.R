@@ -1,13 +1,13 @@
-#' Test omnibus hypotheses about an effect curves
+#' Test omnibus hypotheses about an effect curve
 #'
 #' `summary()` tests an omnibus hypothesis about an effect curve. For example, it can be used to test that the ADRF is flat, that the contrast between two ADRFs is 0 everywhere, or that the AMEF is 0 everywhere.
 #'
 #' @param object an object of class [`effect_curve`]; the result of a call to [adrf()] or a function that modifies it.
 #' @param hypothesis the hypothesis to be tested. Allowable options include `"flat"` (the default), `"linear"`, `"quadratic"`, `"cubic"`, a one-sided formula corresponding to a projection model, or a single number (e.g., 0). See Details. The default is `"flat"` for ADRFs and 0 otherwise.
-#' @param method string; the method used to compute the p-value of the test. Allowable options include `"sim"` for simulation-based, `"imhof"` for Imhof's approximation, `"davies"` for Davies's approximation, `"liu"` for Liu's approximation, `"satterthwaite"` for Satterthwaite's approximation, and `"saddlepoint"` for a saddlepoint approximation. Default is `"imhof"` when the \pkg{CompQuadForm} package is installed, otherwise `"saddlepoint"` when the \pkg{survey} package is installed, and `"sim"` otherwise. See Details.
+#' @param method string; the method used to compute the p-value of the test. Allowable options include `"sim"` for simulation-based, `"imhof"` for Imhof's approximation, `"davies"` for Davies's approximation, `"liu"` for Liu's approximation, `"satterthwaite"` for Satterthwaite's approximation, and `"saddlepoint"` for a saddlepoint approximation. Default is `"imhof"` when the \pkg{CompQuadForm} package is installed and `"saddlepoint"` otherwise. See Details.
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to perform tests. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
-#' @param transform whether to perform the test on the transformed estimates. Allowable options include `TRUE`, `FALSE`, or a function specifying a transformation. Ignored unless `object` is an ADRF object. See Details.
-#' @param df the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise.
+#' @param transform whether to perform the test on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `object` is an ADRF object. See Details.
+#' @param df the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
 #' @param nsim when `method` is `"sim"`, the number of iterations used to simulate the p-values. Higher numbers give more accurate p-values subject to less Monte Carlo error but are slower and require more memory. Default is 1,000,000.
 #' @param \dots when `method` is `"imhof"`, `"davies"`, or `"liu"`, further arguments passed to \pkgfun{CompQuadForm}{imhof}, \pkgfun{CompQuadForm}{davies}, or \pkgfun{CompQuadForm}{liu}, respectively.
 #' @param x a `summary.effect_curve` object.
@@ -23,7 +23,7 @@
 #'
 #'  Rejecting the null hypothesis means that the curve is more complicated than the specified model. For example, rejecting the null hypothesis that the curve is linear implies that the curve is nonlinear (and, therefore, not flat either).
 #'
-#' The test involves computing a test statistic, specifying its distribution under the null hypothesis, and computing the p-value using the compliment of the cumulative density function of the distribution evaluated at the test statistic value. The test statistic depends on `"hypothesis"`. For `hypothesis` equal to a constant, say, \eqn{c}, the test statistic is
+#' The test involves computing a test statistic, specifying its distribution under the null hypothesis, and computing the p-value using the complement of the cumulative distribution function of the distribution evaluated at the test statistic value. The test statistic depends on `"hypothesis"`. For `hypothesis` equal to a constant, say, \eqn{c}, the test statistic is
 #'  \deqn{T^* = \int_\mathcal{A} (\theta(a) - c)^2 \ da}
 #' Otherwise, the test statistic is
 #' \deqn{T^* = \int_\mathcal{A} (\theta(a) - \hat{\theta}_0(a))^2 \ da}
@@ -31,19 +31,22 @@
 #'
 #' Each of these can be approximated as a quadratic form, \eqn{T=\mathbf{\theta}'\mathbf{W}\mathbf{\theta}} where \eqn{\mathbf{\theta}} is a vector of estimates at evaluation points along the curve and \eqn{\mathbf{W}} is a diagonal matrix of weights implementing a trapezoidal approximation to the integral. The null hypothesis is that \eqn{T=0}, which approximates the null hypothesis that \eqn{T^*=0}. Each of the allowable options to `method` corresponds to a method of approximating the distribution of \eqn{T} under the null hypothesis:
 #' * `"sim"` simulates the null distribution by simulating from a multivariate normal distribution under the null hypothesis and computing the test statistic in each simulation. The p-value is the proportion of simulated estimates greater than the observed test statistic. When `df` is not `Inf`, the simulation is done from a multivariate t-distribution.
-#' * `"imhof"`, `"davies"`, and `"liu"` assume the test statistic follows a generalized \eqn{\chi^2}-distribution and approximate its CDF numerically. `"imhof"` tends to be the most accurate and is recommended. These methods require the \CRANpkg{CompQuadForm} package to be installed.
+#' * `"imhof"`, `"davies"`, and `"liu"` assume the test statistic follows a generalized \eqn{\chi^2}-distribution and approximate its CDF numerically. `"imhof"` tends to be the most accurate and is recommended. Because Imhof's and Davies's methods control the absolute rather than the relative error of the computed probability, p-values below .0001, and any these methods fail to compute, are computed using the saddlepoint approximation instead. `"liu"` can be inaccurate when `df` is not `Inf`. These methods require the \CRANpkg{CompQuadForm} package to be installed.
 #' * `"satterthwaite"` also assumes the test statistic follows a generalized \eqn{\chi^2}-distribution, but this distribution is approximated using a scaled F-distribution with the same first two moments.
-#' * `"saddlepoint"` also assumes the test statistic follows a generalized \eqn{\chi^2}-distribution, and this distribution is approximated using a saddlepoint method as implemented in \pkgfun{survey}{pFsum}. This method requires the \CRANpkg{survey} package to be installed.
+#' * `"saddlepoint"` also assumes the test statistic follows a generalized \eqn{\chi^2}-distribution, and this distribution is approximated using the saddlepoint method described by Kuonen (1999), which remains accurate far into the tails of the distribution. Near the center of the distribution, where the saddlepoint approximation is not defined, the Satterthwaite approximation is used instead.
 #'
-#' In general, we recommend using `method = "imhof"`, though this requires \pkg{CompQuadForm} to be installed (and is the default when it is). `method = "saddlepoint"` has also been shown to be quite accurate and very fast. When using `"sim"`, increasing `nsim` improves the accuracy of the p-value by reducing Monte Carlo error. The default value of `1e6` ensures that the simulated p-value is within .0005 of the true p-value with at least 98\% confidence for p-values less than .05. For greater precision at higher p-value thresholds, `nsim` should be increased. The other methods exist primarily for comparison purposes. `"satterthwaite"` is particularly fast and doesn't require any other packages, but it can be somewhat inaccurate.
+#' In general, we recommend using `method = "imhof"`, though this requires \pkg{CompQuadForm} to be installed (and is the default when it is). `method = "saddlepoint"` is also accurate, is very fast, and doesn't require any other packages. When using `"sim"`, increasing `nsim` improves the accuracy of the p-value by reducing Monte Carlo error. The default value of `1e6` ensures that the simulated p-value is within .0005 of the true p-value with at least 98% confidence for p-values less than .05. For greater precision at higher p-value thresholds, `nsim` should be increased. The other methods exist primarily for comparison purposes. `"satterthwaite"` is particularly fast and doesn't require any other packages, but it can be somewhat inaccurate.
 #'
 #' ## Transform
 #'
 #' When the effect curve is an ADRF and the outcomes are bounded (e.g., a probability between 0 and 1), the `transform` argument can be specified, which changes the details of the tests.
 #'
-#' The tests above assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simple a transformation of the estimated points along the curve already computed. When `hypothesis` is a number, that number is also transformed.
+#' The tests above assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. When `hypothesis` is a number, that number is also transformed.
 #'
 #' Tests on the transformed and untransformed ADRFs correspond to different hypotheses; the difference is not simply a matter of the appropriate distribution of the statistic. For example, for binary outcome model with a logistic transformation, testing that the transformed ADRF is linear corresponds to testing whether the ADRF is a sigmoid function, whereas testing that the untransformed ADRF is linear corresponds to testing whether the ADRF is a straight line. These choices correspond to how the projection of the ADRF is formed; see [curve_projection()] for details. See Examples for an example with a binary outcome. In the example, there is evidence to reject that the transformed ADRF is linear for one of the groups, indicating that a sigmoid function is not sufficient for describing the ADRF, but there is indeterminate evidence (at the .05) to reject that the untransformed ADRF is linear for either group, indicating that a linear function is sufficient for describing the ADRF (at least in the treatment range examined).
+#'
+#' @references
+#' Kuonen, D. (1999). Saddlepoint approximations for distributions of quadratic forms in normal variables. *Biometrika*, 86(4), 929–935. \doi{10.1093/biomet/86.4.929}
 #'
 #' @seealso
 #' * [adrf()] for computing the ADRF
@@ -128,14 +131,9 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   }
 
   if (missing(method) || is_null(method)) {
-    if (rlang::is_installed("CompQuadForm")) {
-      method <- "imhof"
-    }
-    else if (rlang::is_installed("survey")) {
-      method <- "saddlepoint"
-    }
-    else {
-      method <- "sim"
+    method <- {
+      if (rlang::is_installed("CompQuadForm")) "imhof"
+      else "saddlepoint"
     }
   }
 
@@ -144,16 +142,6 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   if (method %in% c("imhof", "davies", "liu")) {
     rlang::check_installed("CompQuadForm")
-  }
-  else if (method == "saddlepoint") {
-    rlang::check_installed("survey")
-  }
-
-  ev_tol <- 1e-10
-  if (method %in% c("imhof", "davies", "liu", "sim", "satterthwaite",
-                    "saddlepoint")) {
-    arg::arg_number(ev_tol)
-    arg::arg_gt(ev_tol, 0)
   }
 
   if (method == "sim") {
@@ -182,21 +170,31 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   transformed <- !all(check_if_zero(transform_list$transform(.est0) - .est0))
 
-  # subset
-  if (is_null(.by_grid) || is_not_null(.contrast)) {
+  # subset; process_subset_by_grid() gives an error when subset is supplied
+  # without by or for a contrast
+  .subset <- process_subset_by_grid(substitute(subset),
+                                    .by_grid = .by_grid,
+                                    .contrast = .contrast)
+
+  if (is_null(.by_grid) || !is_null(.contrast)) {
     .s <- seq_along(.est0)
   }
   else {
-    .subset <- process_subset_by_grid(substitute(subset),
-                                      .by_grid = .by_grid,
-                                      .contrast = .contrast)
-
     .s <- which(rep(.subset, each = length(.est0) / fnrow(.by_grid)))
 
     .by_grid <- ss(.by_grid, .subset)
 
     .est0 <- .est0[.s]
     .vcov0 <- ss(.vcov0, .s, .s)
+
+    if (!is_null(.boot)) {
+      .boot[["t"]] <- ss(.boot[["t"]], j = .s)
+      .boot[["t0"]] <- .boot[["t0"]][.s]
+    }
+
+    if (!is_null(.draws)) {
+      .draws <- ss(.draws, j = .s)
+    }
   }
 
   .values <- .attr(object, ".values")
@@ -205,7 +203,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   by_list <- {
     if (is_null(.by_grid) && is_null(.contrast)) list(seq_len(n))
-    else if (is_not_null(.contrast)) gsplit(seq_along(.est0), rep(seq_along(.contrast), each = n))
+    else if (!is_null(.contrast)) gsplit(seq_along(.est0), rep(seq_along(.contrast), each = n))
     else gsplit(seq_along(.est0), rep(seq_row(.by_grid), each = n))
   }
 
@@ -219,10 +217,14 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   else if (rlang::is_formula(hypothesis)) {
     proj_data <- qDF(.values) |>
       setNames(.treat) |>
-      model.frame(formula = hypothesis)
+      model.frame(formula = hypothesis, na.action = stats::na.pass)
 
     mm <- .attr(proj_data, "terms") |>
       model.matrix(data = proj_data)
+
+    if (!all(is.finite(mm))) {
+      arg::err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
+    }
   }
 
   #Weights for trapezoidal Riemann sum
@@ -232,7 +234,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   p <- vapply(by_list, function(.b) {
 
-    if (is_not_null(.boot)) {
+    if (!is_null(.boot)) {
       resid_boot <- .boot
 
       if (is.numeric(hypothesis)) {
@@ -260,7 +262,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
         vcov.b <- stats::vcov(resid_boot)
       }
     }
-    else if (is_not_null(.draws)) {
+    else if (!is_null(.draws)) {
       if (is.numeric(hypothesis)) {
         est.b <- transform_list$transform(.est0[.b]) - transform_list$transform(hypothesis)
 
@@ -291,7 +293,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     else {
       if (is.numeric(hypothesis)) {
         est.b <- transform_list$transform(.est0[.b]) - transform_list$transform(hypothesis)
-        vcov.b <- quad_mult(diag(transform_list$d_transform(.est0[.b])),
+        vcov.b <- quad_mult(diag(transform_list$d_transform(.est0[.b]), nrow = length(.b)),
                             ss(.vcov0, .b, .b))
       }
       else {
@@ -299,10 +301,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
                         transform = transform_list,
                         jac = TRUE, tol = 0, maxit = 20)
 
-        J  <- fit$jacobian
-        JW <- w * J
-
-        H <- J %*% solve(crossprod(J, JW), t(JW))
+        H <- fit$jacobian %*% .proj_influence(mm, .est0[.b], fit, w, transform_list)
 
         est.b <- .est0[.b] - fit$fitted.values
 
@@ -317,87 +316,37 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
       }
     }
 
+    # The covariance of the estimates themselves sets the scale against which
+    # numerical tolerances are judged, so results do not depend on the units of
+    # the outcome
+    ref.b <- {
+      if (is.numeric(hypothesis)) vcov.b
+      else if (!is_null(.boot)) stats::cov(ss(.boot[["t"]], j = .b))
+      else if (!is_null(.draws)) stats::cov(ss(.draws, j = .b))
+      else ss(.vcov0, .b, .b)
+    }
+
     stat <- sum((est.b * wsq)^2)
 
-    if (stat / n < 1e-10) {
-      return(1)
-    }
+    Wsq <- diag(wsq, nrow = length(wsq))
 
-    vcov.b <- quad_mult(diag(wsq), vcov.b)
+    ev <- quad_mult(Wsq, vcov.b) |>
+      eigen(symmetric = TRUE, only.values = TRUE) |>
+      getElement("values")
 
-    eig_vcov <- eigen(vcov.b, symmetric = TRUE)
+    scale <- quad_mult(Wsq, ref.b) |>
+      eigen(symmetric = TRUE, only.values = TRUE) |>
+      getElement("values") |>
+      max()
 
-    pos <- eig_vcov$values > ev_tol  # Tolerance for nonnegative EVs
-
-    if (!any(pos)) {
-      return(NaN)
-    }
-
-    U_r <- ss(eig_vcov$vectors, j = pos)
-
-    Lambda_r_sqrt <- diag(sqrt(eig_vcov$values[pos]), nrow = sum(pos))
-    L <- U_r %*% Lambda_r_sqrt
-
-    V <- crossprod(L)
-
-    if (method == "sim") {
-      return(.sim_p_value(stat, V, n = nsim, max_size = 1e8, df = df))
-    }
-
-    if (method == "satterthwaite") {
-      # Moment matching
-      mu <- sum(diag(V)) #sum(ev)
-      s2 <- sum(V^2)     #sum(ev^2)
-
-      ndf <- mu^2 / s2
-
-      return(pf(stat / mu, df1 = ndf, df2 = df, lower.tail = FALSE))
-    }
-
-    #Rescale variance to make stat = 1 (improves numerical performance)
-    V <- V / stat
-
-    ev <- eigen(V, symmetric = TRUE, only.values = TRUE)$values
-
-    ev <- ev[abs(ev) > ev_tol * max(abs(ev))]
-
-    if (method == "saddlepoint") {
-      return(survey::pFsum(1, alloc(1.0, length(ev)), ev, df, lower.tail = FALSE,
-                           method = "saddlepoint"))
-    }
-
-    if (is.finite(df)) {
-      .q <- 0
-      .lambda <- c(ev, -1 / df)
-      .h <- c(alloc(1.0, length(ev)), df)
-    }
-    else {
-      .q <- 1
-      .lambda <- ev
-      .h <- alloc(1.0, length(ev))
-    }
-
-    suppressWarnings({
-      switch(method,
-             "imhof" = CompQuadForm::imhof(q = .q, lambda = .lambda,
-                                           h = .h,
-                                           epsabs = ...get("epsabs", 1e-6),
-                                           epsrel = ...get("epsrel", 1e-6),
-                                           limit = ...get("limit", 1e4))$Qq,
-             "davies" = CompQuadForm::davies(q = .q, lambda = .lambda,
-                                             h = .h,
-                                             lim = ...get("lim", 1e4),
-                                             acc = ...get("acc", 0.0001))$Qq,
-             "liu" = CompQuadForm::liu(q = .q, lambda = .lambda,
-                                       h = .h))
-    })
-
+    .omnibus_p_value(stat, ev, scale, method = method,
+                     df = df, nsim = nsim, ...)
   }, numeric(1L))
 
   res_names <- "p.value"
 
   out <- make_df(res_names, length(p)) |>
-    ftransform(p.value = pmax(p, 1e-12)) |>
+    ftransform(p.value = squish(p, lo = 1e-12, hi = 1)) |>
     add_est_labels(.contrast, .by_grid)
 
   attr(out, "method") <- method
@@ -435,8 +384,8 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
 
   qoi <- paste(c(if (isTRUE(transformed) && is.numeric(hypothesis)) "transformed",
                  get_curve_type(x),
-                 if (is_not_null(.contrast)) "contrast",
-                 if (is_not_null(.reference)) sprintf("difference from reference (%s = %s)",
+                 if (!is_null(.contrast)) "contrast",
+                 if (!is_null(.reference)) sprintf("difference from reference (%s = %s)",
                                                       .treat, round(.reference, 4L))),
                collapse = " ")
 
@@ -459,8 +408,8 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
 
   method <- switch(method,
                    "satterthwaite" = "the Satterthwaite approximation",
-                   "imhof" = "the Imhof approximation",
-                   "davies" = "the Davies approximation",
+                   "imhof" = "the Imhof approximation (the saddlepoint approximation for p-values below .0001)",
+                   "davies" = "the Davies approximation (the saddlepoint approximation for p-values below .0001)",
                    "liu" = "the Liu approximation",
                    "sim" = sprintf("a simulation approximation with %s replicates",
                                    prettyNum(nsim, big.mark = ",", scientific = FALSE)),
@@ -472,4 +421,153 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
     cli::cat_line()
 
   invisible(x)
+}
+
+# Upper-tail probability of a quadratic form in normal variables: P(Q > stat),
+# where Q = sum_k ev_k * chi^2_1 and ev are the (positive) eigenvalues of its
+# covariance. With finite `df`, the covariance is estimated, and the
+# probability is P(Q > stat * chi^2_df / df).
+.quad_form_tail <- function(stat, ev, method = "imhof", df = Inf, nsim = 1e6, ...) {
+  if (method == "sim") {
+    return(.sim_p_value(stat, diag(ev, nrow = length(ev)), n = nsim,
+                        max_size = 1e8, df = df))
+  }
+
+  if (method == "satterthwaite") {
+    # Moment matching
+    mu <- sum(ev)
+    s2 <- sum(ev^2)
+
+    return(pf(stat / mu, df1 = mu^2 / s2, df2 = df, lower.tail = FALSE))
+  }
+
+  # Rescale to make stat = 1 (improves numerical performance)
+  ev <- ev / stat
+
+  if (is.finite(df)) {
+    .q <- 0
+    .lambda <- c(ev, -1 / df)
+    .h <- c(alloc(1.0, length(ev)), df)
+  }
+  else {
+    .q <- 1
+    .lambda <- ev
+    .h <- alloc(1.0, length(ev))
+  }
+
+  if (method == "saddlepoint") {
+    p <- .saddlepoint_tail(.q, .lambda, .h)
+
+    # The approximation is singular near the mean of the distribution, where
+    # the Satterthwaite approximation is used instead, as in survey
+    if (is.na(p)) {
+      p <- pf(1 / sum(ev), df1 = sum(ev)^2 / sum(ev^2), df2 = df, lower.tail = FALSE)
+    }
+
+    return(p)
+  }
+
+  out <- suppressWarnings({
+    switch(method,
+           "imhof" = CompQuadForm::imhof(q = .q, lambda = .lambda,
+                                         h = .h,
+                                         epsabs = ...get("epsabs", 1e-6),
+                                         epsrel = ...get("epsrel", 1e-6),
+                                         limit = ...get("limit", 1e4)),
+           "davies" = CompQuadForm::davies(q = .q, lambda = .lambda,
+                                           h = .h,
+                                           lim = ...get("lim", 1e4),
+                                           acc = ...get("acc", 0.0001)),
+           "liu" = list(Qq = CompQuadForm::liu(q = .q, lambda = .lambda,
+                                               h = .h)))
+  })
+
+  p <- out[["Qq"]]
+
+  # Imhof's and Davies's methods control the absolute error of the
+  # probability, so small p-values can be inaccurate, negative, or flagged as
+  # unreliable; the saddlepoint approximation, whose error is relative, is used
+  # for them instead
+  if (method %in% c("imhof", "davies") &&
+      (!is.finite(p) || p < 1e-4 || p > 1 ||
+       (!is_null(out[["ifault"]]) && out[["ifault"]] != 0))) {
+    p_sp <- .saddlepoint_tail(.q, .lambda, .h)
+
+    if (!is.na(p_sp)) {
+      p <- p_sp
+    }
+  }
+
+  p
+}
+
+# P-value of the omnibus test given the test statistic and the eigenvalues of
+# the weighted covariance of the tested vector. Tolerances are relative to
+# `scale`, the largest eigenvalue of the weighted covariance of the estimates,
+# so the result does not depend on the units of the outcome. The result is
+# restricted to [0, 1].
+.omnibus_p_value <- function(stat, ev, scale, method, df = Inf, nsim = 1e6,
+                             tol = 1e-10, ...) {
+  scale <- max(scale, ev, 0)
+
+  if (!is.finite(stat) || !is.finite(scale)) {
+    return(NaN)
+  }
+
+  ev <- ev[ev > tol * scale]
+
+  # When the tested quantity has no sampling variance, the hypothesis either
+  # holds to numerical precision or does not hold at all (e.g., testing the
+  # linearity of a curve that is linear by construction)
+  if (is_null(ev)) {
+    if (stat <= tol * max(scale, .Machine$double.xmin)) {
+      return(1)
+    }
+
+    return(0)
+  }
+
+  if (stat <= 0) {
+    return(1)
+  }
+
+  .quad_form_tail(stat, ev, method = method, df = df, nsim = nsim, ...) |>
+    squish(lo = 0, hi = 1)
+}
+
+# Saddlepoint approximation to P(sum_j lambda_j chi^2_{h_j} > q) (Kuonen, 1999),
+# using the Barndorff-Nielsen form, as in survey:::saddle(). Negative lambdas
+# are allowed, which is how finite df are handled. Returns NA near the mean of
+# the distribution, where the approximation is singular.
+.saddlepoint_tail <- function(q, lambda, h = rep(1, length(lambda))) {
+  d <- max(abs(lambda))
+  lambda <- lambda / d
+  q <- q / d
+
+  K <- function(zeta) -sum(h * log1p(-2 * zeta * lambda)) / 2
+  K1 <- function(zeta) sum(h * lambda / (1 - 2 * zeta * lambda))
+  K2 <- function(zeta) 2 * sum(h * lambda^2 / (1 - 2 * zeta * lambda)^2)
+
+  # The saddlepoint lies where 1 - 2 * zeta * lambda > 0 for every lambda
+  upper <- {
+    if (any(lambda > 0)) .99999 / (2 * max(lambda))
+    else 1e3
+  }
+
+  lower <- {
+    if (any(lambda < 0)) .99999 / (2 * min(lambda))
+    else -sum(h) / (2 * q)
+  }
+
+  root <- try(uniroot(function(z) K1(z) - q, lower = lower, upper = upper,
+                      tol = 1e-12)$root, silent = TRUE)
+
+  if (null_or_error(root) || abs(root) < 1e-4) {
+    return(NA_real_)
+  }
+
+  w <- sign(root) * sqrt(2 * (root * q - K(root)))
+  v <- root * sqrt(K2(root))
+
+  pnorm(w + log(v / w) / w, lower.tail = FALSE)
 }

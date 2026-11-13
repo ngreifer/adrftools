@@ -73,7 +73,7 @@ One may also want to perform inference on the ADRF to answer substantive questio
 
 The ADRF is one of a variety of functions we call "effect curves", which are functions of the treatment. The following are the effect curves available in *adrftools*:
 
--   The ARDF: $$\theta_\text{ADRF}(a) = E[Y(a)]$$
+-   The ADRF: $$\theta_\text{ADRF}(a) = E[Y(a)]$$
 -   A subgroup ADRF (where $G$ is a grouping variable and $g$ is a level of $G$): $$\theta_{\text{ADRF},g}(a) = E\left[Y(a)|G=g\right]$$
 -   The average marginal effect function (AMEF)—the derivative of the ADRF: $$\theta_\text{AMEF}(a) = \frac{d\theta_\text{ADRF}(t)}{dt}\Bigr|_{t = a}$$
 -   The reference effect curve—the contrast between each point on an effect curve ($\theta(a)$) and a given (fixed) value on that curve ($\theta(a_0)$): $$\theta_\text{ref}(a; a_0) = \theta(a) - \theta(a_0)$$
@@ -208,7 +208,7 @@ There are several methods of approximating the CDF, and this choice is controlle
 
 `method = "imhof"` and `method = "sim"` are the most reliable. The former is fast and deterministic, and so is used by default when the *CompQuadForm* package is installed. The latter is slower and subject to Monte Carlo error, but does not require any additional packages. `method = "saddlepoint"` performs well, too, and is used by default if the *CompQuadForm* package is not installed but the *survey* package is.
 
-`hypothesis` can also be `"linear"`, `"quadratic"`, `"cubic"`, or a formula representing the projection to test. Rejecting the null hypothesis indicates that the ADRF is more complicated than the supplied model; for example, rejecting the null hypothesis for `hypothesis = "linear"` means the ADRF is nonlinear, and failing to reject the null hypothesis for for `hypothesis = "quadratic"` means there is not enough evidence to claim the ADRF is more complicated than a quadratic model. Rejecting any of these hypotheses also rejects the null hypothesis for a lower-order model, including `"flat"`.
+`hypothesis` can also be `"linear"`, `"quadratic"`, `"cubic"`, or a formula representing the projection to test. Rejecting the null hypothesis indicates that the ADRF is more complicated than the supplied model; for example, rejecting the null hypothesis for `hypothesis = "linear"` means the ADRF is nonlinear, and failing to reject the null hypothesis for `hypothesis = "quadratic"` means there is not enough evidence to claim the ADRF is more complicated than a quadratic model. Rejecting any of these hypotheses also rejects the null hypothesis for a lower-order model, including `"flat"`.
 
 Finally, `hypothesis` can be a single number, indicating the null hypothesis that the ADRF is flat and equal to that value. Typically, this is more useful when testing other effect curves that have a natural null value (e.g., 0).
 
@@ -607,7 +607,7 @@ adrf_bll_bin(logBLL = c(0, 1, 2)) |>
 
 When `transform = FALSE`, standard errors are displayed; otherwise, they are omitted because the computed standard errors are on the transformed estimates. Note that regardless of `transform`, all estimates and confidence intervals are reported on the scale of the original prediction type (in this case, probabilities). `transform` only changes how the confidence intervals are computed.
 
-`transform` can be `TRUE`, `FALSE`, a `<family>` object, or a function. When `TRUE` (the default for all *adrftools* functions that use it), the link function of the outcome model will be used. When a `<family>` object is supplied, its link function will be used. When a function is supplied, it will be used as the transformation. Typically a transformation function takes in as input the estimate on the outcome scale (e.g., probabilities for binary outcomes) and returns a quantity on an unbounded scale; examples include `qlogis()` and `qnorm()` for binary outcomes (corresponding to logistic and probit links) and `log()` for count outcomes.
+`transform` can be `TRUE`, `FALSE`, a `<family>` object, a link object (e.g., from `make.link()`), or one of the functions `log()`, `sqrt()`, `exp()`, `qlogis()`, or `qnorm()`. When `TRUE` (the default for all *adrftools* functions that use it), the link function of the outcome model will be used. When a `<family>` or link object is supplied, its link function will be used. A transformation takes in as input the estimate on the outcome scale (e.g., probabilities for binary outcomes) and returns a quantity on an unbounded scale; examples include `qlogis()` and `qnorm()` for binary outcomes (corresponding to logistic and probit links) and `log()` for count outcomes.
 
 When projecting the ADRF onto a simpler model, one has the option of specifying the projection either as a transformation of the linear predictor or as the linear predictor itself (i.e., untransformed). For example, with a binary outcome and a logistic transformation, specifying the projection as a transformation will yield a logistic (S-shaped) curve, whereas specifying the projection as the linear predictor will yield a straight line. For a transformation $g(\mu)$ with inverse $g^{-1}(\eta)$ (e.g., $g(\mu) = \log{\frac{\mu}{1-\mu}}$ with $g^{-1}(\eta) = \frac{1}{1 + \exp(-\eta)}$), the transformed projection is estimated by minimizing
 
@@ -748,7 +748,7 @@ In the `nhanes3lead` dataset, the `MEC_wt` variable contains sampling weights. B
 2.  Using the `s.weights` argument in `WeightIt::weightit()`
 3.  Using the `weights` argument in `glm()`
 
-Only the last of these three requires using the the `wts` argument.
+Only the last of these three requires using the `wts` argument.
 
 #### Using *survey*
 

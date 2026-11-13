@@ -30,11 +30,11 @@
 
 \item{proj}{an optional \code{curve_projection} object, the output of a call to \code{\link[=curve_projection]{curve_projection()}}. Supplying this adds the projection curve to the effect curve plot.}
 
-\item{transform}{whether to compute intervals on the transformed estimates. Allowable options include \code{TRUE}, \code{FALSE}, or a function specifying a transformation. Ignored unless \code{x} is an ADRF. See Details.}
+\item{transform}{whether to compute intervals on the transformed estimates. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}. Ignored unless \code{x} is an ADRF. See Details.}
 
 \item{ci.type}{string; when bootstrapping is used in the original effect curve, what type of confidence interval is to be computed. Allowable options include \code{"perc"} for percentile intervals, \code{"wald"} for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When \code{simultaneous = TRUE}, only \code{"perc"} and \code{"wald"} are allowed. Default is \code{"perc"}. Ignored when bootstrapping is not used.}
 
-\item{df}{the "denominator" degrees of freedom to use for the critical test statistics for confidence bands. Default is to use the residual degrees of freedom from the original model if it is a linear model and \code{Inf} otherwise.}
+\item{df}{the "denominator" degrees of freedom to use for the critical test statistics for confidence bands. Default is to use the residual degrees of freedom from the original model if it is a linear model and \code{Inf} otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see \code{\link[=adrf]{adrf()}}).}
 
 \item{...}{ignored.}
 }
@@ -76,12 +76,12 @@ Values in brackets are to be changed by the user. Refer to the \CRANpkg{ggplot2}
 When \code{by} is supplied to \code{\link[=adrf]{adrf()}}, \code{plot()} produces an effect curve plot for each subgroup. When \code{x} is the output of a call to \code{\link[=curve_contrast]{curve_contrast()}}, \code{plot()} produces an effect curve plot for each treatment contrast.
 \subsection{Transform}{
 
-The usual confidence bands assume the estimates along the effect curve are normally distributed (or t-distributed when \code{df} is not \code{Inf}). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. \code{transform} transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simple a transformation of the estimated points along the curve already computed. Confidence bands are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome.
+The usual confidence bands assume the estimates along the effect curve are normally distributed (or t-distributed when \code{df} is not \code{Inf}). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. \code{transform} transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. Confidence bands are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome.
 }
 
 \subsection{Simultaneous confidence bands}{
 
-Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. \code{plot()} uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate.
+Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. \code{plot()} uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate. With bootstrapping or Bayesian models and \code{ci.type = "perc"}, the simultaneous band is the product of the equal-tailed percentile intervals with the tail probability calibrated so that it contains the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
 }
 }
 \examples{
@@ -124,6 +124,9 @@ adrf_contrast <- curve_contrast(adrf2)
 
 plot(adrf_contrast)
 }
+}
+\references{
+Montiel Olea, J. L., & Plagborg-Møller, M. (2019). Simultaneous confidence bands: Theory, implementation, and an application to SVARs. \emph{Journal of Applied Econometrics}, 34(1), 1–17. \doi{10.1002/jae.2656}
 }
 \seealso{
 \itemize{

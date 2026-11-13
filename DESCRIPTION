@@ -22,7 +22,7 @@ Imports:
     utils
 Suggests:
     CompQuadForm (>= 1.4.4),
-    fwb (>= 0.5.0),
+    fwb (>= 1.0.0),
     survey,
     splines,
     WeightIt,
@@ -31,13 +31,15 @@ Suggests:
     generics,
     dbarts,
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat (>= 3.0.0),
+    patrick (>= 0.3.0)
 License: GPL (>=2)
 Encoding: UTF-8
 URL: https://github.com/ngreifer/adrftools, https://ngreifer.github.io/adrftools/
 BugReports: https://github.com/ngreifer/adrftools/issues
 VignetteBuilder: knitr
 LazyData: true
-RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.1
