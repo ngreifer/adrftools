@@ -32,6 +32,29 @@ test_that("bootstrap point estimates equal the original estimates", {
                "Only one clustering variable")
 })
 
+test_that("the stored model matrix of the bootstrap gives the same estimates as the original fit", {
+  # The bootstrap stores the columns of the model matrix that are the same at
+  # every treatment value once and the others at each treatment value, while
+  # the other inference methods build the whole model matrix at each treatment
+  # value; an offset, an aliased coefficient, a factor interacting with the
+  # treatment, and a subset exercise each part
+  d <- nhanes3lead
+  d$expo <- seq(1, 3, length.out = nrow(d))
+  d$Male2 <- d$Male
+
+  fit <- glm(Block ~ splines::ns(logBLL, 3) * Race + Male + Male2 + PIR +
+               offset(log(expo)), data = d, family = poisson)
+  expect_true(anyNA(coef(fit)))
+
+  set.seed(5)
+  a <- adrf(fit, treat = "logBLL", n = 7, vcov = "fwb", subset = Age > 7,
+            by = ~Male, fwb.args = list(R = 5, verbose = FALSE))
+  a0 <- adrf(fit, treat = "logBLL", n = 7, vcov = "none", subset = Age > 7,
+             by = ~Male)
+
+  expect_equal(get_est(a), get_est(a0), tolerance = 1e-12)
+})
+
 test_that("bootstrap inference works throughout", {
   fit <- boot_fit()
 

@@ -97,37 +97,34 @@
   off
 }
 
-.get_estimator <- function(.x, ...) {
-  UseMethod(".get_estimator")
+# Which columns differ between two model matrices of the same dimensions; a
+# missing value in either counts as a difference
+.cols_differ <- function(a, b) {
+  d <- a != b
+  d[is.na(d)] <- TRUE
+
+  colSums(d) > 0
 }
 
-#' @exportS3Method NULL
-.get_estimator.lm <- function(.x, ...) {
-  function(mm, beta0 = NULL, model = NULL, offset = 0, ...) {
-    if (is_null(beta0)) {
-      beta0 <- marginaleffects::get_coef(model)
-    }
+.get_linkinv <- function(.x, ...) {
+  UseMethod(".get_linkinv")
+}
 
-    drop(tcrossprod(na_rm(beta0), mm)) + offset
+# The function that maps the linear predictor to the predictions
+#' @exportS3Method NULL
+.get_linkinv.lm <- function(.x, ...) {
+  function(eta) {
+    eta
   }
 }
 
 #' @exportS3Method NULL
-.get_estimator.glm <- function(.x, ...) {
-  .linkinv <- process_family(.x)$linkinv
-
-  function(mm, beta0 = NULL, model = NULL, offset = 0, ...) {
-    if (is_null(beta0)) {
-      beta0 <- marginaleffects::get_coef(model)
-    }
-
-    (drop(tcrossprod(na_rm(beta0), mm)) + offset) |>
-      .linkinv()
-  }
+.get_linkinv.glm <- function(.x, ...) {
+  process_family(.x)$linkinv
 }
 
 #' @exportS3Method NULL
-.get_estimator.default <- function(.x, ...) {
+.get_linkinv.default <- function(.x, ...) {
   NULL
 }
 

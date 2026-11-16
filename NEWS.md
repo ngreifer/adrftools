@@ -51,7 +51,7 @@ adrftools News and Updates
 
 * `method = "sim"` in `summary.effect_curve()` is now faster and uses much less memory.
 
-* `adrf()` is faster and uses less memory, especially with `vcov = "conditional"` and with unconditional standard errors for models fit with *WeightIt*, whose influence functions are no longer computed twice. Omnibus tests and projections of bootstrapped and Bayesian effect curves are faster when no transformation is used.
+* `adrf()` is faster and uses much less memory. The model matrix is now built for one treatment value at a time rather than for all of them at once (on the `?adrf` example with `n = 201`, peak memory fell from about 450 MB to about 170 MB). Influence functions for unconditional standard errors for models fit with *WeightIt* are also no longer computed twice. Omnibus tests and projections of bootstrapped and Bayesian effect curves are faster when no transformation is used.
 
 * Simultaneous p-values for Bayesian models are now computed by inverting the simultaneous intervals. Previously, they were smaller than the pointwise p-values. The calibrated tail probability of the simultaneous intervals (Montiel Olea and Plagborg-Møller, 2019) is now found exactly rather than by root finding, which also fixes an error that could occur with few posterior draws.
 

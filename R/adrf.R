@@ -379,26 +379,46 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   cross_id <- GRP(list(by_id = rep.int(by_id, n), val_id = val_id),
                   sort = TRUE)
 
-  wi <- rep.int(ss(wts, s), n)
+  w_unit <- ss(wts, s)
+  wi <- rep.int(w_unit, n)
 
-  data_grid <- ss(model_data, rep.int(ii, n))
+  # The data with the treatment set to values[k] for every unit, and the grid
+  # of every unit at every treatment value, with the rows ordered by treatment
+  # value, then unit
+  .data_at <- function(k) {
+    d <- model_data
+    d[[treat]] <- rep.int(values[k], ni)
+    d
+  }
 
-  data_grid[[treat]] <- values[val_id]
+  .data_grid <- function() {
+    data_grid <- ss(model_data, rep.int(ii, n))
+    data_grid[[treat]] <- values[val_id]
+    data_grid
+  }
 
-  switch(.get_model_type(x, type = type, data_grid = data_grid,
+  # A sample of up to 20 rows of the grid for checking the model type
+  rows <- seq(1, ni * n, length.out = min(ni * n, 20L)) |>
+    round() |>
+    funique()
+
+  data_check <- ss(model_data, (rows - 1L) %% ni + 1L)
+  data_check[[treat]] <- values[(rows - 1L) %/% ni + 1L]
+
+  switch(.get_model_type(x, type = type, data_grid = data_check,
                          model_data = model_data, is_bayes = is_bayes, ...),
          "lm" = {
-           estimator <- .get_estimator.lm(x)
+           linkinv <- .get_linkinv.lm(x)
            grad_fun <- .get_grad_fun.lm(x)
            pred_fun <- .get_pred_fun.lm(x)
          },
          "glm" = {
-           estimator <- .get_estimator.glm(x)
+           linkinv <- .get_linkinv.glm(x)
            grad_fun <- .get_grad_fun.glm(x)
            pred_fun <- .get_pred_fun.glm(x, type = type)
          },
          {
-           estimator <- .get_estimator.default(x)
+           linkinv <- .get_linkinv.default(x)
            grad_fun <- .get_grad_fun.default(x)
            pred_fun <- .get_pred_fun.default(x, type = type)
          })
@@ -411,55 +431,121 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     beta0 <- beta0[!aliased]
   }
 
-  if (!is_bayes && is_null(pred_fun)) {
-    mm <- get_tt(x, model_data) |>
-      model.matrix(data = data_grid, xlev = .model_xlev(x))
+  # Predictions from the model matrix and coefficients ("lm" and "glm" model
+  # types) are computed one treatment value at a time, so that only one model
+  # matrix the size of the data is held at once rather than one for the whole
+  # grid
+  fast <- !is_bayes && is_null(pred_fun)
 
-    # Subsetting copies the matrix, which can be large, so only when needed
-    if (any(aliased)) {
-      mm <- ss(mm, j = !aliased)
-    }
+  if (fast) {
+    tt <- get_tt(x, model_data)
 
-    # Offsets (which model.matrix() leaves out) for each row of the grid
+    # The variables of the model (the model frame) are evaluated on the whole
+    # grid at once, as predict() would with the grid as new data, because a
+    # variable can depend on other rows (e.g., `I(treat - mean(treat))` or
+    # `rank(treat)`) and so would differ if evaluated one treatment value at
+    # a time. The model matrix, which is computed row by row from the model
+    # frame and is usually much larger, is then built for one treatment value
+    # at a time from the rows of the model frame for that value.
+    data_grid <- .data_grid()
+
+    # Offsets (which model.matrix() leaves out) for each row of the grid, or 0
+    # when the model has no offset
     off_grid <- .grid_offset(x, data_grid, model_data)
 
-    # Gradient of the weighted mean predictions in each subgroup and at each
-    # treatment value with respect to the coefficients, computed as weighted
-    # sums so that the rows of `mm` are not multiplied in a copy
-    .avg_grad <- function() {
-      me <- grad_fun(drop(mm %*% beta0) + off_grid)
+    mf <- stats::model.frame(tt, data = data_grid, xlev = .model_xlev(x))
 
-      fsum(mm, g = cross_id, w = wi * me) / fsum(wi, g = cross_id)
+    rm(data_grid)
+
+    # nrow() rather than fnrow(), which counts the rows of the first column,
+    # a matrix for terms like poly()
+    if (nrow(mf) != ni * n) {
+      arg::err("the variables in the model could not be computed for every unit at every treatment value")
     }
 
-    est_fun <- function(model = NULL, b = NULL, data0 = NULL) {
-      if (is_null(b)) {
-        # Coefficients of a refit model (e.g., in a bootstrap replicate) use
-        # the original aliasing pattern so they match the columns of `mm`; a
-        # coefficient newly aliased in the refit is set to 0, as predict()
-        # does
-        b <- marginaleffects::get_coef(model)[!aliased]
-        b[is.na(b)] <- 0
+    .rows_at <- function(k) {
+      (k - 1L) * ni + ii
+    }
+
+    .off_at <- function(k) {
+      if (length(off_grid) == 1L) off_grid
+      else off_grid[.rows_at(k)]
+    }
+
+    .mm_at <- function(k) {
+      mm <- model.matrix(tt, data = mf[.rows_at(k), , drop = FALSE])
+
+      # Subsetting copies the matrix, so only when needed
+      if (any(aliased)) mm[, !aliased, drop = FALSE]
+      else mm
+    }
+
+    # Coefficients of a refit model (e.g., in a bootstrap replicate) use the
+    # original aliasing pattern so they match the columns of the model matrix;
+    # a coefficient newly aliased in the refit is set to 0, as predict() does
+    .refit_coef <- function(model) {
+      b <- marginaleffects::get_coef(model)[!aliased]
+      b[is.na(b)] <- 0
+      b
+    }
+
+    # Predictions in the order of the grid and, if `grad = TRUE`, the gradient
+    # of the weighted mean predictions in each subgroup and at each treatment
+    # value with respect to the coefficients, in the order of `cross_id`
+    # (subgroup, then treatment value). The gradient is computed as weighted
+    # sums so that the rows of the model matrix are not multiplied in a copy.
+    .fast_pass <- function(b, grad = FALSE) {
+      phat <- vector("list", n)
+      gr <- if (grad) vector("list", n)
+
+      for (k in vi) {
+        mm <- .mm_at(k)
+
+        eta <- drop(mm %*% b) + .off_at(k)
+
+        phat[[k]] <- linkinv(eta)
+
+        if (grad) {
+          gr[[k]] <- fsum(mm, g = by_id, w = w_unit * grad_fun(eta)) /
+            fsum(w_unit, g = by_id)
+        }
       }
 
-      estimator(mm = data0 %or% mm, beta0 = b, model = model, offset = off_grid)
+      list(phat = unlist(phat, use.names = FALSE),
+           gr = if (grad) {
+             gr <- do.call("rbind", gr)
+             ss(gr, .value_major_to_by_major(n, fnrow(gr) / n))
+           })
+    }
+
+    est_fun <- function(model = NULL, b = NULL) {
+      if (is_null(b)) {
+        b <- .refit_coef(model)
+      }
+
+      .fast_pass(b)[["phat"]]
     }
   }
   else {
-    est_fun <- function(model = NULL, b = NULL, data0 = NULL) {
-      pred_fun(data_grid = data0 %or% data_grid, beta0 = b, model = model, ...)
+    # The Bayesian branch predicts one treatment value at a time with
+    # .data_at(), as before
+    data_grid <- if (!is_bayes) .data_grid()
+
+    est_fun <- function(model = NULL, b = NULL) {
+      pred_fun(data_grid = data_grid, beta0 = b, model = model, ...)
     }
   }
 
   out <- list(est = NULL, vcov = NULL, boot = NULL, draws = NULL)
 
   if (is_bayes) {
-    out[["draws"]] <- rsplit(seq_row(data_grid), rep.int(val_id, fnrow(data_grid) / (ni * n))) |>
-      lapply(function(.j) {
-        est_fun(x, data0 = ss(data_grid, .j)) |>
-          .attr("posterior_draws") |>
-          .fmean(g = by_id, w = ss(wi, .j))
-      }) |>
+    # Predictions are computed one treatment value at a time to limit the size
+    # of the posterior draws held at once
+    out[["draws"]] <- lapply(vi, function(k) {
+      pred_fun(data_grid = .data_at(k), model = x, ...) |>
+        .attr("posterior_draws") |>
+        .fmean(g = by_id, w = w_unit)
+    }) |>
       do.call(what = "rbind") |>
       t() |>
       ss(j = .value_major_to_by_major(n, n_by))
@@ -483,6 +569,44 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     # target weights times the bootstrap weights are used to average the
     # predictions
     refit <- .make_boot_refit(x, data)
+
+    if (fast) {
+      # Predictions are needed in every replicate, so the model matrix is
+      # stored rather than rebuilt. Columns that are identical at every
+      # treatment value are stored once and the others once per treatment
+      # value. Which columns are identical is found by comparing them rather
+      # than from the formula, because a variable can depend on the treatment
+      # without naming it, so the stored columns reproduce the model matrix at
+      # each treatment value exactly.
+      mm1 <- .mm_at(1L)
+
+      tc <- rep.int(FALSE, fncol(mm1))
+
+      for (k in vi[-1L]) {
+        tc <- tc | .cols_differ(.mm_at(k), mm1)
+      }
+
+      mm_fixed <- mm1[, !tc, drop = FALSE]
+      mm_treat <- lapply(vi, function(k) {
+        (if (k == 1L) mm1 else .mm_at(k))[, tc, drop = FALSE]
+      })
+
+      rm(mm1)
+
+      est_fun <- function(model = NULL, b = NULL) {
+        if (is_null(b)) {
+          b <- .refit_coef(model)
+        }
+
+        eta_fixed <- drop(mm_fixed %*% b[!tc])
+        b_treat <- b[tc]
+
+        lapply(vi, function(k) {
+          linkinv(eta_fixed + drop(mm_treat[[k]] %*% b_treat) + .off_at(k))
+        }) |>
+          unlist(use.names = FALSE)
+      }
+    }
 
     bootfun <- function(data, w, ...) {
       x_boot <- withCallingHandlers(refit(w), warning = function(cnd) {
@@ -525,22 +649,22 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     out[["vcov"]] <- stats::vcov(out[["boot"]])
   }
   else if (identical(vcov_type, "unconditional")) {
-    phat <- est_fun(x)
+    if (fast) {
+      fp <- .fast_pass(beta0, grad = TRUE)
+      phat <- fp[["phat"]]
+      gr <- fp[["gr"]]
+    }
+    else {
+      phat <- est_fun(x)
+
+      gr <- .gradient(function(b) {
+        est_fun(x, b) |>
+          .fmean(g = cross_id, w = wi) |>
+          drop()
+      }, .x = beta0)
+    }
 
     out[["est"]] <- .fmean(phat, g = cross_id, w = wi)
-
-    gr <- {
-      if (is_null(grad_fun) || !is_null(pred_fun)) {
-        .gradient(function(b) {
-          est_fun(x, b) |>
-            .fmean(g = cross_id, w = wi) |>
-            drop()
-        }, .x = beta0)
-      }
-      else {
-        .avg_grad()
-      }
-    }
 
     # `infl` (the influence of each unit on the coefficients) was computed by
     # .coef_influence() in process_vcov_and_cluster()
@@ -554,6 +678,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       if (!null_or_error(n_bread) && is.numeric(n_bread) && length(n_bread) == 1L &&
           n_bread > 0 && n_bread < fnrow(infl)) {
         infl <- infl * fnrow(infl) / n_bread
+
       }
     }
 
@@ -589,23 +714,24 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     }
   }
   else {
-    out[["est"]] <- est_fun(x) |>
-      .fmean(g = cross_id, w = wi)
+    if (fast) {
+      fp <- .fast_pass(beta0, grad = TRUE)
+      phat <- fp[["phat"]]
+      gr <- fp[["gr"]]
+    }
+    else {
+      phat <- est_fun(x)
+
+      gr <- .gradient(function(b) {
+        est_fun(x, b) |>
+          .fmean(g = cross_id, w = wi) |>
+          drop()
+      }, .x = beta0)
+    }
+
+    out[["est"]] <- .fmean(phat, g = cross_id, w = wi)
 
     V <- marginaleffects::get_vcov(x, vcov = vcov)
-
-    gr <- {
-      if (is_null(grad_fun) || !is_null(pred_fun)) {
-        .gradient(function(b) {
-          est_fun(x, b) |>
-            .fmean(g = cross_id, w = wi) |>
-            drop()
-        }, .x = beta0)
-      }
-      else {
-        .avg_grad()
-      }
-    }
 
     if (fncol(gr) != fnrow(V)) {
       arg::err("the supplied covariance matrix does not have the right dimensions. It should have dimension {fncol(gr)} by {fncol(gr)} but actually has dimension {fnrow(V)} by {fncol(V)}")

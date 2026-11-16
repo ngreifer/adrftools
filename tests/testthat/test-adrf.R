@@ -942,3 +942,132 @@ test_that("character predictors with levels absent from subset use the fast path
   a_slow <- adrf(fit, treat = "logBLL", n = 5, subset = RaceC == "Black", vcov = "conditional")
   expect_equal(get_vcov(a), get_vcov(a_slow), tolerance = 1e-5)
 })
+
+# Model matrices built one treatment value at a time -------------------------
+#
+# For "lm" and "glm" model types, adrf() evaluates the model frame on the whole
+# grid of units and treatment values, builds the model matrix one treatment
+# value at a time from it, and, for the bootstrap, stores the columns that are
+# the same at every treatment value only once. The formulas below are chosen
+# to break each of those steps if it relied on the formula rather than on the
+# data: variables that depend on other rows of the grid, a variable that
+# depends on the treatment without naming it, interactions without main
+# effects, no intercept, a multivariable basis, an offset that depends on the
+# treatment, an aliased coefficient, and a character covariate. Each is
+# compared with predictions and gradients computed from scratch on the whole
+# grid.
+
+# Reads the treatment from the data without naming it in the formula
+lb_hidden <- function(a) {
+  a * get("logBLL", envir = parent.frame())
+}
+
+# ADRF and the gradient of the ADRF with respect to the (non-aliased)
+# coefficients, from the model matrix of the whole grid
+full_grid_adrf <- function(fit, d, values) {
+  N <- nrow(d)
+
+  grid <- d[rep(seq_len(N), length(values)), ]
+  grid$logBLL <- rep(values, each = N)
+
+  tt <- delete.response(terms(fit))
+  mf <- model.frame(tt, data = grid, xlev = fit$xlevels)
+  X <- model.matrix(tt, data = mf)
+
+  b <- coef(fit)
+  aliased <- is.na(b)
+  X <- X[, !aliased, drop = FALSE]
+
+  off <- model.offset(mf) %or% 0
+  eta <- drop(X %*% b[!aliased]) + off
+
+  fam <- if (inherits(fit, "glm")) family(fit) else gaussian()
+
+  val <- rep(seq_along(values), each = N)
+
+  list(est = as.vector(tapply(fam$linkinv(eta), val, mean)),
+       grad = unname(rowsum(X * fam$mu.eta(eta), val) / N),
+       V = vcov(fit, complete = FALSE))
+}
+
+test_that("adrf() matches predictions on the whole grid for formulas that challenge building the model matrix by treatment value", {
+  skip_if_not_installed("patrick")
+  skip_if_not_installed("fwb", "1.0.0")
+
+  d <- nhanes3lead
+  d$Male2 <- d$Male
+  d$Sex <- ifelse(d$Male == 1, "M", "F")
+
+  patrick::with_parameters_test_that(
+    "{label}",
+    {
+      a0 <- adrf(fit, treat = "logBLL", n = 6, data = d, vcov = "none")
+      ref <- full_grid_adrf(fit, d, get_values(a0))
+
+      expect_equal(get_est(a0), ref$est, tolerance = 1e-10)
+
+      # marginaleffects::get_vcov() warns about aliased coefficients
+      if (anyNA(coef(fit))) {
+        expect_warning(a_c <- adrf(fit, treat = "logBLL", n = 6, data = d, vcov = "conditional"),
+                       "rank deficient")
+      }
+      else {
+        a_c <- adrf(fit, treat = "logBLL", n = 6, data = d, vcov = "conditional")
+      }
+      expect_equal(get_est(a_c), ref$est, tolerance = 1e-10)
+      expect_equal(get_vcov(a_c), ref$grad %*% ref$V %*% t(ref$grad),
+                   tolerance = 1e-8)
+
+      a_u <- adrf(fit, treat = "logBLL", n = 6, data = d)
+      expect_equal(get_est(a_u), ref$est, tolerance = 1e-10)
+
+      # The estimate of the bootstrap is computed from the stored columns
+      set.seed(1)
+      a_b <- adrf(fit, treat = "logBLL", n = 6, data = d, vcov = "fwb",
+                  fwb.args = list(R = 2, verbose = FALSE))
+      expect_equal(get_est(a_b), ref$est, tolerance = 1e-10)
+    },
+    patrick::cases(
+      list(label = "centered treatment",
+           fit = lm(Math ~ I(logBLL - mean(logBLL)) * Male, data = d)),
+      list(label = "ranked treatment",
+           fit = lm(Math ~ rank(logBLL) + Male, data = d)),
+      list(label = "covariate scaled by its standard deviation",
+           fit = lm(Math ~ logBLL + I(Age / sd(Age)), data = d)),
+      list(label = "variable that reads the treatment without naming it",
+           fit = lm(Math ~ logBLL + lb_hidden(Age) + Male, data = d)),
+      list(label = "factor interaction",
+           fit = lm(Math ~ poly(logBLL, 3) * Race + PIR, data = d)),
+      list(label = "interaction without main effects",
+           fit = lm(Math ~ Race:logBLL + Age, data = d)),
+      list(label = "no intercept",
+           fit = lm(Math ~ 0 + splines::ns(logBLL, 3) + Male, data = d)),
+      list(label = "multivariable basis",
+           fit = lm(Math ~ poly(logBLL, Age, degree = 2), data = d)),
+      list(label = "offset that depends on the treatment",
+           fit = glm(Block ~ Male + Age + offset(log(logBLL + 1)), data = d,
+                     family = poisson)),
+      list(label = "aliased coefficient",
+           fit = glm(I(Block >= 14) ~ logBLL * Male + Male2, data = d,
+                     family = binomial)),
+      list(label = "character covariate",
+           fit = lm(Math ~ logBLL * Sex + PIR, data = d))
+    )
+  )
+})
+
+test_that("adrf() errors when the model variables can't be computed at every treatment value", {
+  # Missing everywhere but at observed values of the treatment, so missing at
+  # the grid values; the model-type check would send this model to the
+  # general path, so the fast path is forced
+  observed_only <- function(z) {
+    replace(z, !z %in% nhanes3lead$logBLL, NA)
+  }
+
+  fit <- lm(Math ~ observed_only(logBLL) + Male, data = nhanes3lead)
+
+  local_mocked_bindings(.get_model_type = function(...) "lm")
+
+  expect_error(adrf(fit, treat = "logBLL", n = 5),
+               "could not be computed for every unit at every treatment value")
+})

@@ -2,7 +2,6 @@
 
 ## To Do
 
-- R38 (rest): build the model matrix one treatment value at a time to cut peak memory (`_dev/audit-2.md`).
 - Implement the HC2 adjustment to the unconditional variance (M19; see `_dev/omnibus-size-study/README.md`).
 - Decide which items in `_dev/feature-ideas.md` to pursue.
 - Multivariate treatments (`_dev/adrf_mv.R`), to resume later.
@@ -35,3 +34,4 @@
 - 2026-11-13: Fixed R33 and R34: shared helpers for simultaneous Wald critical values and p-values.
 - 2026-11-13: Fixed R39, R42–R44, R46, and most of R38 from the second audit.
 - 2026-11-14: Declared the packages used in tests in Suggests; R CMD check is clean (0 errors, 0 warnings, 0 notes).
+- 2026-11-16: Finished R38: `adrf()` evaluates the model frame on the whole grid and builds the model matrix one treatment value at a time from it (peak memory on the `?adrf` example 118 MB to 53 MB at `n = 51`, 447 MB to 169 MB at `n = 201`); the bootstrap stores the columns that are identical at every treatment value once, found by comparing them. Adversarial formulas (row-dependent variables, a variable that reads the treatment without naming it, and others) are tested against predictions on the whole grid.
