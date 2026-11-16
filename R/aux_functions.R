@@ -926,7 +926,7 @@ process_response <- function(model) {
 # used for the unconditional variance, or NULL when the model has no estfun()
 # or bread() method. For svyglm models, it is computed from the survey design
 # and scaled by the full sample size.
-.coef_influence <- function(model) {
+.coef_influence <- function(model, hc2 = TRUE, cluster = NULL) {
   if (inherits(model, "svyglm")) {
     infl <- .attr(model, "influence") %or%
       tcrossprod(stats::model.matrix(model) * stats::resid(model, "working") * model$weights,
@@ -948,13 +948,215 @@ process_response <- function(model) {
     return(NULL)
   }
 
+  # With na.action = na.exclude, estfun() pads the units dropped from the fit
+  # with NA rows; the influence values are for the units used in the fit
+  na_act <- model[["na.action"]]
+
+  if (inherits(na_act, "exclude") && fnrow(ef) > length(na_act)) {
+    ef <- ef[-na_act, , drop = FALSE]
+  }
+
   br <- try(sandwich::bread(model), silent = TRUE)
 
   if (null_or_error(br)) {
     return(NULL)
   }
 
-  tcrossprod(ef, br)
+  infl <- tcrossprod(ef, br)
+
+  if (hc2) {
+    infl <- .hc2_adjust(infl, model)
+  }
+
+  if (!is_null(cluster)) {
+    cr2 <- lapply(cluster, function(f) .cr2_estfun(model, ef, f))
+
+    if (!any_apply(cr2, is_null)) {
+      attr(infl, "cr2") <- lapply(cr2, tcrossprod, br)
+    }
+  }
+
+  infl
+}
+
+# The CR2 adjustment for the clustering factor `f`, as described by
+# Pustejovsky and Tipton (2018): within each cluster g, the vector of
+# (weighted) residuals u_g is replaced by (I - H_gg)^(-1/2) u_g, with H_gg the
+# block of the hat matrix for the cluster, which makes the cluster-robust
+# variance unbiased when the working model's errors are correct. For GLMs,
+# the residuals and hat matrix are those of the final weighted least squares
+# fit; sandwich::vcovCL(type = "HC2") instead applies the nonsymmetric
+# (I - X_g (X'WX)^(-1) X_g' W_g)^(-1/2) to W_g r_g, which differs when the
+# working weights vary within a cluster. Returns the adjusted rows of estfun(), whose
+# sums within clusters are the adjusted cluster scores, or NULL when the model
+# is not an lm() or glm() fit whose estfun() is the usual product of the
+# weighted residuals and model matrix (e.g., a WeightIt fit that accounts for
+# the estimation of the weights). With clusters of one unit, it is the HC2
+# adjustment.
+.cr2_estfun <- function(model, ef, f) {
+  q <- model[["qr"]]
+
+  if (!inherits(model, "lm") || !inherits(q, "qr")) {
+    return(NULL)
+  }
+
+  n <- fnrow(ef)
+
+  w <- model[["weights"]] %or% rep.int(1, n)
+  res <- model[["residuals"]]
+  X <- try(stats::model.matrix(model), silent = TRUE)
+
+  if (null_or_error(X) || length(w) != n || length(res) != n || fnrow(X) != n ||
+      length(f) != n) {
+    return(NULL)
+  }
+
+  aliased <- is.na(stats::coef(model))
+  X <- X[, !aliased, drop = FALSE]
+
+  pos <- which(w > 0)
+
+  if (length(pos) != nrow(q[["qr"]]) || fncol(X) != fncol(ef)) {
+    return(NULL)
+  }
+
+  # estfun() should be a scalar multiple (e.g., 1 / dispersion) of z * u, with
+  # z = sqrt(w) x and u = sqrt(w) r for working residuals r
+  sw <- sqrt(w[pos])
+  Z <- X[pos, , drop = FALSE] * sw
+  u <- sw * res[pos]
+  ef_std <- Z * u
+
+  k <- sum(ef[pos, ] * ef_std) / sum(ef_std^2)
+
+  tol <- sqrt(.Machine$double.eps) * max(abs(ef), .Machine$double.xmin)
+
+  if (!is.finite(k) || any(abs(ef[pos, , drop = FALSE] - k * ef_std) > tol) ||
+      any(abs(ef[-pos, , drop = FALSE]) > tol)) {
+    return(NULL)
+  }
+
+  # Rows of the orthonormal factor of the weighted model matrix, so that
+  # H_gg = Q_g Q_g'
+  Q <- qr.qy(q, diag(1, length(pos), q[["rank"]]))
+
+  # With the singular value decomposition Q_g = U D V', I - H_gg = I - U D^2 U',
+  # so (I - H_gg)^(-1/2) u_g = u_g + U ((1 - d^2)^(-1/2) - 1) U'u_g; a direction
+  # with leverage 1, in which the residual is 0, is dropped
+  Au <- u
+
+  for (idx in split(seq_along(pos), f[pos], drop = TRUE)) {
+    sv <- svd(Q[idx, , drop = FALSE], nv = 0L)
+    d2 <- sv$d^2
+    a <- rep.int(-1, length(d2))
+    ok <- d2 < 1 - sqrt(.Machine$double.eps)
+    a[ok] <- 1 / sqrt(1 - d2[ok]) - 1
+
+    Au[idx] <- u[idx] + drop(sv$u %*% (a * crossprod(sv$u, u[idx])))
+  }
+
+  out <- ef
+  out[pos, ] <- k * Z * Au
+  out[-pos, ] <- 0
+
+  out
+}
+
+# The HC2 adjustment: each unit's influence on the coefficients is divided by
+# sqrt(1 - h), with h its leverage. A residual is shrunk toward 0 by the fit,
+# with E[e^2] = (1 - h) sigma^2 under homoskedasticity, so the HC0 variance is
+# biased downward, most for the contrasts that depend on units with high
+# leverage (e.g., an ADRF at the extremes of the treatment); the HC2
+# adjustment removes this bias under homoskedasticity (MacKinnon and White,
+# 1985). When the leverages cannot be found, the HC1 adjustment is used
+# instead, which removes the bias for the average leverage, p / n, and the
+# influence values get the attribute `hc2_failed`.
+.hc2_adjust <- function(infl, model) {
+  h <- .hat_values(model, fnrow(infl))
+
+  if (is_null(h)) {
+    infl <- infl * sqrt(.hc1_factor(model, infl))
+    attr(infl, "hc2_failed") <- TRUE
+    return(infl)
+  }
+
+  # A unit with leverage 1 has a residual of 0, so its row is left unscaled
+  # rather than divided by 0
+  adj <- rep.int(1, length(h))
+  ok <- h < 1 - sqrt(.Machine$double.eps)
+  adj[ok] <- 1 / sqrt(1 - h[ok])
+
+  infl * adj
+}
+
+# The HC1 factor n / (n - p), with n the number of units with nonzero weight
+# and p the number of estimated parameters (columns of estfun(), including
+# ancillary parameters such as thresholds); the leverages of any model sum to
+# p, so this corrects the bias for the average leverage. It is 1 when n <= p.
+.hc1_factor <- function(model, infl) {
+  n <- .n_fit_units(model, infl)
+  p <- fncol(infl)
+
+  if (n <= p) 1
+  else n / (n - p)
+}
+
+# The CR1 factor (n - 1) / (n - p) that multiplies G / (G - 1), as in
+# sandwich::vcovCL() with its default type. It is 1 when n <= p.
+.cr1_factor <- function(model, infl) {
+  n <- .n_fit_units(model, infl)
+  p <- fncol(infl)
+
+  if (n <= p) 1
+  else (n - 1) / (n - p)
+}
+
+# The number of units used to fit the model with nonzero weight
+.n_fit_units <- function(model, infl) {
+  n <- try(stats::nobs(model), silent = TRUE)
+
+  if (null_or_error(n) || !is.numeric(n) || length(n) != 1L || !is.finite(n)) {
+    n <- sum(rowSums(abs(infl)) > 0)
+  }
+
+  n
+}
+
+# Leverages (hat values) of the units, one per row of estfun(), or NULL when
+# they cannot be found. For lm() and glm() fits (and models inheriting from
+# them), they are computed from the QR decomposition stored in the fit, which
+# covers only the units with positive (working) weights; the others get a
+# leverage of 0. For other models, hatvalues() is used.
+.hat_values <- function(model, n) {
+  q <- model[["qr"]]
+
+  if (inherits(model, "lm") && inherits(q, "qr")) {
+    r <- q[["rank"]]
+    h0 <- rowSums(qr.qy(q, diag(1, nrow(q[["qr"]]), r))^2)
+
+    w <- model[["weights"]]
+
+    if (is_null(w)) {
+      w <- rep.int(1, n)
+    }
+
+    pos <- which(w > 0)
+
+    if (length(w) == n && length(pos) == length(h0)) {
+      h <- numeric(n)
+      h[pos] <- h0
+      return(h)
+    }
+  }
+
+  h <- try(stats::hatvalues(model), silent = TRUE)
+
+  if (null_or_error(h) || !is.numeric(h) || length(h) != n ||
+      anyNA(h) || any(h < 0) || any(h > 1 + sqrt(.Machine$double.eps))) {
+    return(NULL)
+  }
+
+  unname(h)
 }
 
 process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FALSE,
@@ -1026,9 +1228,18 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
       }
 
       if (builtin_vcovs[p] == "unconditional") {
+        if (inherits(model, "svyglm") && !is_null(cluster)) {
+          arg::wrn("{.arg cluster} is ignored with {.cls svyglm} models when {.code vcov = \"unconditional\"}; the survey design is used instead")
+          cluster <- NULL
+        }
+
+        cl <- process_cluster(cluster, model, data)
+
         # Computed here, where it also checks that the model is supported, and
-        # passed on so that estfun() and bread() are not computed twice
-        infl <- .coef_influence(model)
+        # passed on so that estfun() and bread() are not computed twice. The
+        # HC2 adjustment is used without clustering and the CR2 adjustment
+        # with it (survey designs are handled in .coef_influence())
+        infl <- .coef_influence(model, hc2 = is_null(cl), cluster = cl[["cluster"]])
 
         if (is_null(infl)) {
           arg::wrn('{.arg vcov} cannot be {.val unconditional} with this type of model. Using {.val conditional}')
@@ -1037,13 +1248,29 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
                         is_bayes = is_bayes, data = data))
         }
 
-        if (inherits(model, "svyglm") && !is_null(cluster)) {
-          arg::wrn("{.arg cluster} is ignored with {.cls svyglm} models when {.code vcov = \"unconditional\"}; the survey design is used instead")
-          cluster <- NULL
+        if (isTRUE(.attr(infl, "hc2_failed"))) {
+          arg::msg("the leverages of the units could not be found for this type of model, so the unconditional variance uses the HC1 small-sample adjustment in place of HC2")
         }
 
-        return(c(list(vcov = builtin_vcovs[p], infl = infl),
-                 process_cluster(cluster, model, data)))
+        if (!is_null(cl)) {
+          if (is_null(.attr(infl, "cr2"))) {
+            arg::msg("the CR2 small-sample adjustment is available only for {.fun lm} and {.fun glm} models, so the cluster-robust unconditional variance uses the CR1 adjustment in place of CR2")
+
+            # CR1: G / (G - 1), already in `adj`, times (n - 1) / (n - p)
+            cl[["adj"]] <- cl[["adj"]] * .cr1_factor(model, infl)
+          }
+          else {
+            # One adjusted influence matrix per clustering term; the CR2
+            # adjustment replaces the G / (G - 1) factor
+            cl[["infl_cl"]] <- .attr(infl, "cr2")
+            cl[["adj"]] <- sign(cl[["adj"]])
+          }
+        }
+
+        attr(infl, "hc2_failed") <- NULL
+        attr(infl, "cr2") <- NULL
+
+        return(c(list(vcov = builtin_vcovs[p], infl = infl), cl))
       }
 
       if (!is_null(cluster)) {
@@ -1152,8 +1379,8 @@ process_vcov_and_cluster_list <- function(vcov, models, cluster = NULL, is_bayes
     arg::err("{.arg vcov} must have length equal to the number of imputed datasets")
   }
 
-  # Warnings would be the same for every imputed dataset, so they are given
-  # only for the first
+  # Warnings and messages would be the same for every imputed dataset, so
+  # they are given only for the first
   lapply(seq_len(m), function(.i) {
     out <- function() {
       process_vcov_and_cluster(vcov.list[[.i]], models[[.i]], cluster,
@@ -1161,7 +1388,7 @@ process_vcov_and_cluster_list <- function(vcov, models, cluster = NULL, is_bayes
     }
 
     if (.i == 1L) out()
-    else suppressWarnings(out())
+    else suppressMessages(suppressWarnings(out()))
   })
 }
 

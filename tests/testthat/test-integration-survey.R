@@ -23,6 +23,10 @@ test_that("svyglm ADRFs use the survey weights as target weights", {
 })
 
 test_that("svyglm unconditional variance matches the equivalent weighted lm", {
+  # The design-based variance of svyglm has no HC2 adjustment, so it is
+  # compared with the unadjusted variance of the weighted lm
+  local_mocked_bindings(.hc2_adjust = function(infl, model) infl)
+
   d <- svy_data()
   des <- survey::svydesign(ids = ~1, weights = ~sw, data = d)
   fit <- survey::svyglm(Math ~ (logBLL + I(logBLL^2)) * Male + PIR, design = des)
@@ -86,7 +90,10 @@ test_that("svyglm unconditional variance does not depend on the subset size", {
   G <- cbind(1, get_values(a))
   expect_equal(get_se(a), sqrt(diag(G %*% vcov(fit) %*% t(G))), tolerance = .01)
 
-  # Subset
+  # Subset; the weighted lm is compared without its HC2 adjustment, which
+  # svyglm does not have
+  local_mocked_bindings(.hc2_adjust = function(infl, model) infl)
+
   fit2 <- survey::svyglm(Math ~ logBLL + PIR + Male, design = des)
   fit2_lm <- lm(Math ~ logBLL + PIR + Male, data = d, weights = sw)
   a2 <- adrf(fit2, treat = "logBLL", n = 3, subset = Male == 1)

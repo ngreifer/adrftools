@@ -114,14 +114,14 @@ adrf_bll(logBLL = c(0, .5, 1, 1.5, 2)) |>
     #>               ADRF Estimates
     #> ──────────────────────────────────────────
     #>  logBLL Estimate Std. Error CI Low CI High
-    #>     0.0    8.394     0.1706  7.959   8.829
-    #>     0.5    8.305     0.1247  7.987   8.623
-    #>     1.0    8.066     0.1129  7.778   8.354
-    #>     1.5    7.484     0.1436  7.117   7.850
-    #>     2.0    7.078     0.2186  6.520   7.635
+    #>     0.0    8.394     0.1740  7.950   8.838
+    #>     0.5    8.305     0.1264  7.983   8.628
+    #>     1.0    8.066     0.1141  7.775   8.357
+    #>     1.5    7.484     0.1462  7.111   7.857
+    #>     2.0    7.078     0.2232  6.508   7.647
     #> ──────────────────────────────────────────
     #> Inference: unconditional, simultaneous
-    #> Confidence level: 95% (t* = 2.55, df = 2455)
+    #> Confidence level: 95% (t* = 2.551, df = 2455)
 
 To test an omnibus hypothesis about the ADRF, such as whether it is flat
 or linear, we can use `summary()` on the `<effect_curve>` object itself:
@@ -153,7 +153,7 @@ summary(adrf_bll, hypothesis = "linear")
     #>     -0.3567 and 2.4248
     #> 
     #>  P-value
-    #>   0.3159
+    #>   0.3415
     #> ───────────────────────────────────────────────────────
     #> Computed using the Imhof approximation (the
     #>   saddlepoint approximation for p-values below .0001)
@@ -185,8 +185,8 @@ summary(proj)
     #>                  ADRF Projection Coefficients
     #> ──────────────────────────────────────────────────────────────
     #>         Term Estimate Std. Error     t  P-value CI Low CI High
-    #>  (Intercept)    8.498     0.1329 63.96 < 0.0001  8.237   8.758
-    #>       logBLL   -0.642     0.1266 -5.07 < 0.0001 -0.891  -0.394
+    #>  (Intercept)    8.498     0.1358 62.58 < 0.0001  8.232   8.764
+    #>       logBLL   -0.642     0.1299 -4.94 < 0.0001 -0.897  -0.388
     #> ──────────────────────────────────────────────────────────────
     #> Inference: unconditional
     #> Confidence level: 95% (t* = 1.961, df = 2455)
@@ -198,7 +198,7 @@ Based on the above, we might conclude the following:
 > the included potential confounders, based on rejection of the
 > hypothesis that the ADRF is flat for `logBLL` values between -0.3567
 > and 2.4248 (p \< .0001). There isn’t evidence that the ADRF is
-> nonlinear within this range (p = .3159). The linear projection has a
+> nonlinear within this range (p = .3415). The linear projection has a
 > coefficient of -.642 (p \< .0001), indicating that the expected
 > potential outcome of `Math` decreases by this amount for each unit
 > increase in `logBLL`.

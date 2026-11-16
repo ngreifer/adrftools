@@ -113,18 +113,28 @@ test_that("cluster-robust unconditional variance matches a hand computation", {
 
   expect_true(attr(attr(a, ".vcov_type"), "clustered"))
 
-  # Recompute from the unclustered influence function contributions
+  # Recompute from the influence function contributions, with the residuals
+  # of each cluster adjusted by (I - H_gg)^(-1/2) (CR2)
   N <- nrow(nhanes3lead)
-  IFb <- sandwich::estfun(fit) %*% sandwich::bread(fit)
+  cl <- nhanes3lead$Race
+  X <- model.matrix(fit)
+  e <- residuals(fit)
+  XtXi <- solve(crossprod(X))
+
+  e_adj <- e
+  for (j in levels(cl)) {
+    i <- which(cl == j)
+    ev <- eigen(diag(length(i)) - X[i, ] %*% XtXi %*% t(X[i, ]), symmetric = TRUE)
+    e_adj[i] <- ev$vectors %*% (crossprod(ev$vectors, e[i]) / sqrt(ev$values))
+  }
+
+  IFb <- (X * e_adj) %*% sandwich::bread(fit)
   vals <- get_values(a)
   G <- cbind(1, vals, mean(nhanes3lead$PIR), mean(nhanes3lead$Male))
   P <- vapply(vals, function(v) predict(fit, transform(nhanes3lead, logBLL = v)),
               numeric(N))
   IF <- tcrossprod(IFb, G) + sweep(P, 2L, colMeans(P))
-  cl <- nhanes3lead$Race
-  g <- nlevels(cl)
-  S <- rowsum(IF, cl)
-  V <- crossprod(S / N) * g / (g - 1)
+  V <- crossprod(rowsum(IF, cl) / N)
 
   expect_equal(get_vcov(a), V, tolerance = 1e-8)
 
@@ -394,11 +404,11 @@ test_that("a model with only the treatment uses the single-row shortcut", {
   expect_equal(get_est(a), unname(predict(fit, data.frame(logBLL = vals))),
                tolerance = 1e-8)
 
-  # Unconditional variance equals the HC0 conditional variance when there are
+  # Unconditional variance equals the HC2 conditional variance when there are
   # no covariates
   a_u <- adrf(fit, treat = "logBLL", n = 5)
-  a_hc0 <- adrf(fit, treat = "logBLL", n = 5, vcov = "HC0")
-  expect_equal(get_vcov(a_u), get_vcov(a_hc0), tolerance = 1e-6)
+  a_hc2 <- adrf(fit, treat = "logBLL", n = 5, vcov = "HC2")
+  expect_equal(get_vcov(a_u), get_vcov(a_hc2), tolerance = 1e-6)
 })
 
 test_that("aliased coefficients are dropped", {
@@ -528,7 +538,7 @@ test_that("weighted unconditional variance includes the unit weights", {
   fit <- lm(Math ~ logBLL + PIR + Male, data = nhanes3lead)
 
   N <- nrow(nhanes3lead)
-  IFb <- sandwich::estfun(fit) %*% sandwich::bread(fit)
+  IFb <- sandwich::estfun(fit) %*% sandwich::bread(fit) / sqrt(1 - hatvalues(fit))
   tt <- delete.response(terms(fit))
 
   # Influence function of the weighted mean of predictions within the units
@@ -943,6 +953,72 @@ test_that("character predictors with levels absent from subset use the fast path
   expect_equal(get_vcov(a), get_vcov(a_slow), tolerance = 1e-5)
 })
 
+test_that("leverages for the HC2 adjustment match hatvalues() on every row", {
+  d <- nhanes3lead
+  fits <- list(
+    lm = lm(Math ~ poly(logBLL, 3) * Male + PIR, data = d),
+    aliased = lm(Math ~ logBLL + PIR + I(2 * PIR), data = d),
+    glm = glm(I(Block >= 14) ~ poly(logBLL, 3) * Male + PIR, data = d, family = binomial),
+    zero_wts = lm(Math ~ logBLL + PIR, data = d,
+                  weights = rep(c(0, 1, 2), length.out = nrow(d)))
+  )
+
+  for (nm in names(fits)) {
+    fit <- fits[[nm]]
+    n <- nrow(sandwich::estfun(fit))
+    h <- adrftools:::.hat_values(fit, n)
+
+    expect_length(h, n)
+
+    # Units with zero weight are not in hatvalues() and get a leverage of 0
+    pos <- if (is.null(fit$weights)) seq_len(n) else which(fit$weights > 0)
+    expect_equal(h[pos], unname(hatvalues(fit)), tolerance = 1e-10, label = nm)
+    expect_true(all(h[-pos] == 0), label = nm)
+  }
+})
+
+test_that("the unconditional variance uses the HC2 adjustment only without clustering", {
+  fit <- lm(Math ~ poly(logBLL, 2) * Male + PIR, data = nhanes3lead)
+
+  a <- adrf(fit, treat = "logBLL", n = 5)
+  expect_equal(get_vcov(a),
+               manual_uncond_vcov_lm(fit, nhanes3lead, "logBLL", get_values(a)),
+               tolerance = 1e-8)
+
+  # HC2 increases the variance, most at the ends of the treatment range
+  a0 <- local({
+    local_mocked_bindings(.hc2_adjust = function(infl, model) infl)
+    adrf(fit, treat = "logBLL", n = 5)
+  })
+  expect_equal(get_vcov(a0),
+               manual_uncond_vcov_lm(fit, nhanes3lead, "logBLL", get_values(a), type = "HC0"),
+               tolerance = 1e-8)
+  expect_true(all(get_se(a) > get_se(a0)))
+
+  # With clustering, the influence values are not adjusted
+  a_cl <- adrf(fit, treat = "logBLL", n = 5, cluster = ~Race)
+  a_cl0 <- local({
+    local_mocked_bindings(.hc2_adjust = function(infl, model) infl)
+    adrf(fit, treat = "logBLL", n = 5, cluster = ~Race)
+  })
+  expect_equal(get_vcov(a_cl), get_vcov(a_cl0), tolerance = 1e-12)
+})
+
+test_that("unconditional variances with na.exclude match those with na.omit", {
+  d <- nhanes3lead
+  d$PIR[1:20] <- NA
+
+  fit_ex <- lm(Math ~ logBLL + PIR + Male, data = d, na.action = na.exclude)
+  fit_om <- lm(Math ~ logBLL + PIR + Male, data = d)
+
+  a_ex <- adrf(fit_ex, treat = "logBLL", n = 3)
+  a_om <- adrf(fit_om, treat = "logBLL", n = 3)
+
+  expect_true(all(is.finite(get_se(a_ex))))
+  expect_equal(get_vcov(a_ex), get_vcov(a_om), tolerance = 1e-10)
+})
+
+
 # Model matrices built one treatment value at a time -------------------------
 #
 # For "lm" and "glm" model types, adrf() evaluates the model frame on the whole
@@ -1071,3 +1147,82 @@ test_that("adrf() errors when the model variables can't be computed at every tre
   expect_error(adrf(fit, treat = "logBLL", n = 5),
                "could not be computed for every unit at every treatment value")
 })
+
+test_that("the CR2 adjustment matches sandwich::vcovCL() for linear models and HC2 for clusters of one unit", {
+  d <- nhanes3lead
+  N <- nrow(d)
+  cl <- factor(rep_len(1:150, N))
+
+  # sandwich::vcovCL() with type = "HC2" uses (G - 1) / G in place of the
+  # G / (G - 1) adjustment; for lm() fits the two otherwise agree
+  for (w in list(NULL, rep_len(c(1, 2, 3), N))) {
+    fit <- lm(Math ~ poly(logBLL, 2) * Male + PIR, data = d, weights = w)
+
+    infl <- adrftools:::.coef_influence(fit, hc2 = FALSE, cluster = list(cl))
+    V <- crossprod(rowsum(attr(infl, "cr2")[[1L]], cl)) / N^2
+
+    V_s <- sandwich::vcovCL(fit, cluster = cl, type = "HC2", cadjust = FALSE) * 150 / 149
+    expect_equal(V, unname(V_s), tolerance = 1e-8, ignore_attr = TRUE)
+  }
+
+  # With one unit per cluster, CR2 is HC2
+  fits <- list(lm(Math ~ poly(logBLL, 2) * Male + PIR, data = d),
+               glm(I(Block >= 14) ~ poly(logBLL, 2) * Male + PIR, data = d, family = binomial))
+
+  for (fit in fits) {
+    a_cl <- adrf(fit, treat = "logBLL", n = 4, cluster = data.frame(id = seq_len(N)))
+    a <- adrf(fit, treat = "logBLL", n = 4)
+    expect_equal(get_vcov(a_cl), get_vcov(a), tolerance = 1e-10)
+  }
+
+  # Multiway clustering uses the adjustment for each clustering term
+  a2 <- adrf(fits[[1L]], treat = "logBLL", n = 4, cluster = ~Race + Male)
+  expect_true(all(is.finite(get_se(a2)) & get_se(a2) > 0))
+})
+
+test_that("the CR2 adjustment is skipped with a message for other models", {
+  skip_if_not_installed("WeightIt")
+
+  W <- WeightIt::weightit(logBLL ~ PIR + Male + Age, data = nhanes3lead, method = "glm")
+  fit <- WeightIt::lm_weightit(Math ~ logBLL * Male + PIR, data = nhanes3lead, weightit = W)
+
+  # The influence of a fit that accounts for the estimation of the weights is
+  # not the product of residuals and model matrix that CR2 requires
+  expect_message(a <- adrf(fit, treat = "logBLL", n = 3, cluster = ~Race), "CR2")
+  expect_true(all(is.finite(get_se(a))))
+})
+
+test_that("models without hat values use HC1, and models without CR2 use CR1", {
+  fit <- lm(Math ~ logBLL + PIR + Male, data = nhanes3lead)
+
+  # Without hat values, the influence values are scaled by sqrt(n / (n - p))
+  local({
+    local_mocked_bindings(.hat_values = function(...) NULL)
+    expect_message(a <- adrf(fit, treat = "logBLL", n = 3), "HC1")
+    expect_equal(get_vcov(a),
+                 manual_uncond_vcov_lm(fit, nhanes3lead, "logBLL", get_values(a), type = "HC1"),
+                 tolerance = 1e-8)
+  })
+
+  # Without CR2, the cluster-robust variance is the CR0 one times
+  # G / (G - 1) * (n - 1) / (n - p)
+  local({
+    local_mocked_bindings(.cr2_estfun = function(...) NULL)
+    expect_message(a <- adrf(fit, treat = "logBLL", n = 3, cluster = ~Race), "CR1")
+
+    N <- nrow(nhanes3lead)
+    p <- length(coef(fit))
+    IFb <- sandwich::estfun(fit) %*% sandwich::bread(fit)
+    vals <- get_values(a)
+    G <- cbind(1, vals, mean(nhanes3lead$PIR), mean(nhanes3lead$Male))
+    P <- vapply(vals, function(v) predict(fit, transform(nhanes3lead, logBLL = v)),
+                numeric(N))
+    IF <- tcrossprod(IFb, G) + sweep(P, 2L, colMeans(P))
+    cl <- nhanes3lead$Race
+    g <- nlevels(cl)
+    V <- crossprod(rowsum(IF, cl) / N) * g / (g - 1) * (N - 1) / (N - p)
+
+    expect_equal(get_vcov(a), V, tolerance = 1e-8)
+  })
+})
+

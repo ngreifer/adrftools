@@ -9,9 +9,9 @@ test_that("projecting a linear ADRF onto a line recovers the slope", {
   expect_equal(coef(p)[["logBLL"]], coef(fit)[["logBLL"]], tolerance = 1e-8)
   expect_equal(get_est(p), get_est(a), tolerance = 1e-8)
 
-  # The slope's unconditional variance is its HC0 variance
-  hc0 <- sandwich::vcovHC(fit, type = "HC0")["logBLL", "logBLL"]
-  expect_equal(vcov(p)["logBLL", "logBLL"], hc0, tolerance = 1e-6)
+  # The slope's unconditional variance is its HC2 variance
+  hc2 <- sandwich::vcovHC(fit, type = "HC2")["logBLL", "logBLL"]
+  expect_equal(vcov(p)["logBLL", "logBLL"], hc2, tolerance = 1e-6)
 
   expect_identical(deparse(formula(p)), "~logBLL")
   mm <- model.matrix(p)

@@ -76,7 +76,10 @@ test_that("ordinal_weightit() models are supported on the link scale", {
   fit <- WeightIt::ordinal_weightit(ordered(cut(Math, 4)) ~ logBLL + PIR + Male,
                                     data = nhanes3lead)
 
-  a <- adrf(fit, treat = "logBLL", n = 3, range = c(0, 2), type = "link")
+  # These models have no hat values, so the HC2 adjustment is skipped with a
+  # message
+  expect_message(a <- adrf(fit, treat = "logBLL", n = 3, range = c(0, 2), type = "link"),
+                 "HC2")
 
   ref <- vapply(get_values(a), function(v) {
     nd <- transform(nhanes3lead, logBLL = v)

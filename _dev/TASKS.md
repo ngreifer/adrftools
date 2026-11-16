@@ -2,7 +2,7 @@
 
 ## To Do
 
-- Implement the HC2 adjustment to the unconditional variance (M19; see `_dev/omnibus-size-study/README.md`).
+- M19 follow-ups: the omnibus test still rejects 6.6% to 8.0% at .05 with a flexible logistic model (n <= 1000) or errors largest at the treatment extremes (n <= 500), from the variability of the HC2 estimate; consider a degrees-of-freedom correction or another reference distribution. The size of CR2 has not been checked.
 - Decide which items in `_dev/feature-ideas.md` to pursue.
 - Multivariate treatments (`_dev/adrf_mv.R`), to resume later.
 
@@ -34,4 +34,10 @@
 - 2026-11-13: Fixed R33 and R34: shared helpers for simultaneous Wald critical values and p-values.
 - 2026-11-13: Fixed R39, R42–R44, R46, and most of R38 from the second audit.
 - 2026-11-14: Declared the packages used in tests in Suggests; R CMD check is clean (0 errors, 0 warnings, 0 notes).
+- 2026-11-16: M19 study of the source of the size error and of a Wald test (`_dev/omnibus-size-study/run-wald.R`, README).
+- 2026-11-16: Fixed M19: HC2-adjusted unconditional variance by default; fixed `NA` unconditional SEs with `na.exclude`.
+- 2026-11-16: CR2 for the clustered unconditional variance of `lm()` and `glm()` fits; note on `hatvalues()` methods written to `WeightIt/_dev/hatvalues-ordinal-multinom.md`.
+- 2026-11-16: Models without hat values fall back to HC1, and models without CR2 to CR1, each with a message.
+- 2026-11-16: Checked the HC2 size with a logistic model and three heteroskedastic patterns (`_dev/omnibus-size-study/run-glm-het.R`, README).
+- 2026-11-16: Updated the `_dev` notes for the variance changes: a section on HC2, HC1, CR2, and CR1 in `variance-theory.md`, current results and file descriptions in `test-suite.md` (254 tests, 1,082 expectations, 95.7% line coverage), and implemented ideas struck through in `feature-ideas.md`.
 - 2026-11-16: Finished R38: `adrf()` evaluates the model frame on the whole grid and builds the model matrix one treatment value at a time from it (peak memory on the `?adrf` example 118 MB to 53 MB at `n = 51`, 447 MB to 169 MB at `n = 201`); the bootstrap stores the columns that are identical at every treatment value once, found by comparing them. Adversarial formulas (row-dependent variables, a variable that reads the treatment without naming it, and others) are tested against predictions on the whole grid.

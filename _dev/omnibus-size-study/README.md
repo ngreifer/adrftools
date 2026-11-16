@@ -8,6 +8,8 @@ The calibration study in `_dev/omnibus-pvalue-study/` found that the omnibus tes
 - **What remains is the downward bias of HC0, not its variability.** HC0 rescaled to remove its average bias has the size of a test that uses the true covariance (5.6% and 5.8% at n = 250).
 - **HC2 removes the bias; HC3 and the jackknife overcorrect.** The unconditional variance with HC2-adjusted influence values rejects 5.6%, 5.4%, and 5.0% at n = 250, 500, and 1000; HC3 and the grouped jackknife reject about 3% at n = 250.
 - **The bootstrap and degrees-of-freedom corrections do not fix it.** The fractional weighted bootstrap covariance rejected 7.1% and 8.3% at n = 250 and 500, and the bootstrap distribution of the statistic 6.3% and 7.1%. Weighting the grid by the density of the treatment also changed little.
+- **The error is in the covariance of the coefficients, and a Wald test would not avoid it** (2026-11-16, below). With the exact covariance of the coefficients, the omnibus test is at the nominal level from n = 250; the conditional covariance built from the HC0 sandwich has the same size and bias as the unconditional one. For linear outcome models a Wald test tests the same hypothesis, but it is more sensitive to errors in the covariance (12.6% with HC0 and 8.0% with HC2 at n = 250) and is not practical for nonlinear models.
+- **HC2 helps with a logistic model and with heteroskedastic errors but leaves some excess** (2026-11-16, below). It is better than HC0 in every scenario where HC0 over-rejects and nearly unbiased throughout, but with a flexible logistic model (7.9% at n = 500) or with errors largest at the extremes of the treatment (7.8% to 8.0% at n = 250 and 500), the variability of the estimate keeps the test above the nominal level.
 - **A general substitute for HC2 is the average of HC0 and the grouped jackknife.** To first order in the leverages, HC2 is the average of HC0 and HC3, and the jackknife approximates HC3 while needing only refits of the model. This average rejected 4.7% at n = 250 (against 8.3% for HC0 in the same replicates) and 6.1% at n = 500 (against 7.8%), and 1.3% at the .01 level at both sizes.
 
 ## Why the robust covariance is inaccurate
@@ -92,11 +94,115 @@ At the .01 level, HC0 rejected 2.3% and 2.5% at n = 250 and 500, the bootstrap d
 
 ## Recommendation
 
+**Implemented 2026-11-16** for models with hat values, without clustering and except `svyglm`: the package's unconditional variance now equals the `u2` variance used here (to machine precision on a replicate at n = 250). Models without hat values use HC0 with a message; the jackknife average below was not implemented.
+
 - **Models with hat values (`lm()`, `glm()`, and fits with a `hatvalues()` method):** compute the unconditional variance with the coefficient part of each unit's influence value divided by $\sqrt{1 - h_i}$ (HC2). This is one line in `.adrf_fit_one()`, costs nothing, and was within a percentage point of the nominal level at every sample size studied. The covariate term needs no adjustment.
 - **Other models:** the average of the current influence-function variance and a grouped jackknife variance approximates HC2 with only K refits of the model, using the refitting code that bootstrapping already uses. It is the only general method here that came close to the nominal level, but its justification is the first-order argument above and one simulation, so it would need checking in more settings (a GLM, heteroskedastic errors, other hypotheses) before becoming a default.
 - **Not worth pursuing:** influence-function degrees of freedom, density weights (as a size fix), and the bootstrap.
 
 HC2 is exactly unbiased only under homoskedasticity, which this study assumes; with heteroskedastic errors it reduces but does not remove the bias (MacKinnon and White, 1985; Imbens and Kolesár, 2016). Only the flat test and one outcome model were studied.
+
+## The source of the error, and the Wald test (`run-wald.R`, `analyze-wald.R`, 2026-11-16)
+
+This study asks three questions: whether the excess rejection comes from the test itself or from the covariance it is given; whether the covariance of the ADRF estimates is a separate problem from the covariance of the outcome model's coefficients; and whether a Wald test of flatness tests the same hypothesis and gives the same inference. It uses the data-generating process and outcome model above, with 2000 null replicates at each of n = 250, 500, 1000, and 2000 and 1000 replicates under each of four alternatives at n = 500. The covariances compared are:
+
+- `u0`: the current unconditional covariance (HC0-type);
+- `u2`: the unconditional covariance with HC2-adjusted influence values;
+- `c0`, `c2`: the conditional covariance $G \hat{V}_\beta G'$, with $\hat{V}_\beta$ the HC0 or HC2 sandwich covariance of the coefficients;
+- `c_cl`: the conditional covariance with the classical covariance of the coefficients, $\hat{\sigma}^2 (X'X)^{-1}$, which is unbiased and has an exact scaled $\chi^2$ distribution here because the errors are homoskedastic and normal; `c_cl_F` uses it with the residual degrees of freedom;
+- `oracle`: the covariance of the estimates across the null replicates.
+
+### The test is accurate when the covariance is
+
+Rejection rate at the .05 level (Monte Carlo SE about .005):
+
+| n | Omnibus `u0` | `u2` | `c0` | `c2` | `c_cl` | `c_cl_F` | Oracle |
+|---|---|---|---|---|---|---|---|
+| 250 | .087 | .060 | .088 | .062 | .048 | .046 | .059 |
+| 500 | .078 | .060 | .078 | .062 | .053 | .052 | .052 |
+| 1000 | .064 | .057 | .065 | .057 | .052 | .052 | .051 |
+| 2000 | .063 | .059 | .063 | .059 | .054 | .054 | .052 |
+
+With the classical covariance, the omnibus test is at the nominal level at every sample size, including n = 250 (and at the .01 level: .007 to .013). The chi-squared mixture and the normality of the estimates are therefore adequate here; the excess rejection comes from estimating the covariance.
+
+The average estimated variance of the statistic, $\mathrm{tr}(M \hat{V})$, relative to the truth was .873, .893, .935, and .964 for `u0` and .868, .890, .933, and .963 for `c0`, against 1.05, 1.00, 1.00, and 1.00 for `u2` and 1.04, 1.00, .99, and 1.00 for `c_cl`.
+
+The HC2 rates are a point or so higher than in the earlier diagnostic study (.056, .054, .050, and .047 there); the two differ by one to two Monte Carlo SEs, and HC2's bias is gone in both, so what remains is the variability of the estimate.
+
+### The ADRF covariance problem is the coefficient covariance problem
+
+The conditional covariance built from the HC0 sandwich covariance of the coefficients (`c0`) has the same size and the same bias as the unconditional covariance (`u0`), and the same is true of `c2` and `u2`. The covariate-sampling term contributes nothing here, because the treatment has no effect for anyone, so the predicted curves of different units differ only by estimation error. The error is entirely in the sandwich estimate of the coefficients' covariance, as it is passed through $G$ to the ADRF: the own-observation bias of HC0 in the coefficient directions that determine the curve's shape. When effects vary across units, the covariate term is not zero, but it is estimated by a sample variance of predicted values, whose bias is the factor $(N - 1)/N$ and does not depend on leverage. So the fix belongs in the coefficient part of the influence values, as recommended above, not in the ADRF-level covariance.
+
+### A Wald test of the same hypothesis
+
+For this outcome model, the ADRF is a cubic polynomial in the treatment, $\theta(a) = G(a) \beta$, so its deviations from its weighted mean over the grid, $C \theta$, lie in a three-dimensional space (the fourth eigenvalue of their covariance is $10^{-16}$ of the first). A flat ADRF over the grid is then exactly the rank-3 linear hypothesis $C G \beta = 0$. The omnibus statistic and a Wald statistic test this same hypothesis but measure the deviations $d = C \hat{\theta}$ differently: the omnibus statistic uses a fixed metric, $T = d' W d$ (the trapezoid-weighted squared deviations over the treatment range), and the estimated covariance enters only through its reference distribution; the Wald statistic weights the deviations by the inverse of their estimated covariance, $d' (C \hat{V} C')^{+} d$, referred to $\chi^2_3$ (or $F_{3, n - p}$).
+
+Rejection rate at the .05 level of the Wald test, and of the Wald test that all nine coefficients involving the treatment are 0:
+
+| n | Wald `u0` | `u2` | `c_cl` | `c_cl_F` | Oracle | All treatment coefficients, classical F | HC0 | HC2 |
+|---|---|---|---|---|---|---|---|---|
+| 250 | .126 | .080 | .048 | .046 | .054 | .051 | .384 | .229 |
+| 500 | .102 | .080 | .050 | .050 | .052 | .051 | .284 | .186 |
+| 1000 | .078 | .064 | .048 | .048 | .050 | .051 | .184 | .136 |
+| 2000 | .068 | .059 | .052 | .052 | .060 | .040 | .122 | .096 |
+
+- **With the exact covariance, the two tests have the same size.** Both are at the nominal level with the classical covariance.
+- **With an estimated robust covariance, the Wald test is worse.** With HC0, it rejected 12.6% at n = 250 against 8.7% for the omnibus test, and HC2 does not fix it (8.0% at n = 250 and 500). The Wald test inverts the estimated covariance, so it is affected both by HC0's bias, which is largest in the least variable direction, and by its variability, since the inverse of an unbiased covariance estimate is biased upward: the average Wald statistic with HC2 was 3.39 at n = 250, against 3 if the covariance were exact. The omnibus statistic does not involve the estimated covariance, which only sets its reference distribution, so it is less sensitive to both errors.
+- **The two tests do not give the same inference in a given sample.** Under the null with the classical covariance, their p-values correlated .91 and they reached different decisions at the .05 level in 3.8% of datasets; of the datasets in which either rejected, both rejected in only 45%. Their power depends on the shape of the departure from flatness (n = 500, classical covariance with F reference):
+
+  | Effect on the outcome | Omnibus | Wald | All treatment coefficients |
+  |---|---|---|---|
+  | $.1 A$ | .364 | .311 | .267 |
+  | $.1 A^2$ | .607 | .644 | .883 |
+  | $.3\,\mathrm{logit}^{-1}(4(A - 1))$ | .311 | .300 | .214 |
+  | $.03 A^3$ | .471 | .471 | .784 |
+
+  The omnibus test weights a departure by its size over the treatment range, and the Wald test by its size relative to its uncertainty. Here the three eigenvalues of the covariance of the deviations are within a factor of about 5 of each other (relative eigenvalues 1, .68, .22), so the two metrics are similar and so is their power; they would differ more for a more flexible outcome model or a less evenly spread treatment.
+- **The test of all treatment coefficients tests a different hypothesis.** Its null is that the treatment has no effect for any covariate pattern, which is stronger than a flat ADRF: it rejects when effects vary across units but average to a flat curve. When the effect is the same for everyone, as in these alternatives, it can be more powerful than either ADRF test, because it uses the restriction that the interaction coefficients are 0. With robust covariances it is far worse in size (38% with HC0 at n = 250), because it inverts a 9-dimensional covariance that includes the poorly estimated interaction directions.
+- **For a nonlinear outcome model, a Wald test is not a practical alternative.** With a logistic model, the ADRF is not a polynomial and flatness is not a linear restriction on the coefficients. The covariance of the deviations is numerically full rank, with eigenvalues trailing off (relative eigenvalues 1, .61, .20, .0025, .0004, .0001, ... in one sample of 1000), so a Wald test would have to choose a rank and invert eigenvalues estimated with little precision. The omnibus test needs no inversion.
+
+### Conclusions
+
+- The size problem is the bias of the sandwich estimate of the coefficients' covariance, propagated to the ADRF; the omnibus test is accurate with an accurate covariance.
+- A Wald test would not fix it: it tests the same hypothesis for linear outcome models but is more sensitive to errors in the covariance, so it is worse with robust covariances, and it is not well defined for nonlinear models.
+- HC2 removes the bias but leaves the test a point or so above the nominal level at these sample sizes in this run, from the variability of the estimate.
+
+## HC2 with a logistic model and with heteroskedastic errors (`run-glm-het.R`, `analyze-glm-het.R`, 2026-11-16)
+
+After the HC2 adjustment became the package's default, this study checked it outside the setting it was chosen in. Each cell has 2000 replicates (Monte Carlo SE of a .05 rejection rate about .005); the ADRF is flat in all of them, and the outcome model is the 13-coefficient model above.
+
+- **Logistic model:** a binary outcome with $P(Y = 1) = \mathrm{logit}^{-1}(-.5 + .8 X_1 - .5 X_2 + .3 X_1 X_2)$, not depending on the treatment, fit with `glm(family = binomial)` at n = 500, 1000, and 2000. HC0 and HC2 come from `adrf()` itself, with the adjustment switched off for HC0. The flat test gave the same p-value with and without the default logit transformation (to $10^{-13}$), because the transformed flat projection is the constant on the response scale that minimizes the weighted squared deviations, which is the weighted mean.
+- **Heteroskedastic errors**, with the linear model at n = 250, 500, and 1000, the errors normal with an average variance near 1 and SD:
+  - *increasing*: $.43 + .52 |A - .2|$, three times as large at the extremes of the treatment as in its middle, where the leverages are largest;
+  - *decreasing*: $1.6 / (1 + |A - .2|)$, a third as large at the extremes;
+  - *covariate*: $\exp(.5 X_1 - .25)$, depending on a covariate but not on the treatment.
+
+Rejection rate at the .05 level, and the average estimated variance of the statistic relative to the truth:
+
+| Scenario | n | HC0 | HC2 | HC3 | Classical | Oracle | Variance ratio, HC0 | HC2 |
+|---|---|---|---|---|---|---|---|---|
+| Logistic | 500 | .098 | .079 | | | .051 | .86 | .97 |
+| | 1000 | .076 | .066 | | | .045 | .89 | .96 |
+| | 2000 | .065 | .060 | | | .055 | .95 | .99 |
+| Increasing | 250 | .128 | .078 | .031 | .260 | .056 | .75 | .97 |
+| | 500 | .104 | .080 | .043 | .284 | .053 | .80 | .94 |
+| | 1000 | .069 | .050 | .034 | .292 | .050 | .91 | 1.01 |
+| Decreasing | 250 | .052 | .036 | .023 | .002 | .057 | .97 | 1.10 |
+| | 500 | .052 | .045 | .034 | .002 | .056 | .98 | 1.04 |
+| | 1000 | .050 | .044 | .038 | .000 | .052 | 1.02 | 1.05 |
+| Covariate | 250 | .093 | .057 | .028 | .068 | .061 | .80 | .99 |
+| | 500 | .072 | .045 | .029 | .060 | .050 | .84 | .98 |
+| | 1000 | .070 | .052 | .040 | .066 | .056 | .90 | 1.00 |
+
+"Classical" is the conditional covariance with $\hat\sigma^2 (X'X)^{-1}$ and "Oracle" uses the covariance of the estimates across the replicates; HC3 and the classical covariance were computed only for the linear models.
+
+- **The oracle test is at the nominal level in every cell**, including the logistic model, so the chi-squared mixture remains adequate and the errors are again in the covariance.
+- **HC2 is better than HC0 in every scenario except one, where HC0 was already accurate.** It nearly removes the bias of the variance of the statistic everywhere (ratios .94 to 1.05 against .75 to 1.02 for HC0). When the errors are smaller at the extremes, HC0's bias is offset (the high-leverage units contribute little variance), HC0 is at the nominal level, and HC2 is slightly conservative (3.6% at n = 250, 4.4% to 4.5% from n = 500).
+- **HC2 does not fully fix the size when the high-leverage units are also noisy.** With errors larger at the extremes, HC2 rejects 7.8% and 8.0% at n = 250 and 500 (12.8% and 10.4% for HC0), and with the logistic model, whose largest leverage was .45 in a typical sample of 500, 7.9% and 6.6% at n = 500 and 1000. HC2's variance of the statistic is close to unbiased in both, so what remains is its variability: the estimate rests on a few units with high leverage and large residual variance, so it has few effective degrees of freedom, the second error described above, which mattered little in the homoskedastic study.
+- **HC3 overcorrects in every case** (2.3% to 4.3%), as before.
+- **The classical covariance is badly wrong under heteroskedasticity** (26% to 29% when errors grow at the extremes, 0.2% when they shrink), as expected; the conditional variance in `adrf()` uses the model's own covariance by default, which is the classical one for `lm()`.
+
+**Conclusion.** The HC2 default is a clear improvement over HC0 across these scenarios and never much worse, but with a flexible logistic model at n of 1000 or less, or with error variance concentrated at the extremes of the treatment at n of 500 or less, the omnibus test still rejects 6.6% to 8.0% at the .05 level. The remaining error is variability rather than bias, so a fix would be a degrees-of-freedom correction suited to heavy-tailed contributions or a different reference distribution, not a different leverage adjustment; the influence-function degrees of freedom tried earlier overstated the degrees of freedom by a factor of 2.7 at n = 250 and would not suffice.
 
 ## The calibration study's misspecified model (`misspecified/`)
 

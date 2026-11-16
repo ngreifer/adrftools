@@ -9,9 +9,9 @@ test_that("amef() recovers the slope of a linear ADRF", {
   expect_equal(get_est(m), rep(coef(fit)[["logBLL"]], 11), tolerance = 1e-5)
 
   # The covariate-sampling term cancels in a difference of ADRF values, so the
-  # unconditional variance of the slope is its HC0 sandwich variance
-  hc0 <- sandwich::vcovHC(fit, type = "HC0")["logBLL", "logBLL"]
-  expect_equal(get_se(m), rep(sqrt(hc0), 11), tolerance = 1e-4)
+  # unconditional variance of the slope is its HC2 sandwich variance
+  hc2 <- sandwich::vcovHC(fit, type = "HC2")["logBLL", "logBLL"]
+  expect_equal(get_se(m), rep(sqrt(hc2), 11), tolerance = 1e-4)
 
   s <- summary(m(logBLL = c(0, 1)), simultaneous = FALSE)
   expect_identical(attr(s, "null"), 0)

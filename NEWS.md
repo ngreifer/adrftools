@@ -17,6 +17,10 @@ adrftools News and Updates
 
 * With `glm_weightit()` models fit with `vcov = "HC0"`, unconditional standard errors in `adrf()` now treat the weights as fixed, consistent with the model's own covariance matrix. Previously, the estimation of the weights was always accounted for.
 
+* The unconditional variance in `adrf()`, the default, now applies the HC2 small-sample adjustment of MacKinnon and White (1985), dividing each unit's influence on the model coefficients by $\sqrt{1 - h_i}$, where $h_i$ is its leverage. Previously, the variance had the downward bias of the HC0 sandwich estimator, which is largest at the extremes of the treatment and made the omnibus tests in `summary.effect_curve()` reject a true null hypothesis too often in small samples. The adjustment is not used with `svyglm` models; for models whose leverages cannot be found, the HC1 adjustment $n/(n-p)$ is used instead with a message.
+
+* With `cluster`, the unconditional variance in `adrf()` now uses the CR2 adjustment described by Pustejovsky and Tipton (2018), the clustered analog of HC2, for `lm()` and `glm()` models, in place of the $G/(G-1)$ adjustment. Other models use the CR1 adjustment, $\frac{G}{G-1}\frac{n-1}{n-p}$, with a message.
+
 * *fwb* (>= 1.0.0) is now required for bootstrapping.
 
 * `wts` in `adrf()` is now checked for missing, non-finite, and negative values and for a positive sum in each subgroup.
@@ -132,6 +136,8 @@ adrftools News and Updates
 * Fixed a bug in `adrf()` in which a character predictor with values absent from the units selected by `subset` gave an error.
 
 * Fixed a bug in `summary.curve_projection()` in which `subset` failed with bootstrapped effect curves, and `coef()` and `vcov()` of the output failed or returned the coefficients of all subgroups.
+
+* Fixed a bug in `adrf()` in which unconditional standard errors were `NA` for models fit with `na.action = na.exclude`.
 
 # *adrftools* 0.1.0
 

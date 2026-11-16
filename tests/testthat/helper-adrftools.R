@@ -15,10 +15,19 @@ manual_adrf <- function(fit, data, treat, values, w = NULL, type = "response") {
 
 # Unconditional (Hansen et al.) variance computed by hand for a linear model:
 # influence function of the coefficients plus the sampling term for the
-# covariate distribution
-manual_uncond_vcov_lm <- function(fit, data, treat, values) {
+# covariate distribution. With `type = "HC2"` (what adrf() uses), each unit's
+# influence on the coefficients is divided by sqrt(1 - h); with "HC1", it is
+# multiplied by sqrt(n / (n - p)).
+manual_uncond_vcov_lm <- function(fit, data, treat, values, type = "HC2") {
   N <- nrow(data)
   IFb <- sandwich::estfun(fit) %*% sandwich::bread(fit)
+
+  if (type == "HC2") {
+    IFb <- IFb / sqrt(1 - stats::hatvalues(fit))
+  }
+  else if (type == "HC1") {
+    IFb <- IFb * sqrt(N / (N - length(stats::coef(fit))))
+  }
 
   tt <- stats::delete.response(stats::terms(fit))
 

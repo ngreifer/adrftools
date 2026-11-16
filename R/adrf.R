@@ -5,8 +5,8 @@
 #'
 #' @param x a fitted model object (e.g., from [lm()] or [glm()]).
 #' @param treat a string specifying the name of the treatment variable.
-#' @param vcov how the covariance matrix of the estimates should be computed. If `"unconditional"` (the default for frequentist models), use the sandwich estimator including sampling uncertainty. If `"boot"` or `"fwb"`, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the `vcov` argument of [marginaleffects::get_vcov()]. Can also be `"none"` to avoid computing the uncertainty. For Bayesian models, only `"posterior"`, which uses the posterior of the estimates, and `"none"` are allowed. For models fit to multiply imputed data, `"boot"` and `"fwb"` are not allowed.
-#' @param cluster an optional data frame or one-sided formula with the clustering terms for cluster-robust inference. When `vcov` is `"conditional"`, the covariance matrix of the model coefficients is computed using [sandwich::vcovCL()] with its default type; `vcov` can also be `"HC0"`, `"HC1"`, `"HC2"`, or `"HC3"` to request that type from [sandwich::vcovCL()] (`"HC2"` and `"HC3"` are available only for `lm()` and `glm()` models). Other strings and functions supplied to `vcov` cannot be used with `cluster`.
+#' @param vcov how the covariance matrix of the estimates should be computed. If `"unconditional"` (the default for frequentist models), use the sandwich estimator including sampling uncertainty, with the HC2 small-sample adjustment when it is available (see Details). If `"boot"` or `"fwb"`, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the `vcov` argument of [marginaleffects::get_vcov()]. Can also be `"none"` to avoid computing the uncertainty. For Bayesian models, only `"posterior"`, which uses the posterior of the estimates, and `"none"` are allowed. For models fit to multiply imputed data, `"boot"` and `"fwb"` are not allowed.
+#' @param cluster an optional data frame or one-sided formula with the clustering terms for cluster-robust inference. When `vcov` is `"unconditional"`, the CR2 small-sample adjustment is used when it is available (see Details). When `vcov` is `"conditional"`, the covariance matrix of the model coefficients is computed using [sandwich::vcovCL()] with its default type; `vcov` can also be `"HC0"`, `"HC1"`, `"HC2"`, or `"HC3"` to request that type from [sandwich::vcovCL()] (`"HC2"` and `"HC3"` are available only for `lm()` and `glm()` models). Other strings and functions supplied to `vcov` cannot be used with `cluster`.
 #' @param range numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the effect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.
 #' @param n integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Must be between 2 and 1000. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.
 #' @param type character string indicating the type of prediction. Passed to [marginaleffects::get_predict()]. Default is `"response"` for predictions on the scale of the outcome variable. Other options might include `"link"` for the linear predictor. This argument is ignored for `lm` objects.
@@ -22,6 +22,10 @@
 #'
 #' @details
 #' `adrf()` estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When `vcov = "unconditional"`, the variance is computed using the formulas in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires [sandwich::estfun()] and [sandwich::bread()] methods for the supplied object to be available.
+#'
+#' In the unconditional variance, each unit's contribution to the influence function of the model coefficients is divided by \eqn{\sqrt{1 - h_i}}, where \eqn{h_i} is the unit's leverage (i.e., hat value), as in the HC2 estimator of MacKinnon and White (1985). Without this adjustment, the variance would share the downward bias of the HC0 sandwich estimator, which is largest for estimates that depend on units with high leverage, such as the ADRF at the extremes of the treatment, and which can make the omnibus tests in [summary.effect_curve()] reject a true null hypothesis too often in small samples. The leverages are computed from the fitted model for `lm()` and `glm()` models and extracted using [hatvalues()] for other models; when they cannot be found, the HC1 adjustment is used instead with a message, which multiplies the variance contributed by the model coefficients by \eqn{n/(n-p)}, where \eqn{n} is the number of units and \eqn{p} the number of estimated parameters, and corrects the bias only for the average leverage. The adjustment is not used with `svyglm` models, whose variance is computed from the survey design.
+#'
+#' When `cluster` is supplied, the unconditional variance uses the CR2 adjustment described by Pustejovsky and Tipton (2018), the cluster-level analog of HC2: within each cluster, the vector of residuals is multiplied by \eqn{(I - H_{gg})^{-1/2}}, where \eqn{H_{gg}} is the block of the hat matrix for the units in the cluster, in place of the usual \eqn{G/(G-1)} adjustment, where \eqn{G} is the number of clusters. With clusters of one unit, it is the HC2 adjustment. CR2 is available only for `lm()` and `glm()` models (including those whose influence function is that of an ordinary `glm()` fit, such as `glm_weightit()` models with fixed weights); for other models, the CR1 adjustment, \eqn{\frac{G}{G-1}\frac{n-1}{n-p}} (the default of `sandwich::vcovCL()`), is used with a message. For generalized linear models, the residuals and hat matrix are those of the final iteratively reweighted least squares fit, so the adjusted variance can differ from that of `sandwich::vcovCL(type = "HC2")` when the working weights vary within clusters.
 #'
 #' When a `<mira>` object from \pkg{mice} or a `<mimira>` object from \pkg{MatchThem} is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. The degrees of freedom used for tests and confidence intervals are those of Reiter (2007), or of Li, Raghunathan, and Rubin (1991) when the complete-data degrees of freedom are infinite (e.g., for generalized linear models). These account for the number of imputations and the fraction of missing information, which is assumed to be the same for all points on the curve, so a single value is used for every point and for joint inference. Bootstrapping is not allowed with such objects.
 #'
@@ -39,6 +43,10 @@
 #'
 #' @references
 #' Li, K. H., Raghunathan, T. E., & Rubin, D. B. (1991). Large-sample significance levels from multiply imputed data using moment-based statistics and an *F* reference distribution. *Journal of the American Statistical Association*, 86(416), 1065–1073. \doi{10.1080/01621459.1991.10475152}
+#'
+#' MacKinnon, J. G., & White, H. (1985). Some heteroskedasticity-consistent covariance matrix estimators with improved finite sample properties. *Journal of Econometrics*, 29(3), 305–325. \doi{10.1016/0304-4076(85)90158-7}
+#'
+#' Pustejovsky, J. E., & Tipton, E. (2018). Small-sample methods for cluster-robust variance estimation and hypothesis testing in fixed effects models. *Journal of Business & Economic Statistics*, 36(4), 672–683. \doi{10.1080/07350015.2016.1247004}
 #'
 #' Reiter, J. P. (2007). Small-sample degrees of freedom for multi-component significance tests with multiple imputation for missing data. *Biometrika*, 94(2), 502–508. \doi{10.1093/biomet/asm028}
 #'
@@ -679,6 +687,9 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
           n_bread > 0 && n_bread < fnrow(infl)) {
         infl <- infl * fnrow(infl) / n_bread
 
+        if (!is_null(cl_list[["infl_cl"]])) {
+          cl_list[["infl_cl"]] <- lapply(cl_list[["infl_cl"]], `*`, fnrow(infl) / n_bread)
+        }
       }
     }
 
@@ -704,7 +715,14 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       else if (is_null(cl_list)) crossprod(S / fnrow(S))
       else {
         V <- Reduce("+", lapply(seq_along(cl_list[["cluster"]]), function(j) {
-          crossprod(fsum(S, cl_list[["cluster"]][[j]]) / fnrow(S)) * cl_list[["adj"]][j]
+          # With the CR2 adjustment, each clustering term has its own adjusted
+          # influence on the coefficients
+          S_j <- {
+            if (is_null(cl_list[["infl_cl"]])) S
+            else S + tcrossprod(cl_list[["infl_cl"]][[j]] - infl, gr)
+          }
+
+          crossprod(fsum(S_j, cl_list[["cluster"]][[j]]) / fnrow(S)) * cl_list[["adj"]][j]
         }))
 
         # Multiway clustering can give negative eigenvalues

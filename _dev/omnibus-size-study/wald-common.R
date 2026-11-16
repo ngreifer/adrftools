@@ -9,7 +9,7 @@
 # (the trapezoid-weighted L2 norm over the treatment range) rather than the
 # inverse of their covariance.
 
-source(file.path(Sys.getenv("ADRF_ROOT", "."), "_dev/omnibus-size-study/common.R"))
+source(file.path(Sys.getenv("ADRF_ROOT", "."), "_dev/omnibus-size-study/common.R"), local = TRUE)
 
 # Effects of the treatment added to the outcome for the power comparison; the
 # ADRF is then delta * f(a) plus a constant
@@ -17,7 +17,8 @@ effects <- list(
   none = function(a) 0 * a,
   linear = function(a) a,
   quadratic = function(a) a^2,
-  sigmoid = function(a) stats::plogis(4 * (a - 1))
+  sigmoid = function(a) stats::plogis(4 * (a - 1)),
+  cubic = function(a) a^3
 )
 
 # Wald test of C theta = 0 using the generalized inverse of C V C' on its

@@ -4,6 +4,8 @@ A second pass over `R/`, the documentation, the vignette, and the README, after 
 
 Issues are numbered R1, R2, ... for reference. Line numbers are as of this audit.
 
+**Status (2026-11-16):** every item is resolved. Each is struck through with a note on what was done; R4 and R26 were resolved by restricting `transform` to transformations with a known inverse and derivative, and R38 was finished on 2026-11-16 by building the model matrix one treatment value at a time.
+
 ## Silently wrong results
 
 - **~~R1. Zero model weights shrink the unconditional SEs and break the default `wts`.~~** ~~✓ `bread()` is scaled by `nobs()` (units with nonzero weight), but `S` is divided by `nrow(estfun())` (`R/adrf.R` unconditional branch), so with zero weights the SEs are too small by the factor (nonzero units)/N: 0.1418 against 0.1768 with 500 of 2521 weights set to 0, matching the fit with those rows dropped. The default `wts` also fails ("length(w) must match length(x)"), because `process_wts()` uses `insight::n_obs()`, which excludes zero-weight units. Fix: multiply `infl` by `nrow(estfun) / nobs(x)`, and use the number of rows of the evaluation data in `process_wts()`.~~ Fixed: `infl` is scaled by `nrow(estfun) / nobs(x)` (checked for `lm()` and quasibinomial `glm()`, whose SEs now equal those of the fit with the zero-weight rows dropped; a zero-weight *WeightIt* fit could not be constructed to check), and `process_wts()` uses the rows of the evaluation data.
