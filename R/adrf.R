@@ -8,9 +8,9 @@
 #' @param vcov how the covariance matrix of the estimates should be computed. If `"unconditional"` (the default for frequentist models), use the sandwich estimator including sampling uncertainty. If `"boot"` or `"fwb"`, use the traditional or fractional weighted bootstrap, respectively (both of which require the \CRANpkg{fwb} package to be installed). Otherwise, may be a covariance matrix or other allowed input to the `vcov` argument of [marginaleffects::get_vcov()]. Can also be `"none"` to avoid computing the uncertainty. For Bayesian models, only `"posterior"`, which uses the posterior of the estimates, and `"none"` are allowed. For models fit to multiply imputed data, `"boot"` and `"fwb"` are not allowed.
 #' @param cluster an optional data frame or one-sided formula with the clustering terms for cluster-robust inference. When `vcov` is `"conditional"`, the covariance matrix of the model coefficients is computed using [sandwich::vcovCL()] with its default type; `vcov` can also be `"HC0"`, `"HC1"`, `"HC2"`, or `"HC3"` to request that type from [sandwich::vcovCL()] (`"HC2"` and `"HC3"` are available only for `lm()` and `glm()` models). Other strings and functions supplied to `vcov` cannot be used with `cluster`.
 #' @param range numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the effect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.
-#' @param n integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.
+#' @param n integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Must be between 2 and 1000. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.
 #' @param type character string indicating the type of prediction. Passed to [marginaleffects::get_predict()]. Default is `"response"` for predictions on the scale of the outcome variable. Other options might include `"link"` for the linear predictor. This argument is ignored for `lm` objects.
-#' @param data an optional data frame containing the observations originally used to fit the outcome model supplied to `x`. This should only be used if the supplied model is not supported by \pkg{insight}. In most cases, this should not need to be supplied.
+#' @param data an optional data frame containing the observations originally used to fit the outcome model supplied to `x`. This is needed when the dataset cannot be recovered from the model (e.g., when the model was fit inside a function or is not supported by \pkg{insight}), and it is used to find variables named in `subset`, `by`, `wts`, and `cluster` that are not in the dataset used to fit the model. In most cases, this does not need to be supplied.
 #' @param subset an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function. Can also be a vector of row numbers or row names; logical vectors and row numbers refer to the units used to fit the model (i.e., excluding any dropped because of missing values), and row names refer to the original dataset.
 #' @param by optional variable(s) over which to group the estimation. Can be a character vector or one-sided formula.
 #' @param wts optional weights used to generalize the effect curve to a weighted population. Can be a numeric vector, the name of a variable in the original dataset, `TRUE` to use the weights used to fit the model, or `FALSE` for no weights. The default depends on the model; see Details.
@@ -343,7 +343,8 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                           cl_list, vcov_type, is_bayes, type, data = NULL,
                           fwb.args = list(), ...) {
   vcov <- cl_list[["vcov"]]
-  cl_list[["vcov"]] <- NULL
+  infl <- cl_list[["infl"]]
+  cl_list[c("vcov", "infl")] <- NULL
 
   model_data <- ss(model_data, s)
 
@@ -412,11 +413,24 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
   if (!is_bayes && is_null(pred_fun)) {
     mm <- get_tt(x, model_data) |>
-      model.matrix(data = data_grid) |>
-      ss(j = !aliased)
+      model.matrix(data = data_grid, xlev = .model_xlev(x))
+
+    # Subsetting copies the matrix, which can be large, so only when needed
+    if (any(aliased)) {
+      mm <- ss(mm, j = !aliased)
+    }
 
     # Offsets (which model.matrix() leaves out) for each row of the grid
     off_grid <- .grid_offset(x, data_grid, model_data)
+
+    # Gradient of the weighted mean predictions in each subgroup and at each
+    # treatment value with respect to the coefficients, computed as weighted
+    # sums so that the rows of `mm` are not multiplied in a copy
+    .avg_grad <- function() {
+      me <- grad_fun(drop(mm %*% beta0) + off_grid)
+
+      fsum(mm, g = cross_id, w = wi * me) / fsum(wi, g = cross_id)
+    }
 
     est_fun <- function(model = NULL, b = NULL, data0 = NULL) {
       if (is_null(b)) {
@@ -449,6 +463,14 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       do.call(what = "rbind") |>
       t() |>
       ss(j = .value_major_to_by_major(n, n_by))
+
+    if (fnrow(out[["draws"]]) < 2L) {
+      arg::err("at least two posterior draws are required")
+    }
+
+    if (anyNA(out[["draws"]])) {
+      arg::err("the posterior draws of the predictions contain missing values")
+    }
 
     out[["est"]] <- colMeans(out[["draws"]])
   }
@@ -516,28 +538,12 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
         }, .x = beta0)
       }
       else {
-        grad_fun(mm, eta = drop(mm %*% beta0) + off_grid) |>
-          fmean(g = cross_id, w = wi)
+        .avg_grad()
       }
     }
 
-    if (inherits(x, "svyglm")) {
-      # Scale by the full sample size, not the size of the subset or the
-      # single-row shortcut
-      infl <- .attr(x, "influence") %or% tcrossprod(model.matrix(x) * resid(x, "working") * x$weights,
-                                                    x$naive.cov)
-      infl <- fnrow(infl) * infl
-    }
-    else if (inherits(x, "glm_weightit") && identical(x[["vcov_type"]], "HC0")) {
-      # A WeightIt fit with `vcov = "HC0"` treats the weights as fixed, so the
-      # estimation of the weights is left out of the influence function
-      infl <- sandwich::estfun(x, asympt = FALSE) |>
-        tcrossprod(sandwich::bread(x))
-    }
-    else {
-      infl <- sandwich::estfun(x) |>
-        tcrossprod(sandwich::bread(x))
-    }
+    # `infl` (the influence of each unit on the coefficients) was computed by
+    # .coef_influence() in process_vcov_and_cluster()
 
     if (!inherits(x, "svyglm")) {
       # bread() is scaled by the number of units with nonzero model weights,
@@ -597,8 +603,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
         }, .x = beta0)
       }
       else {
-        grad_fun(mm, eta = drop(mm %*% beta0) + off_grid) |>
-          .fmean(g = cross_id, w = wi)
+        .avg_grad()
       }
     }
 

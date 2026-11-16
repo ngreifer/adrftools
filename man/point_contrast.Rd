@@ -18,7 +18,7 @@ point_contrast(object)
 )
 }
 \arguments{
-\item{object}{for \code{point_contrast()}, a \code{\link{curve_est}} object; the output of a an \code{effect_curve} object. For \code{summary()}, a \code{curve_est_contrast} object; the output of a call to \code{point_contrast()}.}
+\item{object}{for \code{point_contrast()}, a \code{\link{curve_est}} object; the output of a call to an \code{effect_curve} object. For \code{summary()}, a \code{curve_est_contrast} object; the output of a call to \code{point_contrast()}.}
 
 \item{conf_level}{the desired confidence level. Set to 0 to omit confidence intervals. Default is .95.}
 

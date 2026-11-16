@@ -2,7 +2,7 @@
 
 ## Results
 
-Line coverage is **96.1%** (`covr::package_coverage()` with `NOT_CRAN=true`; it was 91.8% on the first pass). All 14 test files pass with 220 tests (each *patrick* case counts as a test) and 921 expectations: 0 failures, 0 warnings, and 1 skip (the opt-in *brms* test). The full suite runs in about 45 seconds.
+Line coverage is **96.1%** (`covr::package_coverage()` with `NOT_CRAN=true`; it was 91.8% on the first pass). All 14 test files pass with 234 tests (each *patrick* case counts as a test) and 993 expectations: 0 failures, 0 warnings, and 1 skip (the opt-in *brms* test). The full suite runs in about 45 seconds.
 
 | File | Coverage |
 |---|---|

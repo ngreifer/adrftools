@@ -62,6 +62,11 @@ curve_contrast <- function(x) {
     arg::err("{.fun adrf} must have been called with {.arg by} specified to use {.fun {fn_name}}")
   }
 
+  if (fnrow(.by_grid) < 2L) {
+    fn_name <- rlang::current_call() |> rlang::call_name()
+    arg::err("{.fun {fn_name}} requires at least two subgroups, but {.arg x} has only one")
+  }
+
   .est <- .attr(x, ".est")
   .values <- .attr(x, ".values")
 

@@ -30,16 +30,16 @@
 
 \item{proj}{an optional \code{curve_projection} object, the output of a call to \code{\link[=curve_projection]{curve_projection()}}. Supplying this adds the projection curve to the effect curve plot.}
 
-\item{transform}{whether to compute intervals on the transformed estimates. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}. Ignored unless \code{x} is an ADRF. See Details.}
+\item{transform}{whether to compute intervals on the transformed estimates. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}. Ignored unless \code{x} is an ADRF and Wald inference is used (i.e., ignored with percentile intervals, the default with bootstrapping and Bayesian models). See Details.}
 
-\item{ci.type}{string; when bootstrapping is used in the original effect curve, what type of confidence interval is to be computed. Allowable options include \code{"perc"} for percentile intervals, \code{"wald"} for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When \code{simultaneous = TRUE}, only \code{"perc"} and \code{"wald"} are allowed. Default is \code{"perc"}. Ignored when bootstrapping is not used.}
+\item{ci.type}{string; when bootstrapping or Bayesian inference is used in the original effect curve, which type of confidence interval is to be computed. For bootstrapping, allowable options include \code{"perc"} for percentile intervals, \code{"wald"} for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When \code{simultaneous = TRUE}, only \code{"perc"} and \code{"wald"} are allowed. For Bayesian models, allowable options include \code{"perc"} for equi-tailed intervals and \code{"wald"} for Wald intervals. Default is \code{"perc"}. Ignored when bootstrapping is not used and the model is not Bayesian.}
 
 \item{df}{the "denominator" degrees of freedom to use for the critical test statistics for confidence bands. Default is to use the residual degrees of freedom from the original model if it is a linear model and \code{Inf} otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see \code{\link[=adrf]{adrf()}}).}
 
 \item{...}{ignored.}
 }
 \value{
-A \code{ggplot} object that can modified using functions in \pkg{ggplot2}. Below are some common tasks and instructions to perform them. Note all should be run after running \code{library("ggplot2")}.
+A \code{ggplot} object that can be modified using functions in \pkg{ggplot2}. Below are some common tasks and instructions to perform them. Note all should be run after running \code{library("ggplot2")}.
 
 \itemize{
 \item{Change the position of the legend:
@@ -81,7 +81,7 @@ The usual confidence bands assume the estimates along the effect curve are norma
 
 \subsection{Simultaneous confidence bands}{
 
-Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. \code{plot()} uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate. With bootstrapping or Bayesian models and \code{ci.type = "perc"}, the simultaneous band is the product of the equal-tailed percentile intervals with the tail probability calibrated so that it contains the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
+Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. \code{plot()} uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate. With Wald inference, the critical value is computed using \pkgfun{mvtnorm}{qmvt} with the same settings as \code{\link[=summary.curve_est]{summary.curve_est()}}, which uses a randomized algorithm; use \code{\link[=set.seed]{set.seed()}} for reproducible results. With bootstrapping or Bayesian models and \code{ci.type = "perc"}, the simultaneous band is the product of the equal-tailed percentile intervals with the tail probability calibrated so that it contains the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
 }
 }
 \examples{

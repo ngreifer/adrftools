@@ -139,7 +139,8 @@ summary(adrf_bll, hypothesis = "flat")
     #>   P-value
     #>  < 0.0001
     #> ───────────────────────────────────────────────────────
-    #> Computed using the Imhof approximation
+    #> Computed using the Imhof approximation (the
+    #>   saddlepoint approximation for p-values below .0001)
 
 ``` r
 # Test for linearity
@@ -154,7 +155,8 @@ summary(adrf_bll, hypothesis = "linear")
     #>  P-value
     #>   0.3159
     #> ───────────────────────────────────────────────────────
-    #> Computed using the Imhof approximation
+    #> Computed using the Imhof approximation (the
+    #>   saddlepoint approximation for p-values below .0001)
 
 The results indicate that the ADRF is not flat, but there isn’t enough
 evidence to claim it is nonlinear in the range specified. We might
@@ -171,7 +173,7 @@ Below, we plot the linear projection along with the original ADRF:
 plot(adrf_bll, proj = proj)
 ```
 
-<img src="man/figures/README-unnamed-chunk-9-1.png" alt="" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-10-1.png" alt="" style="display: block; margin: auto;" />
 
 To examine the coefficient describing the projection, we can use
 `summary()` on the projection:
@@ -196,8 +198,8 @@ Based on the above, we might conclude the following:
 > the included potential confounders, based on rejection of the
 > hypothesis that the ADRF is flat for `logBLL` values between -0.3567
 > and 2.4248 (p \< .0001). There isn’t evidence that the ADRF is
-> nonlinear within this range (p = .3153). The linear projection has a
-> coefficient of -.643 (p \< .0001), indicating that the expected
+> nonlinear within this range (p = .3159). The linear projection has a
+> coefficient of -.642 (p \< .0001), indicating that the expected
 > potential outcome of `Math` decreases by this amount for each unit
 > increase in `logBLL`.
 

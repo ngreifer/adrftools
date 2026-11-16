@@ -25,7 +25,7 @@
     aliased <- is.na(beta)
 
     X <- get_tt(x, model_data) |>
-      model.matrix(data = nd)
+      model.matrix(data = nd, xlev = .model_xlev(x))
 
     if (fncol(X) != length(beta) ||
         (!is_null(names(beta)) && !identical(colnames(X), names(beta)))) {
@@ -59,15 +59,20 @@
 .grid_offset <- function(x, data, model_data = NULL) {
   off <- 0
 
-  mf <- try(stats::model.frame(get_tt(x, model_data), data = data,
-                               na.action = stats::na.pass),
-            silent = TRUE)
+  tt <- try(get_tt(x, model_data), silent = TRUE)
 
-  if (!null_or_error(mf)) {
-    o <- stats::model.offset(mf)
+  # The model frame of the whole grid is built only when the formula has an
+  # offset() term
+  if (!null_or_error(tt) && !is_null(.attr(tt, "offset"))) {
+    mf <- try(stats::model.frame(tt, data = data, na.action = stats::na.pass),
+              silent = TRUE)
 
-    if (!is_null(o)) {
-      off <- off + o
+    if (!null_or_error(mf)) {
+      o <- stats::model.offset(mf)
+
+      if (!is_null(o)) {
+        off <- off + o
+      }
     }
   }
 
@@ -132,9 +137,13 @@
 }
 
 #' @exportS3Method NULL
+# The gradient of each prediction with respect to the coefficients is its row
+# of the model matrix times the returned value (the derivative of the inverse
+# link at the linear predictor); returning the multiplier rather than the
+# product avoids a second copy of the model matrix
 .get_grad_fun.lm <- function(.x, ...) {
-  function(mm, eta = NULL) {
-    mm
+  function(eta) {
+    1
   }
 }
 
@@ -142,8 +151,8 @@
 .get_grad_fun.glm <- function(.x, ...) {
   .mu.eta <- process_family(.x)$mu.eta
 
-  function(mm, eta = NULL) {
-    .mu.eta(eta) * mm
+  function(eta) {
+    .mu.eta(eta)
   }
 }
 

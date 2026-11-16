@@ -87,22 +87,30 @@ test_that(".gradient() computes numerical derivatives", {
                J, tolerance = 1e-5)
 })
 
-test_that(".sim_p_value() agrees with the exact chi-squared p-value", {
-  set.seed(1)
-  V <- diag(3)
+test_that(".sim_p_value() agrees with exact p-values", {
   stat <- qchisq(.9, 3)
 
-  p <- adrftools:::.sim_p_value(stat, V, n = 1e5)
-  expect_equal(p, .1, tolerance = .1)
-
-  # Splitting into chunks gives the same kind of answer
   set.seed(1)
-  p_chunk <- adrftools:::.sim_p_value(stat, V, n = 1e5 + 7, max_size = 3 * 1e4)
-  expect_equal(p_chunk, .1, tolerance = .1)
+  p <- adrftools:::.sim_p_value(stat, c(1, 1, 1), n = 1e5)
+  expect_lt(abs(p - .1), 4 * sqrt(.1 * .9 / 1e5))
 
+  # Splitting into chunks of unequal size gives the same kind of answer
   set.seed(1)
-  p_t <- adrftools:::.sim_p_value(stat, V, n = 1e5, df = 10)
-  expect_gt(p_t, p)
+  p_chunk <- adrftools:::.sim_p_value(stat, c(1, 1, 1), n = 1e5 + 7, chunk = 3e4)
+  expect_lt(abs(p_chunk - .1), 4 * sqrt(.1 * .9 / 1e5))
+
+  # With finite df, Q / 3 has an F(3, 10) distribution
+  set.seed(1)
+  p_t <- adrftools:::.sim_p_value(stat, c(1, 1, 1), n = 1e5, df = 10)
+  p_f <- pf(stat / 3, 3, 10, lower.tail = FALSE)
+  expect_lt(abs(p_t - p_f), 4 * sqrt(p_f * (1 - p_f) / 1e5))
+
+  # Unequal eigenvalues, against the saddlepoint approximation; zero
+  # eigenvalues are dropped
+  ev <- c(3, 1, .5, .1, 0)
+  set.seed(1)
+  p_w <- adrftools:::.sim_p_value(6, ev, n = 2e5)
+  expect_equal(p_w, adrftools:::.quad_form_tail(6, ev, method = "saddlepoint"), tolerance = .03)
 
   expect_error(adrftools:::make_rmvt(c(0, 0), -diag(2)), "positive definite")
   expect_error(adrftools:::make_rmvt(c(0, 0), diag(3)), "Incompatible")
@@ -351,4 +359,52 @@ test_that("process_family() rebuilds link functions from the link name", {
   fam$link <- "not_a_link"
   f2 <- adrftools:::process_family(structure(list(), class = "some_model"))
   expect_identical(f2$link, "identity")
+})
+
+test_that("simultaneous Wald critical values and p-values are accurate and consistent", {
+  # With independent estimates, the exact values follow from the Sidak formula
+  k <- 5
+  crit_exact <- qnorm((1 + .95^(1 / k)) / 2)
+
+  set.seed(1)
+  expect_equal(adrftools:::.mvt_crit(.95, diag(k)), crit_exact, tolerance = 1e-3,
+               ignore_attr = TRUE)
+
+  z <- c(-2.5, 1, 2.5, 3, 6)
+  p_exact <- 1 - (1 - 2 * pnorm(-abs(z)))^k
+
+  set.seed(1)
+  p <- adrftools:::.mvt_p_values(z, diag(k))
+  expect_equal(p, p_exact, tolerance = 1e-4)
+
+  # Equal |z| give equal p-values, which decrease in |z|
+  expect_identical(p[1L], p[3L])
+  expect_true(all(diff(p[order(abs(z))]) <= 0))
+
+  # Far from the null, the Bonferroni bound is used, which is within 1e-4
+  expect_equal(p[5L], k * 2 * pnorm(-6))
+
+  # One estimate gives the pointwise p-value
+  expect_equal(adrftools:::.mvt_p_values(2, matrix(1), df = 10), 2 * pt(-2, 10))
+
+  # The p-value at the critical value is 1 - conf_level
+  R <- matrix(.6, 4, 4)
+  diag(R) <- 1
+  set.seed(2)
+  cr <- adrftools:::.mvt_crit(.9, R, df = 30)
+  set.seed(3)
+  expect_equal(adrftools:::.mvt_p_values(cr, R, df = 30), .1, tolerance = 2e-3)
+})
+
+test_that("summary() intervals and plot() bands use the same simultaneous critical value", {
+  fit <- lm(Math ~ poly(logBLL, 3) + Male + PIR, data = nhanes3lead)
+  a <- adrf(fit, treat = "logBLL", n = 21)
+
+  set.seed(10)
+  s <- summary(a(logBLL = get_values(a)))
+  set.seed(10)
+  rb <- ribbon_data(plot(a))
+
+  expect_equal(rb$ymin, s$conf.low, tolerance = 1e-12)
+  expect_equal(rb$ymax, s$conf.high, tolerance = 1e-12)
 })

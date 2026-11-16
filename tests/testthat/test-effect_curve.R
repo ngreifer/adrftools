@@ -159,3 +159,29 @@ test_that("interpolation and the AMEF do not depend on the scale of the treatmen
     expect_equal(res$amef, ref$amef, tolerance = 1e-5)
   }
 })
+
+test_that("values just outside the grid are moved to its ends and others give an error", {
+  fit <- lm(Math ~ poly(logBLL, 3) + Male + PIR, data = nhanes3lead)
+  a <- adrf(fit, treat = "logBLL", n = 51)
+  v <- get_values(a)
+  w <- diff(range(v))
+
+  # Within 0.1% of the width, the estimate at the end point, labeled with the
+  # requested value
+  e <- a(logBLL = c(min(v) - .0009 * w, max(v) + .0009 * w))
+  e0 <- a(logBLL = range(v))
+  expect_equal(e$estimate, e0$estimate, tolerance = 1e-12)
+  expect_equal(vcov(e), vcov(e0), tolerance = 1e-12, ignore_attr = TRUE)
+  expect_equal(e$logBLL, c(min(v) - .0009 * w, max(v) + .0009 * w))
+
+  # Farther out, which used to give NA or unstable extrapolation
+  expect_error(a(logBLL = max(v) + .005 * w), "within the range")
+  expect_error(a(logBLL = c(1, min(v) - .1 * w)), "within the range")
+  expect_error(amef(a)(logBLL = max(v) + .005 * w), "within the range")
+
+  # reference_curve() follows the same rule
+  r <- reference_curve(a, reference = max(v) + .0009 * w)
+  expect_equal(attr(r, ".reference"), max(v))
+  expect_false(anyNA(get_est(r)))
+  expect_error(reference_curve(a, reference = max(v) + .005 * w), "within the range")
+})

@@ -3,13 +3,13 @@
 #' `summary()` tests an omnibus hypothesis about an effect curve. For example, it can be used to test that the ADRF is flat, that the contrast between two ADRFs is 0 everywhere, or that the AMEF is 0 everywhere.
 #'
 #' @param object an object of class [`effect_curve`]; the result of a call to [adrf()] or a function that modifies it.
-#' @param hypothesis the hypothesis to be tested. Allowable options include `"flat"` (the default), `"linear"`, `"quadratic"`, `"cubic"`, a one-sided formula corresponding to a projection model, or a single number (e.g., 0). See Details. The default is `"flat"` for ADRFs and 0 otherwise.
+#' @param hypothesis the hypothesis to be tested. Allowable options include `"flat"`, `"linear"`, `"quadratic"`, `"cubic"`, a one-sided formula corresponding to a projection model, or a single number (e.g., 0). See Details. The default is `"flat"` for ADRFs and 0 otherwise.
 #' @param method string; the method used to compute the p-value of the test. Allowable options include `"sim"` for simulation-based, `"imhof"` for Imhof's approximation, `"davies"` for Davies's approximation, `"liu"` for Liu's approximation, `"satterthwaite"` for Satterthwaite's approximation, and `"saddlepoint"` for a saddlepoint approximation. Default is `"imhof"` when the \pkg{CompQuadForm} package is installed and `"saddlepoint"` otherwise. See Details.
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to perform tests. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param transform whether to perform the test on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `object` is an ADRF object. See Details.
 #' @param df the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
 #' @param nsim when `method` is `"sim"`, the number of iterations used to simulate the p-values. Higher numbers give more accurate p-values subject to less Monte Carlo error but are slower and require more memory. Default is 1,000,000.
-#' @param \dots when `method` is `"imhof"`, `"davies"`, or `"liu"`, further arguments passed to \pkgfun{CompQuadForm}{imhof}, \pkgfun{CompQuadForm}{davies}, or \pkgfun{CompQuadForm}{liu}, respectively.
+#' @param \dots when `method` is `"imhof"` or `"davies"`, further arguments passed to \pkgfun{CompQuadForm}{imhof} or \pkgfun{CompQuadForm}{davies}, respectively.
 #' @param x a `summary.effect_curve` object.
 #' @param digits numeric; the number of digits to print.
 #'
@@ -31,19 +31,19 @@
 #'
 #' Each of these can be approximated as a quadratic form, \eqn{T=\mathbf{\theta}'\mathbf{W}\mathbf{\theta}} where \eqn{\mathbf{\theta}} is a vector of estimates at evaluation points along the curve and \eqn{\mathbf{W}} is a diagonal matrix of weights implementing a trapezoidal approximation to the integral. The null hypothesis is that \eqn{T=0}, which approximates the null hypothesis that \eqn{T^*=0}. Each of the allowable options to `method` corresponds to a method of approximating the distribution of \eqn{T} under the null hypothesis:
 #' * `"sim"` simulates the null distribution by simulating from a multivariate normal distribution under the null hypothesis and computing the test statistic in each simulation. The p-value is the proportion of simulated estimates greater than the observed test statistic. When `df` is not `Inf`, the simulation is done from a multivariate t-distribution.
-#' * `"imhof"`, `"davies"`, and `"liu"` assume the test statistic follows a generalized \eqn{\chi^2}-distribution and approximate its CDF numerically. `"imhof"` tends to be the most accurate and is recommended. Because Imhof's and Davies's methods control the absolute rather than the relative error of the computed probability, p-values below .0001, and any these methods fail to compute, are computed using the saddlepoint approximation instead. `"liu"` can be inaccurate when `df` is not `Inf`. These methods require the \CRANpkg{CompQuadForm} package to be installed.
+#' * `"imhof"`, `"davies"`, and `"liu"` assume the test statistic follows a generalized \eqn{\chi^2}-distribution and approximate its CDF numerically. `"imhof"` tends to be the most accurate and is recommended. Because Imhof's and Davies's methods control the absolute rather than the relative error of the computed probability, p-values below .0001, and any that these methods fail to compute, are computed using the saddlepoint approximation instead. `"liu"` can be inaccurate when `df` is not `Inf`. These methods require the \CRANpkg{CompQuadForm} package to be installed.
 #' * `"satterthwaite"` also assumes the test statistic follows a generalized \eqn{\chi^2}-distribution, but this distribution is approximated using a scaled F-distribution with the same first two moments.
 #' * `"saddlepoint"` also assumes the test statistic follows a generalized \eqn{\chi^2}-distribution, and this distribution is approximated using the saddlepoint method described by Kuonen (1999), which remains accurate far into the tails of the distribution. Near the center of the distribution, where the saddlepoint approximation is not defined, the Satterthwaite approximation is used instead.
 #'
-#' In general, we recommend using `method = "imhof"`, though this requires \pkg{CompQuadForm} to be installed (and is the default when it is). `method = "saddlepoint"` is also accurate, is very fast, and doesn't require any other packages. When using `"sim"`, increasing `nsim` improves the accuracy of the p-value by reducing Monte Carlo error. The default value of `1e6` ensures that the simulated p-value is within .0005 of the true p-value with at least 98% confidence for p-values less than .05. For greater precision at higher p-value thresholds, `nsim` should be increased. The other methods exist primarily for comparison purposes. `"satterthwaite"` is particularly fast and doesn't require any other packages, but it can be somewhat inaccurate.
+#' In general, we recommend using `method = "imhof"`, though this requires \pkg{CompQuadForm} to be installed (and is the default when it is). `method = "saddlepoint"` is also accurate, is very fast, and doesn't require any other packages. When using `"sim"`, increasing `nsim` improves the accuracy of the p-value by reducing Monte Carlo error. The default value of `1e6` ensures that the simulated p-value is within .0005 of the true p-value with at least 97.8% confidence for p-values less than .05. For greater precision at higher p-value thresholds, `nsim` should be increased. The other methods exist primarily for comparison purposes. `"satterthwaite"` is particularly fast and doesn't require any other packages, but it can be somewhat inaccurate.
 #'
 #' ## Transform
 #'
 #' When the effect curve is an ADRF and the outcomes are bounded (e.g., a probability between 0 and 1), the `transform` argument can be specified, which changes the details of the tests.
 #'
-#' The tests above assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. When `hypothesis` is a number, that number is also transformed.
+#' The tests above assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. How `transform` is used depends on `hypothesis`. When `hypothesis` is a number, the estimates and that number are transformed to be on an unbounded scale, and the test is performed on the transformed estimates, whose distribution is computed using the delta method (or from the transformed bootstrap or posterior draws). When `hypothesis` is a string or formula, the estimates are not transformed; instead, the projection is fit with the inverse of the transformation as its inverse link, as described in [curve_projection()], and the residuals of the estimates around it are tested. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. A value of `hypothesis` outside the domain of the transformation (e.g., `hypothesis = 0` with a logit transformation) gives an error; set `transform = FALSE` to perform the test on the original scale. A transformation supplied to `transform` that cannot be applied to every estimate or draw also gives an error, and when `transform = TRUE`, the estimates are left untransformed with a warning in that case.
 #'
-#' Tests on the transformed and untransformed ADRFs correspond to different hypotheses; the difference is not simply a matter of the appropriate distribution of the statistic. For example, for binary outcome model with a logistic transformation, testing that the transformed ADRF is linear corresponds to testing whether the ADRF is a sigmoid function, whereas testing that the untransformed ADRF is linear corresponds to testing whether the ADRF is a straight line. These choices correspond to how the projection of the ADRF is formed; see [curve_projection()] for details. See Examples for an example with a binary outcome. In the example, there is evidence to reject that the transformed ADRF is linear for one of the groups, indicating that a sigmoid function is not sufficient for describing the ADRF, but there is indeterminate evidence (at the .05) to reject that the untransformed ADRF is linear for either group, indicating that a linear function is sufficient for describing the ADRF (at least in the treatment range examined).
+#' Tests on the transformed and untransformed ADRFs correspond to different hypotheses; the difference is not simply a matter of the appropriate distribution of the statistic. For example, for a binary outcome model with a logistic transformation, testing that the transformed ADRF is linear corresponds to testing whether the ADRF is a sigmoid function, whereas testing that the untransformed ADRF is linear corresponds to testing whether the ADRF is a straight line. These choices correspond to how the projection of the ADRF is formed; see [curve_projection()] for details. See Examples for an example with a binary outcome. In the example, there is evidence to reject that the transformed ADRF is linear for one of the groups, indicating that a sigmoid function is not sufficient for describing the ADRF, but there is indeterminate evidence (at the .05 level) to reject that the untransformed ADRF is linear for either group, indicating that a linear function is sufficient for describing the ADRF (at least in the treatment range examined).
 #'
 #' @references
 #' Kuonen, D. (1999). Saddlepoint approximations for distributions of quadratic forms in normal variables. *Biometrika*, 86(4), 929–935. \doi{10.1093/biomet/86.4.929}
@@ -166,7 +166,9 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   .values <- .attr(object, ".values")
 
   # transform
-  transform_list <- process_transform(transform, object, .est0)
+  transform_list <- process_transform(transform, object, .est0,
+                                      null = if (is.numeric(hypothesis)) hypothesis,
+                                      null_arg = "hypothesis")
 
   transformed <- !all(check_if_zero(transform_list$transform(.est0) - .est0))
 
@@ -208,6 +210,12 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   }
 
   if (rlang::is_string(hypothesis)) {
+    n_coef <- switch(hypothesis, flat = 1L, linear = 2L, quadratic = 3L, cubic = 4L)
+
+    if (n_coef > n) {
+      .check_proj_mm(matrix(1, nrow = n, ncol = n_coef))
+    }
+
     mm <- switch(hypothesis,
                  flat = matrix(1, nrow = n, ncol = 1L),
                  linear = cbind(1, .values),
@@ -223,8 +231,10 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
       model.matrix(data = proj_data)
 
     if (!all(is.finite(mm))) {
-      arg::err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
+      arg::err("evaluating the projection model at the values of {.var {(.treat)}} produced non-finite values, which is not allowed")
     }
+
+    .check_proj_mm(mm)
   }
 
   #Weights for trapezoidal Riemann sum
@@ -248,16 +258,8 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
                         transform = transform_list)
 
         resid_boot[["t0"]] <- est.b <- .est0[.b] - fit$fitted.values
-        resid_boot[["t"]] <- resid_boot[["t"]] |>
-          dapply(MARGIN = 1L, return = "matrix",
-                 FUN = function(.esti) {
-                   fiti <- .nls_fit(x = mm, y = .esti[.b], w = w,
-                                    transform = transform_list,
-                                    start = fit$coefficients)
-
-                   .esti[.b] - fiti$fitted.values
-                 }) |>
-          unname()
+        resid_boot[["t"]] <- .proj_resid_draws(mm, ss(resid_boot[["t"]], j = .b), w,
+                                               transform_list, fit$coefficients)
 
         vcov.b <- stats::vcov(resid_boot)
       }
@@ -274,16 +276,8 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
         fit <- .nls_fit(x = mm, y = .est0[.b], w = w,
                         transform = transform_list)
 
-        resid_draws <- .draws |>
-          dapply(MARGIN = 1L, return = "matrix",
-                 FUN = function(.esti) {
-                   fiti <- .nls_fit(x = mm, y = .esti[.b], w = w,
-                                    transform = transform_list,
-                                    start = fit$coefficients)
-
-                   .esti[.b] - fiti$fitted.values
-                 }) |>
-          unname()
+        resid_draws <- .proj_resid_draws(mm, ss(.draws, j = .b), w,
+                                         transform_list, fit$coefficients)
 
         est.b <- .est0[.b] - fit$fitted.values
 
@@ -429,8 +423,7 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
 # probability is P(Q > stat * chi^2_df / df).
 .quad_form_tail <- function(stat, ev, method = "imhof", df = Inf, nsim = 1e6, ...) {
   if (method == "sim") {
-    return(.sim_p_value(stat, diag(ev, nrow = length(ev)), n = nsim,
-                        max_size = 1e8, df = df))
+    return(.sim_p_value(stat, ev, n = nsim, df = df))
   }
 
   if (method == "satterthwaite") {
@@ -570,4 +563,12 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
   v <- root * sqrt(K2(root))
 
   pnorm(w + log(v / w) / w, lower.tail = FALSE)
+}
+
+# Residuals of each draw (row of `Y`) around its own projection
+.proj_resid_draws <- function(x, Y, w, transform, start) {
+  coefs <- .proj_coef_draws(x, Y, w, transform, start)
+
+  (Y - transform$inv_transform(tcrossprod(coefs, x))) |>
+    unname()
 }

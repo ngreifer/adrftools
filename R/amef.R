@@ -4,13 +4,13 @@
 #' `amef()` computes the average marginal effect function (AMEF), the derivative of the average dose-response function (ADRF), from an `adrf_curve` object.
 #'
 #' @param x an `adrf_curve` object; the output of a call to [adrf()].
-#' @param eps numeric; the step size to use when calculating numerical derivatives. Default is `1e-5` (.00001). See Details.
+#' @param eps numeric; the step size to use when calculating numerical derivatives, relative to the range of treatment values at which the ADRF was computed: the step is `eps` times a quarter of that range. Default is `1e-5` (.00001). See Details.
 #'
 #' @returns
 #' An object of class `amef_curve`, which inherits from [`effect_curve`].
 #'
 #' @details
-#' The AMEF is calculated numerically using the central finite derivative formula:
+#' The AMEF is calculated numerically using the central finite difference formula:
 #'
 #'  \deqn{\frac{df(x)}{dx} \approx \frac{f(x + e) - f(x - e)}{2e}}
 #'

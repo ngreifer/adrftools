@@ -881,3 +881,64 @@ test_that("missing values in by, an empty subset, and a zero-width range give in
   # Missing values outside the subset are fine
   expect_no_error(adrf(fit, treat = "logBLL", n = 5, by = ~M2, subset = !is.na(M2)))
 })
+
+test_that("models fit without data can be used", {
+  logBLL <- nhanes3lead$logBLL
+  Math <- nhanes3lead$Math
+  Male2 <- nhanes3lead$Male
+  Male2[1:5] <- NA
+  other <- 1:3
+
+  # glm() stores the environment of the formula as `data`, which here holds
+  # objects of other lengths
+  fit <- glm(Math ~ logBLL + Male2)
+  expect_true(is.environment(fit$data))
+
+  a <- expect_no_warning(adrf(fit, treat = "logBLL", n = 5, vcov = "conditional"))
+  vals <- get_values(a)
+  nd <- data.frame(logBLL, Male2)[!is.na(Male2), ]
+
+  expect_equal(get_est(a), manual_adrf(fit, nd, "logBLL", vals), tolerance = 1e-8)
+  expect_equal(get_vcov(a), get_vcov(adrf(glm(Math ~ logBLL + Male2, data = data.frame(Math, logBLL, Male2)),
+                                          treat = "logBLL", n = 5, vcov = "conditional")),
+               tolerance = 1e-10)
+
+  # Inside a function
+  f <- function() {
+    x <- nhanes3lead$logBLL
+    y <- nhanes3lead$Math
+    z <- 1:2
+    glm(y ~ x)
+  }
+
+  fit2 <- f()
+  a2 <- adrf(fit2, treat = "x", n = 5)
+  expect_equal(get_est(a2), manual_adrf(fit2, data.frame(x = nhanes3lead$logBLL), "x", get_values(a2)),
+               tolerance = 1e-8)
+})
+
+test_that("treatments cannot share a name with the arguments or internals of the effect curve", {
+  d <- transform(nhanes3lead, subset = logBLL, .est = logBLL)
+
+  expect_error(adrf(lm(Math ~ subset + Male, data = d), treat = "subset", n = 5),
+               "cannot be named")
+  expect_error(adrf(lm(Math ~ .est + Male, data = d), treat = ".est", n = 5),
+               "cannot be named")
+})
+
+test_that("character predictors with levels absent from subset use the fast path", {
+  d <- transform(nhanes3lead, RaceC = as.character(Race))
+  fit <- glm(I(Block >= 14) ~ poly(logBLL, 2) * RaceC + Male, data = d, family = binomial)
+
+  s <- d$RaceC == "Black"
+  md <- adrftools:::process_model_data(fit)
+  grid <- md[s, , drop = FALSE][rep(1:20, 2), , drop = FALSE]
+  expect_identical(adrftools:::.get_model_type(fit, data_grid = grid, model_data = md), "glm")
+
+  a <- adrf(fit, treat = "logBLL", n = 5, subset = RaceC == "Black", vcov = "conditional")
+  expect_equal(get_est(a), manual_adrf(fit, d[s, ], "logBLL", get_values(a)), tolerance = 1e-8)
+
+  local_mocked_bindings(.get_model_type = function(...) "default")
+  a_slow <- adrf(fit, treat = "logBLL", n = 5, subset = RaceC == "Black", vcov = "conditional")
+  expect_equal(get_vcov(a), get_vcov(a_slow), tolerance = 1e-5)
+})

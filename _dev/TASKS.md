@@ -2,7 +2,7 @@
 
 ## To Do
 
-- Address the remaining items of the second audit (`_dev/audit-2.md`): R14, R21, R24, R25, R28, R31, R33, R34, R36–R44, R46.
+- R38 (rest): build the model matrix one treatment value at a time to cut peak memory (`_dev/audit-2.md`).
 - Implement the HC2 adjustment to the unconditional variance (M19; see `_dev/omnibus-size-study/README.md`).
 - Decide which items in `_dev/feature-ideas.md` to pursue.
 - Multivariate treatments (`_dev/adrf_mv.R`), to resume later.
@@ -29,3 +29,9 @@
 - 2026-11-13: Second audit (`_dev/audit-2.md`): 46 findings (R1–R46), 16 silently wrong results, 15 errors, 8 performance, 7 documentation.
 - 2026-11-13: Fixed R1–R3, R5, R6, R8, R10–R13, R16, R20, R23, R27, R29, R32, R35, and R45 from the second audit.
 - 2026-11-13: Fixed R7, R9, R15, R17–R19, R22, and R30 from the second audit; resolved R4 and R26 by restricting `transform` to known transformations.
+- 2026-11-13: Fixed R21, R28, R31, R36, R37, R40, and R41 from the second audit; `anova()` errors when the extra terms cannot be identified.
+- 2026-11-13: Fixed R14: effect curves and references error outside the grid, with values within 0.1% of its width moved to the end points.
+- 2026-11-13: Fixed R24 and R25: a null value or an explicit transformation outside the domain gives an error; the outcome model's link falls back to the identity with a warning.
+- 2026-11-13: Fixed R33 and R34: shared helpers for simultaneous Wald critical values and p-values.
+- 2026-11-13: Fixed R39, R42–R44, R46, and most of R38 from the second audit.
+- 2026-11-14: Declared the packages used in tests in Suggests; R CMD check is clean (0 errors, 0 warnings, 0 notes).

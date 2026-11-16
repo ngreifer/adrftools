@@ -9,7 +9,7 @@ reference_curve(x, reference)
 \arguments{
 \item{x}{an \code{\link{effect_curve}} object; the output of a call to \code{\link[=adrf]{adrf()}} or a function that modifies it.}
 
-\item{reference}{numeric; the value of the treatment to use as the reference value.}
+\item{reference}{numeric; the value of the treatment to use as the reference value. This must be within the range of treatment values at which the effect curve was computed (see \code{\link{effect_curve}} for how values just outside it are handled).}
 }
 \value{
 An object of class \code{reference_curve}, which inherits from \code{\link{effect_curve}}, with the value supplied to \code{reference} as an additional attribute.
@@ -55,6 +55,6 @@ summary(ref1)
 \item \code{\link[=plot.effect_curve]{plot.effect_curve()}} for plotting the reference effect curve
 \item \code{\link[=summary.effect_curve]{summary.effect_curve()}} for testing hypotheses about the reference effect curve
 \item \code{\link[=summary.curve_est]{summary.curve_est()}} for performing inference on individual points on an effect curve, including a reference effect curve
-\item \code{\link[=point_contrast]{point_contrast()}} for effect curve estimates to each other (rather than to a single point)
+\item \code{\link[=point_contrast]{point_contrast()}} for comparing effect curve estimates to each other (rather than to a single point)
 }
 }

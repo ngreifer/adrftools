@@ -4,7 +4,7 @@
 #' `reference_curve()` creates a new effect curve as the contrast between each point on a given effect curve and a specified point along that curve. The new curve is called a "reference effect curve".
 #'
 #' @param x an [`effect_curve`] object; the output of a call to [adrf()] or a function that modifies it.
-#' @param reference numeric; the value of the treatment to use as the reference value.
+#' @param reference numeric; the value of the treatment to use as the reference value. This must be within the range of treatment values at which the effect curve was computed (see [`effect_curve`] for how values just outside it are handled).
 #'
 #' @returns
 #' An object of class `reference_curve`, which inherits from [`effect_curve`], with the value supplied to `reference` as an additional attribute.
@@ -17,7 +17,7 @@
 #' * [plot.effect_curve()] for plotting the reference effect curve
 #' * [summary.effect_curve()] for testing hypotheses about the reference effect curve
 #' * [summary.curve_est()] for performing inference on individual points on an effect curve, including a reference effect curve
-#' * [point_contrast()] for effect curve estimates to each other (rather than to a single point)
+#' * [point_contrast()] for comparing effect curve estimates to each other (rather than to a single point)
 #'
 #' @examples
 #' data("nhanes3lead")
@@ -54,7 +54,7 @@ reference_curve <- function(x, reference) {
   check_effect_curve(x, reference_ok = FALSE, projection_ok = FALSE)
 
   arg::arg_supplied(reference)
-  check_reference(reference, values = .attr(x, ".values"))
+  reference <- check_reference(reference, values = .attr(x, ".values"))
 
   x <- .add_values(x, reference)
 

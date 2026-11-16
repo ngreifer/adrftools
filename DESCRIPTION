@@ -28,12 +28,19 @@ Suggests:
     WeightIt,
     MatchThem,
     mice,
-    generics,
     dbarts,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
-    patrick (>= 0.3.0)
+    patrick (>= 0.3.0),
+    MASS,
+    bartisan,
+    betareg,
+    brms,
+    estimatr,
+    fixest,
+    rstanarm,
+    stan4bart
 License: GPL (>=2)
 Encoding: UTF-8
 URL: https://github.com/ngreifer/adrftools, https://ngreifer.github.io/adrftools/

@@ -274,3 +274,24 @@ test_that("anova() requires the same transformation in both projections", {
   expect_true(is.finite(anova(p3, p1)$p.value))
   expect_error(anova(p3, p1_id), "same `transform`")
 })
+
+test_that("projections and anova() give informative errors for unusable models", {
+  fit <- lm(Math ~ poly(logBLL, 3) + Male + PIR, data = nhanes3lead)
+
+  a3 <- adrf(fit, treat = "logBLL", n = 3)
+  expect_error(curve_projection(a3, "cubic"), "only 3 values")
+  expect_error(summary(a3, "cubic"), "only 3 values")
+  expect_error(summary(a3, ~ logBLL + I(logBLL^2) + I(logBLL^3)), "only 3 values")
+
+  a <- adrf(fit, treat = "logBLL", n = 11)
+  expect_error(curve_projection(a, ~ logBLL + I(2 * logBLL)), "linearly dependent")
+
+  # Raw powers of a treatment on a large scale are not linearly dependent
+  d <- transform(nhanes3lead, big = logBLL * 1e9)
+  a_big <- adrf(lm(Math ~ poly(big, 3) + Male, data = d), treat = "big", n = 11)
+  expect_no_error(curve_projection(a_big, "cubic"))
+
+  a_none <- adrf(fit, treat = "logBLL", n = 11, vcov = "none")
+  expect_error(anova(curve_projection(a_none, "quadratic"), curve_projection(a_none, "linear")),
+               "none")
+})

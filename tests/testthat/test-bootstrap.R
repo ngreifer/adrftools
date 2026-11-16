@@ -375,3 +375,79 @@ test_that("bootstrap replicates that alias a coefficient match refitting the mod
   expect_gt(sum(f$t[, 4L]), 0)
   expect_equal(unname(attr(a, ".boot")$t), unname(f$t[, 1:3]), tolerance = 1e-10)
 })
+
+test_that("summaries of projections with subset use the matching subgroups", {
+  fit <- boot_fit()
+
+  set.seed(123)
+  a <- adrf(fit, treat = "logBLL", n = 11, by = ~Male, vcov = "fwb",
+            fwb.args = list(R = 199, verbose = FALSE))
+  p <- curve_projection(a, "linear")
+
+  s <- summary(p)
+  s1 <- summary(p, subset = Male == 1)
+
+  expect_identical(nrow(s1), 2L)
+  expect_equal(s1$estimate, s$estimate[3:4], tolerance = 1e-10)
+  expect_equal(s1$p.value, s$p.value[3:4], tolerance = 1e-10)
+  expect_equal(s1$conf.low, s$conf.low[3:4], tolerance = 1e-10)
+
+  expect_equal(coef(s1), coef(p)[3:4], tolerance = 1e-10)
+  expect_equal(vcov(s1), vcov(p)[3:4, 3:4], tolerance = 1e-10)
+
+  sw <- summary(p, subset = Male == 1, ci.type = "wald")
+  expect_equal(sw$std.error, sqrt(diag(vcov(p)))[3:4], tolerance = 1e-10, ignore_attr = TRUE)
+})
+
+test_that("a draw outside the domain of the transformation gives a warning or an error", {
+  fit <- glm(I(Block >= 14) ~ poly(logBLL, 2) + Male + PIR,
+             data = nhanes3lead, family = binomial)
+
+  set.seed(1)
+  a <- adrf(fit, treat = "logBLL", n = 11, vcov = "fwb",
+            fwb.args = list(R = 199, verbose = FALSE))
+
+  # Interpolated draws can fall just outside (0, 1)
+  est <- a(logBLL = c(.3, 1.1, 2.05))
+  b <- attr(est, ".boot")
+  b$t[5L, 1L] <- -3e-4
+  attr(est, ".boot") <- b
+
+  # The link of the outcome model is replaced by the identity with a warning
+  expect_warning(s <- summary(est, ci.type = "wald", simultaneous = FALSE),
+                 "outside the domain of the link")
+  s_u <- summary(est, ci.type = "wald", simultaneous = FALSE, transform = FALSE)
+  expect_equal(as.data.frame(s), as.data.frame(s_u), tolerance = 1e-10)
+
+  # A transformation supplied explicitly gives an error
+  expect_error(summary(est, ci.type = "wald", simultaneous = FALSE, transform = qlogis),
+               "bootstrap estimates")
+
+  # Percentile intervals do not transform the draws
+  expect_no_warning(summary(est, simultaneous = FALSE))
+  expect_no_warning(summary(est, simultaneous = FALSE, null = 0))
+})
+
+test_that("projections of bootstrap draws match fitting each draw separately", {
+  fit <- glm(I(Block >= 14) ~ poly(logBLL, 3) + Male + PIR,
+             data = nhanes3lead, family = binomial)
+
+  set.seed(1)
+  a <- adrf(fit, treat = "logBLL", n = 11, vcov = "fwb",
+            fwb.args = list(R = 99, verbose = FALSE))
+
+  B <- attr(a, ".boot")$t
+
+  for (tr in list(FALSE, TRUE)) {
+    p <- curve_projection(a, "quadratic", transform = tr)
+    mm <- model.matrix(p)
+    w <- adrftools:::get_trapezoidal_w(get_values(a))
+    tl <- adrftools:::process_transform(tr, a, get_est(a))
+
+    manual <- t(apply(B, 1L, function(y) {
+      adrftools:::.nls_fit(mm, y, w = w, transform = tl, start = coef(p))$coefficients
+    }))
+
+    expect_equal(unname(attr(p, ".proj_boot")$t), unname(manual), tolerance = 1e-6)
+  }
+})

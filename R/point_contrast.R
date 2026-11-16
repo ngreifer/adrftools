@@ -4,7 +4,7 @@
 #' `point_contrast()` computes pairwise contrasts of estimates from an effect curve.
 #'
 #' @inheritParams summary.curve_est
-#' @param object for `point_contrast()`, a [`curve_est`] object; the output of a an `effect_curve` object. For `summary()`, a `curve_est_contrast` object; the output of a call to `point_contrast()`.
+#' @param object for `point_contrast()`, a [`curve_est`] object; the output of a call to an `effect_curve` object. For `summary()`, a `curve_est_contrast` object; the output of a call to `point_contrast()`.
 #' @param null the null value for hypothesis tests. Default is 0. Set to `NA` to omit tests.
 #'
 #' @returns
@@ -208,7 +208,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
   # Compute p-values
   if (!anyNA(null)) {
     if (ci.type == "wald") {
-      # Compute test statistic on transformed estimates if null is specified
+      # Compute test statistics when a null value is specified
       res[[stat]][!zeros] <- (est[!zeros] - null) / se[!zeros]
 
       if (simultaneous) {
@@ -218,19 +218,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
             .to_psd()
         }
 
-        pvals <- try(vapply(abs(res[[stat]][!zeros]),
-                            function(zi) {
-                              1 - mvtnorm::pmvt(lower = rep.int(-zi, sum(!zeros)),
-                                                upper = rep.int(zi, sum(!zeros)),
-                                                df = .mvt_df(df), corr = vp,
-                                                keepAttr = FALSE,
-                                                abseps = 1e-5)
-                            }, numeric(1L)),
-                     silent = TRUE)
-
-        if (null_or_error(pvals)) {
-          arg::err("there was an error computing simultaneous p-values")
-        }
+        pvals <- .mvt_p_values(res[[stat]][!zeros], vp, df)
       }
       else {
         pvals <- switch(stat,
@@ -243,7 +231,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
     else if (.vcov_type == "bootstrap") {
       s <- summary(.boot,
                    conf = 0,
-                   parm = seq_along(est),
+                   index = seq_along(est),
                    ci.type = ci.type,
                    p.value = TRUE,
                    null = null,
@@ -270,17 +258,7 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
             .to_psd()
         }
 
-        t_crit <- try(mvtnorm::qmvt(conf_level,
-                                    tail = "both.tails",
-                                    df = .mvt_df(df), corr = vp,
-                                    keepAttr = FALSE,
-                                    maxiter = 1e5,
-                                    abseps = 1e-5)$quantile,
-                      silent = TRUE)
-
-        if (null_or_error(t_crit)) {
-          arg::err("there was an error computing simultaneous confidence intervals")
-        }
+        t_crit <- .mvt_crit(conf_level, vp, df)
       }
       else {
         t_crit <- switch(stat,
@@ -288,7 +266,6 @@ summary.curve_est_contrast <- function(object, conf_level = 0.95, simultaneous =
                          "t" = abs(qt((1 - conf_level) / 2, df)))
       }
 
-      # Reverse transformation
       res$conf.low[] <- est - t_crit * se
       res$conf.high[] <- est + t_crit * se
 

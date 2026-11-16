@@ -150,6 +150,15 @@ process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL)
     arg::err("{.arg subset} must evaluate to a logical vector")
   }
 
+  if (length(subset) == 1L) {
+    subset <- rep.int(subset, fnrow(.by_grid))
+  }
+  else if (length(subset) != fnrow(.by_grid)) {
+    arg::err("{.arg subset} must evaluate to a single value or one value for each subgroup")
+  }
+
+  subset[is.na(subset)] <- FALSE
+
   if (!any(subset)) {
     arg::err("{.arg subset} must identify a real subset of units")
   }
@@ -207,6 +216,25 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   seq(range[1L], range[2L], length.out = n)
 }
 
+# The local polynomial used to interpolate between grid points cannot
+# extrapolate reliably beyond the grid (just past its ends, the estimates are
+# `NA`), so values outside the grid give an error. Values outside it by at most
+# 0.1% of its width (e.g., an end point typed as printed, after rounding) are
+# moved to the nearest end.
+.snap_to_grid <- function(x, v, arg_name) {
+  r <- .range(v)
+  leeway <- .001 * (r[2L] - r[1L])
+
+  if (any(x < r[1L] - leeway | x > r[2L] + leeway, na.rm = TRUE)) {
+    rf <- format(r, digits = 10L, drop0trailing = TRUE)
+
+    arg::err(c("All values of {.arg {arg_name}} must be within the range of treatment values at which the effect curve was computed ({rf[1L]} to {rf[2L]}).",
+               i = "To estimate the effect curve outside this range, supply a wider range to {.arg range} in the call to {.fun adrf}."))
+  }
+
+  pmin(pmax(x, r[1L]), r[2L])
+}
+
 check_reference <- function(reference, values, strict = TRUE) {
   arg::arg_number(reference)
 
@@ -215,11 +243,7 @@ check_reference <- function(reference, values, strict = TRUE) {
   range_diff <- range_t[2L] - range_t[1L]
 
   if (strict) {
-    if (any(reference < range_t[1L] - .01 * range_diff) ||
-        any(reference > range_t[2L] + .01 * range_diff)) {
-      r <- format(range_t, digits = 4L, drop0trailing = TRUE)
-      arg::err("{.arg reference} must be within the range of treatment values supplied to {.fun adrf} ({r[1L]} to {r[2L]})")
-    }
+    return(.snap_to_grid(reference, values, "reference"))
   }
   else {
     if (any(reference < range_t[1L] - .1 * range_diff) ||
@@ -227,6 +251,8 @@ check_reference <- function(reference, values, strict = TRUE) {
       arg::wrn("{.arg reference} is outside the range of observed treatment values supplied to {.fun adrf}")
     }
   }
+
+  reference
 }
 
 process_eps <- function(eps, values) {
@@ -237,15 +263,6 @@ process_eps <- function(eps, values) {
 }
 
 process_model_data <- function(model, data = NULL) {
-  if (is.environment(model[["data"]])) {
-    vars <- insight::find_predictors(model, effects = "fixed", component = "all",
-                                     flatten = TRUE, verbose = FALSE)
-
-    dat <- model[["data"]] |> as.list() |> list2DF()
-
-    return(ss(dat, j = intersect(vars, colnames(dat))))
-  }
-
   if (utils::hasName(model, "survey.design")) {
     vars <- insight::find_predictors(model, effects = "fixed", component = "all",
                                      flatten = TRUE, verbose = FALSE)
@@ -561,6 +578,15 @@ get_data_mids <- function(x, imp = NULL, all_vars = FALSE) {
 process_treat <- function(treat, data) {
   arg::arg_string(treat)
 
+  # The effect curve is a function whose first argument is named after the
+  # treatment, so the treatment cannot share a name with its other argument or
+  # with the objects it uses internally
+  reserved <- c("subset", rlang::fn_fmls_names(.make_fun))
+
+  if (anyv(reserved, treat)) {
+    arg::err("the treatment cannot be named {.val {treat}}; rename it before fitting the model")
+  }
+
   if (!anyv(names(data), treat)) {
     arg::err(c("{.arg treat} must be the name of a variable in the original dataset.",
                "*" = "Supplied value: {.val {treat}}",
@@ -711,7 +737,16 @@ process_wts_list <- function(wts, models, eval_data.list) {
   rep.int(list(as.vector(wts)), m)
 }
 
-process_transform <- function(transform, x = NULL, .est = NULL) {
+# `null` is a numeric null value to be tested on the transformed scale, named
+# `null_arg` in messages, and `check_draws` is whether the bootstrap or
+# posterior draws will be transformed (they are not for percentile intervals).
+# A transformation requested explicitly that cannot be applied to every value
+# it will be applied to gives an error, as does a null value outside its
+# domain; the link function of the outcome model (`transform = TRUE`) is
+# replaced by the identity with a warning instead, since the user did not
+# choose it.
+process_transform <- function(transform, x = NULL, .est = NULL, null = NULL,
+                              null_arg = "null", check_draws = TRUE) {
   if (inherits(x, "effect_curve")) {
     if (!.is_pure_adrf(x)) {
       transform <- FALSE
@@ -740,11 +775,9 @@ process_transform <- function(transform, x = NULL, .est = NULL) {
     arg::err("{.arg transform} must be {.val {TRUE}}, {.val {FALSE}}, a family, a link object (e.g., from {.fun make.link}), or one of {.fun log}, {.fun sqrt}, {.fun exp}, {.fun qlogis}, or {.fun qnorm}")
   }
 
-  # Use the identity when the transformation cannot be applied to the
-  # estimates and reversed, so estimates and standard errors stay on the same
-  # scale
-  if (!is_null(.est) && !.transform_is_valid(.family, .est)) {
-    .family <- stats::quasi("identity")
+  if (!is_null(.est) && !.is_identity_family(.family)) {
+    .family <- .check_transform_values(.family, x, .est, null, null_arg,
+                                       check_draws, explicit = !isTRUE(transform))
   }
 
   linkfun <- .family$linkfun
@@ -754,6 +787,49 @@ process_transform <- function(transform, x = NULL, .est = NULL) {
        inv_transform = .family$linkinv,
        d_transform = function(mu) 1 / mu.eta(linkfun(mu)),
        d_inv_transform = mu.eta)
+}
+
+.is_identity_family <- function(.family) {
+  identical(.family[["link"]] %or% .family[["name"]], "identity")
+}
+
+# Checks that the transformation can be applied to and reversed for the null
+# value, the estimates, and, when they will be transformed, the bootstrap or
+# posterior draws, which between grid points can fall outside the domain of
+# the transformation. Returns the family to use.
+.check_transform_values <- function(.family, x, .est, null, null_arg,
+                                    check_draws, explicit) {
+  null <- null[!is.na(null)]
+
+  if (!is_null(null) && !.transform_is_valid(.family, null)) {
+    arg::err(c("The null value supplied to {.arg {null_arg}} ({null}) is outside the domain of the transformation, so it cannot be tested on the transformed scale.",
+               i = "Set {.code transform = FALSE} to perform the test on the original scale."))
+  }
+
+  draws <- {
+    if (check_draws) .attr(x, ".boot")[["t"]] %or% .attr(x, ".draws")
+  }
+
+  what <- {
+    if (!.transform_is_valid(.family, .est)) "estimates"
+    else if (!is_null(draws) && !.transform_is_valid(.family, draws)) {
+      if (is_null(.attr(x, ".boot"))) "posterior draws"
+      else "bootstrap estimates"
+    }
+  }
+
+  if (is_null(what)) {
+    return(.family)
+  }
+
+  if (explicit) {
+    arg::err(c("The transformation supplied to {.arg transform} cannot be applied to all of the {what}, some of which are outside its domain.",
+               i = "Supply a different transformation or set {.code transform = FALSE}{if (what != \"estimates\") \", or use percentile intervals where available\" else \"\"}."))
+  }
+
+  arg::wrn("some of the {what} are outside the domain of the link function of the outcome model, so they are not transformed. Set {.code transform = FALSE} to silence this warning")
+
+  stats::quasi("identity")
 }
 
 # Families for the transformations that can be supplied as functions; each has
@@ -846,6 +922,41 @@ process_response <- function(model) {
     deparse1()
 }
 
+# The influence of each unit on the coefficients, estfun() %*% t(bread()),
+# used for the unconditional variance, or NULL when the model has no estfun()
+# or bread() method. For svyglm models, it is computed from the survey design
+# and scaled by the full sample size.
+.coef_influence <- function(model) {
+  if (inherits(model, "svyglm")) {
+    infl <- .attr(model, "influence") %or%
+      tcrossprod(stats::model.matrix(model) * stats::resid(model, "working") * model$weights,
+                 model$naive.cov)
+
+    return(fnrow(infl) * infl)
+  }
+
+  ef <- try({
+    # A WeightIt fit with `vcov = "HC0"` treats the weights as fixed, so the
+    # estimation of the weights is left out of the influence function
+    if (inherits(model, "glm_weightit") && identical(model[["vcov_type"]], "HC0"))
+      sandwich::estfun(model, asympt = FALSE)
+    else
+      sandwich::estfun(model)
+  }, silent = TRUE)
+
+  if (null_or_error(ef)) {
+    return(NULL)
+  }
+
+  br <- try(sandwich::bread(model), silent = TRUE)
+
+  if (null_or_error(br)) {
+    return(NULL)
+  }
+
+  tcrossprod(ef, br)
+}
+
 process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FALSE,
                                      data = NULL) {
   if (is_null(vcov) || isFALSE(vcov) || identical(vcov, "none")) {
@@ -915,8 +1026,11 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
       }
 
       if (builtin_vcovs[p] == "unconditional") {
-        if (null_or_error(try(sandwich::bread(model), silent = TRUE)) ||
-            null_or_error(try(sandwich::estfun(model), silent = TRUE))) {
+        # Computed here, where it also checks that the model is supported, and
+        # passed on so that estfun() and bread() are not computed twice
+        infl <- .coef_influence(model)
+
+        if (is_null(infl)) {
           arg::wrn('{.arg vcov} cannot be {.val unconditional} with this type of model. Using {.val conditional}')
 
           return(Recall(vcov = "conditional", model = model, cluster = cluster,
@@ -928,7 +1042,7 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
           cluster <- NULL
         }
 
-        return(c(list(vcov = builtin_vcovs[p]),
+        return(c(list(vcov = builtin_vcovs[p], infl = infl),
                  process_cluster(cluster, model, data)))
       }
 
@@ -1116,6 +1230,16 @@ process_cluster <- function(.cluster, model, data) {
   list(cluster = cluster,
        adj = sgn * g / (g - 1),
        vars = cluster_vars)
+}
+
+# The levels of the factor and character predictors used to fit the model, so
+# that model.matrix() keeps the columns of levels absent from a subset of the
+# data (as it already does for factors)
+.model_xlev <- function(model) {
+  xlev <- try(model[["xlevels"]], silent = TRUE)
+
+  if (is.list(xlev)) xlev
+  else NULL
 }
 
 get_tt <- function(model, model_data = NULL) {
@@ -1611,32 +1735,32 @@ make_rmvt <- function(mu, Sigma, df = Inf, tol = 1e-7) {
 #' @param n number of iterations
 #' @param max_size longest length allowed for a given vector
 #' @param df degrees of freedom
-.sim_p_value <- function(stat, v, n = 1e6, max_size = 1e7, df = Inf) {
-  # Make multivariate t/normal random generator
-  rmvt <- make_rmvt(alloc(0.0, fncol(v)), v, df = df)
+# P(Q >= stat) for Q = sum_k ev[k] * Z_k^2, with Z_k independent standard
+# normal, by simulation; with finite `df`, Q is divided by an independent
+# chi^2_df / df, as for the quadratic form of a multivariate t vector. Each
+# term is drawn directly, which needs only the eigenvalues, and the draws are
+# made in chunks of `chunk` so memory does not grow with `n`.
+.sim_p_value <- function(stat, ev, n = 1e6, df = Inf, chunk = 1e5) {
+  ev <- ev[ev > 0]
 
-  d <- fnrow(v)
+  sizes <- c(rep.int(chunk, n %/% chunk), n %% chunk)
+  sizes <- sizes[sizes > 0]
 
-  # Max number of iterations in one run, based on max_size
-  max_n <- max(1, max_size %/% d)
+  hits <- vapply(sizes, function(m) {
+    q <- numeric(m)
 
-  if (n <= max_n) {
-    return(mean(.colSums(rmvt(n)^2, d, n) >= stat))
-  }
+    for (k in seq_along(ev)) {
+      q <- q + ev[k] * stats::rnorm(m)^2
+    }
 
-  iters <- n %/% max_n
-  r <- n %% max_n
+    if (is.finite(df)) {
+      q <- q / (stats::rchisq(m, df) / df)
+    }
 
-  p <- numeric(iters + 1L)
-  for (i in seq_len(iters)) {
-    p[i] <- sum(.colSums(rmvt(max_n)^2, d, max_n) >= stat)
-  }
+    sum(q >= stat)
+  }, numeric(1L))
 
-  if (r > 0) {
-    p[iters + 1L] <- sum(.colSums(rmvt(r)^2, d, r) >= stat)
-  }
-
-  sum(p) / n
+  sum(hits) / n
 }
 
 #' Get kernel weights for interpolation
@@ -1711,7 +1835,7 @@ get_kernel_w <- function(x, v = x, kernel = "gaussian", constant = .5, bw = NULL
 #' @param x the predictor values to impute
 #' @param v the values on the existing grid
 #' @param w a matrix of length(x) by length(v) weights; if null, kernel weights are estimated
-#' @param p the degree of the local polynomial. Set to 0 to just NW interpolation.
+#' @param p the degree of the local polynomial. Set to 0 to use Nadaraya-Watson interpolation.
 #' @param ... args passed to `get_kernel_w()` when `w` is `NULL`
 get_locpoly_w <- function(x, v = x, w = NULL, p = 3, ...) {
   arg::arg_count(p)

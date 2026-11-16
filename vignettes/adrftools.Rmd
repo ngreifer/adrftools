@@ -101,7 +101,7 @@ data("nhanes3lead")
 head(nhanes3lead)
 ```
 
-The treatment variables is `logBLL`, the natural log of blood lead levels in μg/dL, and for this analysis, we will use `Math` as the outcome variable, which is the score on the WISC Math test. Covariates include `Age`, `Male`, `Race`, `PIR`, `Enough_Food`, `Smoke_in_Home`, `Smoke_Pregnant`, and `NICU`.
+The treatment variable is `logBLL`, the natural log of blood lead levels in μg/dL, and for this analysis, we will use `Math` as the outcome variable, which is the score on the WISC Math test. Covariates include `Age`, `Male`, `Race`, `PIR`, `Enough_Food`, `Smoke_in_Home`, `Smoke_Pregnant`, and `NICU`.
 
 ## Analysis
 
@@ -117,7 +117,7 @@ We will use *adrftools* to answer the following research questions:
 
 ### Fitting the outcome model
 
-The first step is to fit the outcome model. This model is not to be interpreted and should flexible enough to capture nonlinear relationships, especially between the treatment and the outcome. *adrftools* supports any model also supported by [*marginaleffects*](https://cran.r-project.org/package=marginaleffects), but performance is improved with models fit with `lm()` or `glm()`.
+The first step is to fit the outcome model. This model is not to be interpreted and should be flexible enough to capture nonlinear relationships, especially between the treatment and the outcome. *adrftools* supports any model also supported by [*marginaleffects*](https://cran.r-project.org/package=marginaleffects), but performance is improved with models fit with `lm()` or `glm()`.
 
 Below, we use `lm()` to fit a linear regression of `Math` on `logBLL`, the covariates, and their interaction. We will supply `logBLL` as a natural cubic spline with 5 degrees of freedom to capture potential nonlinearities using `splines::ns()`. We will also allow the full ADRF to vary across levels of `Male` to allow us to examine sex differences later.
 
@@ -138,7 +138,7 @@ To compute the ADRF, we supply the outcome model to `adrf()`, which also require
 adrf_bll <- adrf(fit, treat = "logBLL")
 ```
 
-The ADRF is only evaluated for a range of treatment values. That range can be controlled by the `range` argument to `adrf()`. By default, the range is the middle 95% of treatment values, which in the case corresponds to values from `r round(min(attr(adrf_bll, ".values")), 4)` to `r round(max(attr(adrf_bll, ".values")), 4)`. It is important to know this range because all inferences made generalize only to treatment values in this range. Typically, values on the edges of the observed treatment range are estimated with less certainty, and values beyond the observed treatment range involve extrapolation.
+The ADRF is only evaluated for a range of treatment values. That range can be controlled by the `range` argument to `adrf()`. By default, the range is the middle 95% of treatment values, which in this case corresponds to values from `r round(min(attr(adrf_bll, ".values")), 4)` to `r round(max(attr(adrf_bll, ".values")), 4)`. It is important to know this range because all inferences made generalize only to treatment values in this range. Typically, values on the edges of the observed treatment range are estimated with less certainty, and values beyond the observed treatment range involve extrapolation.
 
 `adrf()` also provides options for uncertainty estimation using the `vcov` argument. The default, `vcov = "unconditional"`, uses M-estimation to account for uncertainty in estimation and sampling analytically as described by @hansenVarianceEstimationAverage2024; this requires the model object to have `estfun()` and `bread()` methods. Setting `vcov = "boot"` or `vcov = "fwb"` use the traditional or fractional weighted bootstrap [@xu2020], respectively, as implemented in [*fwb*](https://ngreifer.github.io/fwb/); these both also account for sampling and estimation uncertainty. Finally, any argument to the `vcov` argument of `marginaleffects::get_vcov()` can be supplied to perform conditional inference (i.e., treating the sample as fixed); the "default" variance can be requested by setting `vcov = "conditional"` (which typically just uses the `vcov()` method for the model object).
 
@@ -162,7 +162,7 @@ plot(adrf_bll)
 
 The x-axis is the treatment and the y-axis is the value of the ADRF at the treatment level (labeled $\text{E[Math]}$). The solid red line is the ADRF and the pink ribbon is the 95% uniform confidence band.
 
-By default, confidence bands are computed providing uniform coverage, meaning the nominal rate refers to simultaneous coverage of all points on the line rather for a single given point [@montielolea2019]. Pointwise confidence bands can instead be requested by setting `simultaneous = FALSE` in the call to `plot()`. This is generally not recommended as it overstates the precision of the estimated ADRF. The confidence level can be set with `conf_level`, and if bootstrapping is used in `adrf()`, the method of computing the confidence interval can be controlled by the `ci.type` argument, which is passed to `fwb::summary.fwb()`. Simultaneous coverage is only possible when `ci.type` is `"perc"` (percentile confidence intervals, the default for bootstrapping) or `"wald"`.
+By default, confidence bands are computed providing uniform coverage, meaning the nominal rate refers to simultaneous coverage of all points on the line rather than to a single given point [@montielolea2019]. Pointwise confidence bands can instead be requested by setting `simultaneous = FALSE` in the call to `plot()`. This is generally not recommended as it overstates the precision of the estimated ADRF. The confidence level can be set with `conf_level`, and if bootstrapping is used in `adrf()`, the method of computing the confidence interval can be controlled by the `ci.type` argument, which is passed to `fwb::summary.fwb()`. Simultaneous coverage is only possible when `ci.type` is `"perc"` (percentile confidence intervals, the default for bootstrapping) or `"wald"`.
 
 To compute confidence intervals around specific points of the ADRF, one can use `summary()` on the output of the `<effect_curve>` object:
 
@@ -185,7 +185,7 @@ In addition to the contrast estimates and confidence intervals, test statistics 
 
 ### Testing the ADRF
 
-To test omnibus hypotheses about the ADRF, such as whether it is flat or linear, we can use `summary()` on the `<effect_curve>` object itself, rather than on its output. In particular, `summary()` tests whether a given projection of the ADRF is sufficient to characterize it. This projection is determined by the argument to `hypothesis`. By default, this is `"flat"`, which tests that null hypothesis that the ADRF is flat. If this hypothesis is rejected, this implies there is some effect of the treatment.
+To test omnibus hypotheses about the ADRF, such as whether it is flat or linear, we can use `summary()` on the `<effect_curve>` object itself, rather than on its output. In particular, `summary()` tests whether a given projection of the ADRF is sufficient to characterize it. This projection is determined by the argument to `hypothesis`. By default, this is `"flat"`, which tests the null hypothesis that the ADRF is flat. If this hypothesis is rejected, this implies there is some effect of the treatment.
 
 ```{r}
 summary(adrf_bll)
@@ -203,10 +203,10 @@ There are several methods of approximating the CDF, and this choice is controlle
 
 1.  Monte Carlo simulation of the distribution of $T$ under the null hypothesis (`method = "sim"`)
 2.  Analytic approximation using functionality in the [*CompQuadForm*](https://cran.r-project.org/package=CompQuadForm) package (`method = "imhof"`, `"davies"`, or `"liu"`)
-3.  Satterthwaite's approximation based on moment matching to a $\chi^2$ distribution (`method = "satterthwaite"`)
-4.  Kuonen's saddlepoint approximation using functionality in the [*survey*](https://cran.r-project.org/package=survey) package (`method = "saddlepoint"`)
+3.  Satterthwaite's approximation based on moment matching to a scaled $\chi^2$ distribution, or to a scaled $F$ distribution when `df` is finite (`method = "satterthwaite"`)
+4.  Kuonen's saddlepoint approximation (`method = "saddlepoint"`)
 
-`method = "imhof"` and `method = "sim"` are the most reliable. The former is fast and deterministic, and so is used by default when the *CompQuadForm* package is installed. The latter is slower and subject to Monte Carlo error, but does not require any additional packages. `method = "saddlepoint"` performs well, too, and is used by default if the *CompQuadForm* package is not installed but the *survey* package is.
+`method = "imhof"` and `method = "sim"` are the most reliable. The former is fast and deterministic, and so is used by default when the *CompQuadForm* package is installed. The latter is slower and subject to Monte Carlo error, but does not require any additional packages. `method = "saddlepoint"` performs well, too, is very fast, does not require any additional packages, and is used by default if the *CompQuadForm* package is not installed.
 
 `hypothesis` can also be `"linear"`, `"quadratic"`, `"cubic"`, or a formula representing the projection to test. Rejecting the null hypothesis indicates that the ADRF is more complicated than the supplied model; for example, rejecting the null hypothesis for `hypothesis = "linear"` means the ADRF is nonlinear, and failing to reject the null hypothesis for `hypothesis = "quadratic"` means there is not enough evidence to claim the ADRF is more complicated than a quadratic model. Rejecting any of these hypotheses also rejects the null hypothesis for a lower-order model, including `"flat"`.
 
@@ -262,7 +262,7 @@ To add the projection to the original estimated ADRF plot, we can supply the `cu
 plot(adrf_bll, proj = proj)
 ```
 
-The dotted line is the projection, and the solid line and shaded region correspond to the original ADRF estimate and the original ADRF estimate's confidence bands.
+The dashed line is the projection, and the solid line and shaded region correspond to the original ADRF estimate and the original ADRF estimate's confidence bands.
 
 Two nested projection models can be compared with a Wald test using `anova()`, just as for typical linear models.
 
@@ -292,7 +292,7 @@ We can plot the reference curve, which will essentially be the original ADRF shi
 plot(adrf_bll_ref)
 ```
 
-Notice that the confidence bands narrow close for treatment levels close to the reference level; we have greater certainty about ADRF deviations from the its value at the reference level in that region.
+Notice that the confidence bands narrow for treatment levels close to the reference level; we have greater certainty about ADRF deviations from its value at the reference level in that region.
 
 We can use `summary()` to test whether the reference curve is equal to 0 everywhere, which tests whether the ADRF differs from its value at the reference level:
 
@@ -338,7 +338,7 @@ amef_bll(c(0, 1, 2)) |>
 
 Here, a p-value for the test that the AMEF value is equal to 0 is displayed along with confidence intervals. The null value for this test can be controlled with the `null` argument to `summary()`.
 
-Testing whether the AMEF is uniformly equal to 0 is theoretically equivalent testing whether the ADRF is flat. We can perform this test using `summary()` on the `<amef_curve>` object itself. The default value for `hypothesis` is 0 to test whether the AMEF is 0 everywhere.
+Testing whether the AMEF is uniformly equal to 0 is theoretically equivalent to testing whether the ADRF is flat. We can perform this test using `summary()` on the `<amef_curve>` object itself. The default value for `hypothesis` is 0 to test whether the AMEF is 0 everywhere.
 
 ```{r}
 summary(amef_bll)
@@ -551,7 +551,7 @@ We can plot the ADRF with `plot()`:
 plot(adrf_bll_bin)
 ```
 
-An important thing to notice is that the confidence bands are asymmetrical. This is because symmetrical Wald confidence bands are first computed on transformed versions of the ADRF estimates before being back-transformed to be on the original scale. This isn't the same as computing the ADRF on the linear predictor of the outcome model (i.e., by specifying `type = "link"` in the call to `adrf()`); this involves computing the ADRF as usual on the original (probability scale), transforming the ADRF estimates, using the delta method to compute the variance of the transformed estimates, and then computing Wald confidence bands using the variance of the transformed estimates before back-transforming[^1]. This ensures the confidence bands respect the bounds implied by the link function used in the outcome model.
+An important thing to notice is that the confidence bands are asymmetrical. This is because symmetrical Wald confidence bands are first computed on transformed versions of the ADRF estimates before being back-transformed to be on the original scale. This isn't the same as computing the ADRF on the linear predictor of the outcome model (i.e., by specifying `type = "link"` in the call to `adrf()`); this involves computing the ADRF as usual on the original (probability) scale, transforming the ADRF estimates, using the delta method to compute the variance of the transformed estimates, and then computing Wald confidence bands using the variance of the transformed estimates before back-transforming[^1]. This ensures the confidence bands respect the bounds implied by the link function used in the outcome model.
 
 [^1]: Note that the confidence bands are symmetrical when a scaling corresponding to the transformation is applied to the y-axis; to see this, run `plot(adrf_bll_bin) + ggplot2::scale_y_continuous(transform = "logit")`
 
@@ -583,7 +583,7 @@ plot(adrf_bll_bin, transform = FALSE) +
 
 ####  {.unlisted .unnumbered}
 
-Bootstrapping and using a percentile confidence bands avoids this issue because such bands are invariant to transformation and respect the bounds of the outcome.
+Bootstrapping and using percentile confidence bands avoids this issue because such bands are invariant to transformation and respect the bounds of the outcome.
 
 `summary()` applied to the ADRF point estimates also has a `transform` argument for the same purpose; by default, it computes transformed confidence intervals.
 
@@ -617,9 +617,9 @@ $$
 
 where $P(a; \mathbf{\hat{b}})$ is the linear predictor of the projection model evaluated at treatment value $a$ (e.g., $P(a; \mathbf{\hat{b}})=\hat{b}_0 + \hat{b}_1 a$ for a simple linear projection model). The projection is estimated using nonlinear least-squares, with propagation of the uncertainty in the ADRF carried through using the delta method.
 
-The choice of whether to use a transformed projection or an untransformed projection affects the output of `summary()` and `curve_projection()`, both of which involve a projection of the ADRF. When transformation is requested with `summary()` (the default), the null hypothesis tested is whether the ADRF is sufficiently described by the transformed linear predictor. For example, consider a scenario in which the true ADRF is S-shaped. Testing whether ADRF is linear **without** transformation corresponds to testing whether the ADRF is more complicated than a straight line, and therefore will likely yield rejection of the null hypothesis (i.e., because a straight line is not sufficient to characterize the S-shaped ADRF). Testing whether the ADRF is linear **with** transformation corresponds to testing whether the ADRF is more complicated than an S-shaped curve, and therefore will likely yield a failure to reject the null hypothesis (i.e., because the S-shaped curve is sufficient to characterize the ADRF). The correct choice depends on the specifics of the research question and context.
+The choice of whether to use a transformed projection or an untransformed projection affects the output of `summary()` and `curve_projection()`, both of which involve a projection of the ADRF. When transformation is requested with `summary()` (the default), the null hypothesis tested is whether the ADRF is sufficiently described by the transformed linear predictor. For example, consider a scenario in which the true ADRF is S-shaped. Testing whether the ADRF is linear **without** transformation corresponds to testing whether the ADRF is more complicated than a straight line, and therefore will likely yield rejection of the null hypothesis (i.e., because a straight line is not sufficient to characterize the S-shaped ADRF). Testing whether the ADRF is linear **with** transformation corresponds to testing whether the ADRF is more complicated than an S-shaped curve, and therefore will likely yield a failure to reject the null hypothesis (i.e., because the S-shaped curve is sufficient to characterize the ADRF). The correct choice depends on the specifics of the research question and context.
 
-When testing whether the ADRF is flat, the test using the transformed linear predictor is typically equivalent to that using the linear predictor itself; ideally these tests should yield the same conclusion. When testing whether the ADRF is equal to a given value, the test back-transforms the ADRF estimate and the given value before computing the test statistic.
+When testing whether the ADRF is flat, the test using the transformed linear predictor is typically equivalent to that using the linear predictor itself; ideally these tests should yield the same conclusion. When testing whether the ADRF is equal to a given value, the test transforms the ADRF estimate and the given value before computing the test statistic.
 
 In the tabbed output below, we run `summary()` and `curve_projection()` with and without transformation:
 
@@ -697,7 +697,7 @@ plot(adrf_bll_bin, proj = proj_u) +
 
 ####  {.unlisted .unnumbered}
 
-Notice that the projections appear someone different depending on whether transformation is requested. If so (the default), the projection coefficients are interpreted like those from a generalized linear model of the outcome on the treatment with the transformation as the given link function (in this case, on the log odds scale). The projection is curved to reflect the nonlinear relationship implied by the transformation. If not, the projection coefficients are interpreted directly as though fitted with a linear model, and the projection is linear. Transformed projections may be more realistic by respecting the scale of the outcome, but their coefficients can be harder to interpret.
+Notice that the projections appear somewhat different depending on whether transformation is requested. If so (the default), the projection coefficients are interpreted like those from a generalized linear model of the outcome on the treatment with the transformation as the given link function (in this case, on the log odds scale). The projection is curved to reflect the nonlinear relationship implied by the transformation. If not, the projection coefficients are interpreted directly as though fitted with a linear model, and the projection is linear. Transformed projections may be more realistic by respecting the scale of the outcome, but their coefficients can be harder to interpret.
 
 In the example above, the untransformed linear projection appears to fit the ADRF slightly better; it would be reasonable to say that in the observed treatment range, the ADRF can be sufficiently described as linear. However, knowing that the outcome is bounded by 0 and 1, we know the ADRF cannot be linear across the entirety of the real number line.
 
@@ -789,7 +789,7 @@ fit_gs <- glm(Math ~ splines::ns(logBLL, df = 5) *
               weights = MEC_wt)
 ```
 
-With `glm()`, we need to set `wts = TRUE` in the call to `adrf()` to ensure the weights are properly included in the ADRF estimation. If not, the weights will be used only in fitting the outcome mode, but the ADRF will generalize to the unweighted population. This is okay if the weights are balancing weights, but if they are sampling weights, it is critical for them to be incorporated into the ADRF as well.
+With `glm()`, we need to set `wts = TRUE` in the call to `adrf()` to ensure the weights are properly included in the ADRF estimation. If not, the weights will be used only in fitting the outcome model, but the ADRF will generalize to the unweighted population. This is okay if the weights are balancing weights, but if they are sampling weights, it is critical for them to be incorporated into the ADRF as well.
 
 ```{r}
 adrf_gs <- adrf(fit_gs, treat = "logBLL",
@@ -798,13 +798,13 @@ adrf_gs <- adrf(fit_gs, treat = "logBLL",
 plot(adrf_gs)
 ```
 
-Using `wts = "MEC_wts"` would yield the same results and can be used if the weights used to fit the outcome model are different from those used to generalized the ADRF (as we will see below when combining sampling and balancing weights).
+Using `wts = "MEC_wt"` would yield the same results and can be used if the weights used to fit the outcome model are different from those used to generalize the ADRF (as we will see below when combining sampling and balancing weights).
 
 #### Sampling weights and balancing weights together
 
 If you want to use balancing weights in a sampling-weighted sample, some additional considerations are required. Importantly, the product of the sampling weights and balancing weights is used to fit the outcome model, but the ADRF is computed incorporating the sampling weights alone. Doing this with *WeightIt* is the most straightforward; simply supplying the `s.weights` argument to `weightit()` makes everything work as expected. They are automatically included in the outcome model when fit with `glm_weightit()`[^2].
 
-[^2]: Note that this same procedure be used without actually estimating balancing weights by setting `method = NULL` in the call to `weightit()`. This yields the same results as the previous two methods.
+[^2]: Note that this same procedure can be used without actually estimating balancing weights by setting `method = NULL` in the call to `weightit()`. This yields the same results as the previous two methods.
 
 ```{r, eval = weightit_ok}
 library(WeightIt)
@@ -929,7 +929,7 @@ adrf_bll_bayes <- adrf(bfit, treat = "logBLL")
 adrf_bll_bayes
 ```
 
-All credible intervals and bands use the confidence interval interface (e.g., using `conf_level` in `summary()` and `plot()` to request the credibility level). The posterior can be treated as a multivariate normal distribution to compute Wald-based credible intervals by setting `ci.type = "wald"`, though the default is to use equi-tailed percentile intervals with `ci.type = "perc"`. Simultaneous inference for equi-tailed percentile intervals, if requested, uses the Bayesian algorithm described by @montielolea2019, which guarantees uniform credibility across the whole effect curve. P-values for estimates along the effect curve are computed as the complement of the smallest credibility level that excludes the null value.
+All credible intervals and bands use the confidence interval interface (e.g., using `conf_level` in `summary()` and `plot()` to request the credibility level). The posterior can be treated as a multivariate normal distribution to compute Wald-based credible intervals by setting `ci.type = "wald"`, though the default is to use equi-tailed percentile intervals with `ci.type = "perc"`. Simultaneous inference for equi-tailed percentile intervals, if requested, uses the Bayesian algorithm described by @montielolea2019, which ensures the band has the requested credibility simultaneously across the whole effect curve, up to Monte Carlo error from the finite number of posterior draws. P-values for estimates along the effect curve are computed as the complement of the smallest credibility level that excludes the null value.
 
 ```{r, eval = bart_ok}
 plot(adrf_bll_bayes)

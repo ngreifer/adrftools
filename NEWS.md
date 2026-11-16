@@ -33,7 +33,7 @@ adrftools News and Updates
 
 * With multiply imputed data, the degrees of freedom used for tests and confidence intervals now account for the between-imputation variance, using the method of Reiter (2007), or of Li, Raghunathan, and Rubin (1991) when the complete-data degrees of freedom are infinite. Previously, the smallest complete-data degrees of freedom across the imputed datasets were used, so inference for generalized linear models used the normal distribution regardless of the number of imputations.
 
-* `vcov = "HC3"` can now be used with `cluster` in `adrf()` and is passed to `sandwich::vcovCL()`. Supplying `cluster` with any other string or with a function or formula supplied to `vcov` now gives an error. Previously, these were ignored and the default cluster-robust covariance matrix was used.
+* `vcov` can now be `"HC0"`, `"HC1"`, `"HC2"`, or `"HC3"` when `cluster` is supplied to `adrf()`, in which case it is passed as the type to `sandwich::vcovCL()`. Supplying `cluster` with any other string besides `"unconditional"`, `"conditional"`, `"boot"`, and `"fwb"`, or when `vcov` is a function or formula, now gives an error. Previously, these were ignored and the default cluster-robust covariance matrix was used.
 
 * `subset` in `adrf()` now gives an informative error when it is a factor, contains character values that are not row names, or contains row numbers that are out of range or that mix positive and negative values. Previously, factors gave an unrelated error and the other values gave incorrect results or were ignored.
 
@@ -42,6 +42,16 @@ adrftools News and Updates
 * `amef()` applied to a reference curve now returns a plain AMEF, which is what it computed, since subtracting a reference value does not change the derivative. Previously, the result was labeled, plotted, and tested as a reference curve even though it was not 0 at the reference point. Use `reference_curve()` on the output of `amef()` to compute a reference AMEF.
 
 * `adrf()` now gives informative errors when `subset` selects no units, the two values in `range` are equal, or a variable in `by` has missing values.
+
+* Evaluating an effect curve at treatment values outside the range of its grid points now gives an error, as does a value of `reference` outside that range in `reference_curve()`. Values outside it by no more than 0.1% of its width (e.g., an end point supplied as it was printed, after rounding) are treated as the nearest end point. Previously, effect curves were extrapolated beyond their grid points, which gave unstable estimates and `NA` estimates just past the end points, and `reference` could be up to 1% of the width beyond them.
+
+* Informative errors are now given when `anova()` is used with `vcov = "none"`, `curve_contrast()` is used with a single subgroup, a projection model has more coefficients than the number of treatment values at which the effect curve was computed or has linearly dependent terms, or the treatment is named `subset` or shares a name with an object used internally by the effect curve. `subset = TRUE` when evaluating or summarizing an effect curve now selects all subgroups.
+
+* Simultaneous Wald p-values in `summary()` are now much faster, and simultaneous Wald critical values are faster in `summary()` and more accurate in `plot()` and `point_contrast()`. `summary()` and `plot()` now compute the critical value with the same settings, so their intervals and bands agree. Previously, `plot()` and `point_contrast()` used less accurate settings than `summary()`, and a simultaneous p-value was computed for every estimate, which took about a second each with many estimates.
+
+* `method = "sim"` in `summary.effect_curve()` is now faster and uses much less memory.
+
+* `adrf()` is faster and uses less memory, especially with `vcov = "conditional"` and with unconditional standard errors for models fit with *WeightIt*, whose influence functions are no longer computed twice. Omnibus tests and projections of bootstrapped and Bayesian effect curves are faster when no transformation is used.
 
 * Simultaneous p-values for Bayesian models are now computed by inverting the simultaneous intervals. Previously, they were smaller than the pointwise p-values. The calibrated tail probability of the simultaneous intervals (Montiel Olea and Plagborg-Møller, 2019) is now found exactly rather than by root finding, which also fixes an error that could occur with few posterior draws.
 
@@ -71,7 +81,7 @@ adrftools News and Updates
 
 * Fixed a bug in `point_contrast()` in which `summary()` failed when `by` was supplied in the original call to `adrf()`.
 
-* Fixed a bug in `summary.curve_est()`, `plot.effect_curve()`, and `summary.effect_curve()` in which a transformation supplied to `transform` that produced non-finite values for some estimates (e.g., `qlogis` with estimates outside 0 and 1) gave an error or reported standard errors on a different scale from the estimates. Now, the estimates are left untransformed in this case.
+* Fixed a bug in `summary.curve_est()`, `plot.effect_curve()`, and `summary.effect_curve()` in which a transformation that produced non-finite values for some estimates, bootstrap or posterior draws, or for the null value (e.g., `qlogis` with values outside 0 and 1, or a null value of 0) gave an unrelated error, infinite test statistics, `NaN` p-values, or standard errors on a different scale from the estimates. Now, a null value outside the domain of the transformation and a transformation supplied to `transform` that cannot be applied give informative errors. When `transform = TRUE` and the link function of the outcome model cannot be applied to some bootstrap or posterior draws (e.g., draws between grid points just outside 0 and 1), the estimates are left untransformed with a warning.
 
 * Fixed a bug in which interpolation between the points of an effect curve lost precision when the kernel weights were very unequal. This mostly affected `amef()` at the ends of the treatment range, where derivatives could be off by about 0.1%.
 
@@ -116,6 +126,12 @@ adrftools News and Updates
 * Fixed a bug in `adrf()` in which models with aliased (i.e., `NA`) coefficients failed with `vcov = "conditional"` and robust standard errors, and bootstrapping failed when a replicate aliased a coefficient, e.g., when all units in a rare factor level received a weight of 0.
 
 * Fixed a bug in `anova()` for `curve_projection` objects in which the null hypothesis was not printed when a model formula was long. `anova()` also now gives an informative error when the extra terms cannot be tested because the projection has more terms than the effect curve can identify.
+
+* Fixed a bug in `adrf()` in which models fit without a `data` argument (e.g., `glm(y ~ x)`) failed whenever the environment in which they were fit contained other objects.
+
+* Fixed a bug in `adrf()` in which a character predictor with values absent from the units selected by `subset` gave an error.
+
+* Fixed a bug in `summary.curve_projection()` in which `subset` failed with bootstrapped effect curves, and `coef()` and `vcov()` of the output failed or returned the coefficients of all subgroups.
 
 # *adrftools* 0.1.0
 

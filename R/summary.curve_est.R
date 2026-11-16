@@ -3,11 +3,11 @@
 #' @description
 #' `summary()` computes estimates and confidence intervals for specified points on the supplied effect curve.
 #'
-#' @param object an [`effect_curve`] object; the output of a call to [adrf()] or a function that modifies it.
+#' @param object a [`curve_est`] object; the output of a call to an [`effect_curve`] object.
 #' @param conf_level the desired confidence level. Set to 0 to omit confidence intervals. Default is .95.
 #' @param simultaneous `logical`; whether the computed p-values and confidence intervals should be simultaneous (`TRUE`) or pointwise (`FALSE`). Simultaneous (also known as uniform) intervals jointly cover all specified estimates at the desired confidence level, whereas pointwise confidence intervals only cover each estimate at the desired level. Simultaneous p-values are inversions of the simultaneous confidence intervals. Default is `TRUE`. See Details.
 #' @param null the null value for the hypothesis tests. Default is to use a null value of 0 when the effect curve is an AMEF, a curve contrast, or a reference effect curve, and to omit hypothesis tests otherwise. Set to `NA` to manually omit hypothesis tests.
-#' @param transform whether to compute intervals and perform tests on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `object` is an ADRF. See Details.
+#' @param transform whether to compute intervals and perform tests on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `object` is an ADRF and Wald inference is used (i.e., ignored with percentile intervals, the default with bootstrapping and Bayesian models). See Details.
 #' @param df the "denominator" degrees of freedom to use for the tests and critical test statistics for confidence intervals. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
 #' @param ci.type string; when bootstrapping or Bayesian inference is used in the original effect curve, which type of confidence interval is to be computed. For bootstrapping, allowable options include `"perc"` for percentile intervals, `"wald"` for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed. For Bayesian models, allowable options include `"perc"` for equi-tailed intervals and `"wald"` for Wald intervals. Default is `"perc"`. Ignored when bootstrapping is not used and the model is not Bayesian.
 #' @param ... ignored.
@@ -18,13 +18,13 @@
 #' @details
 #' ## Transform
 #'
-#' The usual confidence intervals and tests assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. Confidence intervals are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome. When `null` is a number, that number is also transformed. When `transform` is specified, standard errors are not reported (i.e., because the standard errors used for tests and confidence intervals are those of the transformed estimates).
+#' The usual confidence intervals and tests assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. `transform` transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. Confidence intervals are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome. When `null` is a number, that number is also transformed. When a transformation other than the identity is used, including the default link function of a generalized linear model, standard errors are not reported, because the standard errors used for tests and confidence intervals are those of the transformed estimates. `transform` is only used with Wald inference; percentile intervals, the default with bootstrapping and Bayesian models, already respect the bounds of the outcome because they are invariant to transformation.
 #'
-#' When `transform` is `TRUE`, the link function of the outcome model is used; when a family or link object is supplied, its link function is used. Only transformations with a known inverse and derivative are allowed. When the transformation cannot be applied to every estimate (e.g., `qlogis` with an estimate outside 0 and 1), the estimates are left untransformed.
+#' When `transform` is `TRUE`, the link function of the outcome model is used; when a family or link object is supplied, its link function is used. Only transformations with a known inverse and derivative are allowed. A value of `null` outside the domain of the transformation (e.g., a null value of 0 or 1 with a logit transformation) gives an error; set `transform = FALSE` to test it on the original scale. A transformation supplied to `transform` that cannot be applied to every estimate, or, with Wald intervals, to every bootstrap or posterior draw, also gives an error. When `transform = TRUE` and the link function of the outcome model cannot be applied to every draw (e.g., a draw between grid points just outside 0 and 1), the estimates are left untransformed with a warning.
 #'
 #' ## Simultaneous confidence intervals and tests
 #'
-#' Simultaneous confidence intervals ensure all estimates, not just a given individual point, are contained within the union of confidence intervals at the given confidence level. These are wider than pointwise intervals to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `summary()` uses the "sup-t" simultaneous confidence interval, which is the smallest one-parameter interval that covers all estimates at the desired rate. Simultaneous hypothesis tests are performed by inverting the simultaneous confidence intervals; the p-value for each test is the complement of the smallest confidence level for which a simultaneous confidence intervals accounting for other tests contains the null value. The widths of the confidence intervals and the p-values depend on how many and which estimates are computed. With bootstrapping or Bayesian models and `ci.type = "perc"`, the simultaneous intervals are the equal-tailed percentile intervals with the tail probability calibrated so that they jointly contain the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
+#' Simultaneous confidence intervals ensure all estimates, not just a given individual point, are contained within their confidence intervals at the given confidence level. These are wider than pointwise intervals to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `summary()` uses the "sup-t" simultaneous confidence interval, which is the smallest one-parameter interval that covers all estimates at the desired rate. Simultaneous hypothesis tests are performed by inverting the simultaneous confidence intervals; the p-value for each test is the complement of the smallest confidence level for which a simultaneous confidence interval accounting for the other tests contains the null value. The widths of the confidence intervals and the p-values depend on how many and which estimates are computed. With Wald inference, the simultaneous critical value and p-values are computed from the multivariate t (or normal) distribution of the estimates using \pkgfun{mvtnorm}{qmvt} and \pkgfun{mvtnorm}{pmvt}, which use a randomized algorithm, so they can differ slightly between calls; use [set.seed()] for reproducible results. With bootstrapping or Bayesian models and `ci.type = "perc"`, the simultaneous intervals are the equal-tailed percentile intervals with the tail probability calibrated so that they jointly contain the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
 #'
 #' @references
 #' Montiel Olea, J. L., & Plagborg-Møller, M. (2019). Simultaneous confidence bands: Theory, implementation, and an application to SVARs. *Journal of Applied Econometrics*, 34(1), 1–17. \doi{10.1002/jae.2656}
@@ -96,12 +96,15 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
 
   est0 <- stats::coef(object)
 
-  # transform
-  transform_list <- process_transform(transform, object, est0)
-
   simultaneous <- process_simultaneous(simultaneous, est0)
 
   ci.type <- process_ci.type(ci.type, .vcov_type, simultaneous)
+
+  # transform; only Wald inference uses the transformation, so only then are
+  # the null value and the bootstrap or posterior draws transformed
+  transform_list <- process_transform(transform, object, est0,
+                                      null = if (ci.type == "wald") null,
+                                      check_draws = ci.type == "wald")
 
   # First, apply transforms if necessary
   transform <- transform_list$transform
@@ -109,8 +112,6 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
 
   est <- transform(est0)
 
-  # process_transform() has already replaced a transformation that cannot be
-  # reversed with the identity
   do_transform <- ci.type != "perc" &&
     !all(check_if_zero(est - est0))
 
@@ -182,19 +183,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
             .to_psd()
         }
 
-        pvals <- try(vapply(abs(res[[stat]][!zeros]),
-                            function(zi) {
-                              1 - mvtnorm::pmvt(lower = rep.int(-zi, sum(!zeros)),
-                                                upper = rep.int(zi, sum(!zeros)),
-                                                df = .mvt_df(df), corr = vp,
-                                                abseps = 1e-5,
-                                                maxpts = 1e6)
-                            }, numeric(1L)),
-                     silent = TRUE)
-
-        if (null_or_error(pvals)) {
-          arg::err("there was an error computing simultaneous p-values")
-        }
+        pvals <- .mvt_p_values(res[[stat]][!zeros], vp, df)
       }
       else {
         pvals <- switch(stat,
@@ -207,7 +196,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
     else if (.vcov_type == "bootstrap") {
       s <- summary(.boot,
                    conf = 0,
-                   parm = seq_along(est),
+                   index = seq_along(est),
                    ci.type = ci.type,
                    p.value = TRUE,
                    null = null,
@@ -234,16 +223,7 @@ summary.curve_est <- function(object, conf_level = 0.95, simultaneous = TRUE, nu
             .to_psd()
         }
 
-        t_crit <- try(mvtnorm::qmvt(conf_level,
-                                    tail = "both.tails",
-                                    df = .mvt_df(df), corr = vp,
-                                    abseps = 1e-5,
-                                    maxpts = 1e6)$quantile,
-                      silent = TRUE)
-
-        if (null_or_error(t_crit)) {
-          arg::err("there was an error computing simultaneous confidence intervals")
-        }
+        t_crit <- .mvt_crit(conf_level, vp, df)
       }
       else {
         t_crit <- switch(stat,

@@ -9,13 +9,13 @@
 #' @param null the value at which to plot a horizontal reference line. Default is to plot a line with a y-intercept of 0 when the effect curve is an AMEF, a curve contrast, or a reference effect curve, and to omit a line otherwise. Set to `NA` to manually omit the line.
 #' @param subset an optional logical expression indicating the subset of the subgroups to plot. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param proj an optional `curve_projection` object, the output of a call to [curve_projection()]. Supplying this adds the projection curve to the effect curve plot.
-#' @param transform whether to compute intervals on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `x` is an ADRF. See Details.
+#' @param transform whether to compute intervals on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `x` is an ADRF and Wald inference is used (i.e., ignored with percentile intervals, the default with bootstrapping and Bayesian models). See Details.
 #' @param df the "denominator" degrees of freedom to use for the critical test statistics for confidence bands. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
-#' @param ci.type string; when bootstrapping is used in the original effect curve, what type of confidence interval is to be computed. Allowable options include `"perc"` for percentile intervals, `"wald"` for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed. Default is `"perc"`. Ignored when bootstrapping is not used.
+#' @param ci.type string; when bootstrapping or Bayesian inference is used in the original effect curve, which type of confidence interval is to be computed. For bootstrapping, allowable options include `"perc"` for percentile intervals, `"wald"` for Wald intervals, and other options allowed by \pkgfun{fwb}{summary.fwb}. When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed. For Bayesian models, allowable options include `"perc"` for equi-tailed intervals and `"wald"` for Wald intervals. Default is `"perc"`. Ignored when bootstrapping is not used and the model is not Bayesian.
 #' @param ... ignored.
 #'
 #' @returns
-#' A `ggplot` object that can modified using functions in \pkg{ggplot2}. Below are some common tasks and instructions to perform them. Note all should be run after running `library("ggplot2")`.
+#' A `ggplot` object that can be modified using functions in \pkg{ggplot2}. Below are some common tasks and instructions to perform them. Note all should be run after running `library("ggplot2")`.
 #'
 #' \itemize{
 #' \item{Change the position of the legend:
@@ -54,7 +54,7 @@
 #'
 #' ## Simultaneous confidence bands
 #'
-#' Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `plot()` uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate. With bootstrapping or Bayesian models and `ci.type = "perc"`, the simultaneous band is the product of the equal-tailed percentile intervals with the tail probability calibrated so that it contains the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
+#' Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. `plot()` uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate. With Wald inference, the critical value is computed using \pkgfun{mvtnorm}{qmvt} with the same settings as [summary.curve_est()], which uses a randomized algorithm; use [set.seed()] for reproducible results. With bootstrapping or Bayesian models and `ci.type = "perc"`, the simultaneous band is the product of the equal-tailed percentile intervals with the tail probability calibrated so that it contains the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).
 #'
 #' @references
 #' Montiel Olea, J. L., & Plagborg-Møller, M. (2019). Simultaneous confidence bands: Theory, implementation, and an application to SVARs. *Journal of Applied Econometrics*, 34(1), 1–17. \doi{10.1002/jae.2656}
@@ -132,7 +132,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
   null <- process_null(null, x)
 
-  transform_list <- process_transform(transform, x, .est0)
+  .est_all <- .est0
 
   # subset
   .subset <- process_subset_by_grid(substitute(subset),
@@ -147,27 +147,31 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
     .est0 <- .est0[.s]
   }
 
-  # First, apply transforms if necessary
+  do_inference <- (.vcov_type != "none") &&
+    !is_null(.vcov) && (conf_level > 0)
+
+  if (do_inference) {
+    simultaneous <- process_simultaneous(simultaneous, .est0)
+
+    ci.type <- process_ci.type(ci.type, .vcov_type, simultaneous)
+  }
+
+  # First, apply transforms if necessary; only Wald intervals transform the
+  # bootstrap or posterior draws
+  transform_list <- process_transform(transform, x, .est_all,
+                                      check_draws = do_inference && ci.type == "wald")
+
   transform <- transform_list$transform
   inv_transform <- transform_list$inv_transform
 
   .est <- transform(.est0)
 
-  do_inference <- (.vcov_type != "none") &&
-    !is_null(.vcov) && (conf_level > 0)
-
   if (do_inference) {
-    simultaneous <- process_simultaneous(simultaneous, .est)
-
-    ci.type <- process_ci.type(ci.type, .vcov_type, simultaneous)
-
     res_names <- c(.treat, "estimate",
                    "conf.low", "conf.high")
 
     res <- make_df(res_names, length(.est))
 
-    # process_transform() has already replaced a transformation that cannot
-    # be reversed with the identity
     do_transform <- ci.type != "perc" &&
       !all(check_if_zero(.est - .est0))
 
@@ -212,18 +216,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
             cov2cor() |>
             .to_psd()
 
-          t_crit <- try(mvtnorm::qmvt(conf_level,
-                                      tail = "both.tails",
-                                      df = .mvt_df(df), corr = vp,
-                                      keepAttr = FALSE,
-                                      maxiter = 1e5,
-                                      abseps = 1e-5)$quantile,
-                        silent = TRUE)
-
-          if (null_or_error(t_crit)) {
-            error <- conditionMessage(.attr(t_crit, "condition"))
-            arg::err("There was an error computing simultaneous confidence intervals:\n{error}")
-          }
+          t_crit <- .mvt_crit(conf_level, vp, df)
         }
         else {
           t_crit <- switch(stat,

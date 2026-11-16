@@ -36,7 +36,7 @@ adrf(x, ...)
 
 \item{type}{character string indicating the type of prediction. Passed to \code{\link[marginaleffects:get_predict]{marginaleffects::get_predict()}}. Default is \code{"response"} for predictions on the scale of the outcome variable. Other options might include \code{"link"} for the linear predictor. This argument is ignored for \code{lm} objects.}
 
-\item{data}{an optional data frame containing the observations originally used to fit the outcome model supplied to \code{x}. This should only be used if the supplied model is not supported by \pkg{insight}. In most cases, this should not need to be supplied.}
+\item{data}{an optional data frame containing the observations originally used to fit the outcome model supplied to \code{x}. This is needed when the dataset cannot be recovered from the model (e.g., when the model was fit inside a function or is not supported by \pkg{insight}), and it is used to find variables named in \code{subset}, \code{by}, \code{wts}, and \code{cluster} that are not in the dataset used to fit the model. In most cases, this does not need to be supplied.}
 
 \item{subset}{an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function. Can also be a vector of row numbers or row names; logical vectors and row numbers refer to the units used to fit the model (i.e., excluding any dropped because of missing values), and row names refer to the original dataset.}
 
@@ -46,7 +46,7 @@ adrf(x, ...)
 
 \item{range}{numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the effect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.}
 
-\item{n}{integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.}
+\item{n}{integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Must be between 2 and 1000. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.}
 
 \item{fwb.args}{an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}.}
 }

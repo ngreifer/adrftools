@@ -282,3 +282,20 @@ test_that("point_contrast() works within subgroups", {
   expect_equal(s$std.error, unname(se), tolerance = 1e-8)
   expect_output(print(s), "ADRF Point Contrasts")
 })
+
+test_that("curve_contrast() requires at least two subgroups", {
+  fit <- lm(Math ~ poly(logBLL, 2) * Male + PIR, data = nhanes3lead)
+  a <- adrf(fit, treat = "logBLL", n = 11, by = ~Male, subset = Male == 1)
+
+  expect_error(curve_contrast(a), "at least two subgroups")
+})
+
+test_that("subset = TRUE selects every subgroup", {
+  fit <- lm(Math ~ poly(logBLL, 2) * Male + PIR, data = nhanes3lead)
+  a <- adrf(fit, treat = "logBLL", n = 11, by = ~Male)
+
+  expect_equal(a(logBLL = c(0, 1), subset = TRUE), a(logBLL = c(0, 1)))
+  expect_equal(summary(a, "linear", method = "satterthwaite", subset = TRUE),
+               summary(a, "linear", method = "satterthwaite"))
+  expect_error(a(logBLL = 1, subset = c(TRUE, FALSE, TRUE)), "one value for each subgroup")
+})

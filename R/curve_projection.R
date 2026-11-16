@@ -6,7 +6,7 @@
 #' @inheritParams summary.curve_est
 #' @param x an [`effect_curve`] object; the output of a call to [adrf()].
 #' @param model the projection model to be fit. Can be a one-sided formula corresponding to the projection model or one of the following strings: `"flat"`, `"linear"`, `"quadratic"`, `"cubic"`.
-#' @param transform whether to compute the projection using a transformation of the linear predictor. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless `object` is an ADRF. See Details.
+#' @param transform whether to compute the projection using a transformation of the linear predictor. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless `x` is an ADRF. See Details.
 #' @param subset an optional logical expression indicating the subset of subgroups for which to compute the projection. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param object,object2 a `curve_projection` object; the output of a call to `curve_projection()`.
 #' @param null the null value for hypothesis test. Default is 0. Set to `NA` to omit tests.
@@ -14,7 +14,7 @@
 #' @param \dots ignored.
 #'
 #' @returns
-#' `curve_projection()` returns an `curve_projection` object, which inherits from [`effect_curve`]. This object is a function that produces estimates of the effect curve projection when called with values of the treatment as inputs. See [`effect_curve`] for details on calling this function.
+#' `curve_projection()` returns a `curve_projection` object, which inherits from [`effect_curve`]. This object is a function that produces estimates of the effect curve projection when called with values of the treatment as inputs. See [`effect_curve`] for details on calling this function.
 #'
 #' The coefficients and covariance matrix of the fitted projection should be extracted with `coef()` and `vcov()`, respectively. `summary()` produces the coefficients and quantities of interest for inference (test statistics, p-values, and confidence intervals). Using `plot()` on a `curve_projection` object plots the projection curve as if it was an effect curve; see [plot.effect_curve()] for adding the projection curve to the plot of the original effect curve.
 #'
@@ -33,7 +33,7 @@
 #'
 #' \deqn{\int_{a_\text{lower}}^{a_\text{upper}}{\left(\hat{\theta}(a)-f^{-1}\left( B(a) \hat{\mathbf{\beta}} \right) \right)^2 da}}
 #'
-#' where \eqn{f^{-1}(y)} is the inverse of the transformation supplied to `transform` (i.e., corresponding to the inverse link function of a generalized linear model), essentially using nonlinear least squares (NLS) to estimate the effect curve projection. This make the coefficients in the projection model correspond to the coefficients on the linear predictor \eqn{B(a)\hat{\mathbf{\beta}}}. In this case, the projection is not simply a linear projection, but it may still be more interpretable than the original ADRF. For example, if the outcome model was originally fit using logistic regression and `transform = TRUE` in the call to `curve_projection()` with `model = "linear"`, the resulting projection would be a logistic curve governed by the intercept and slope of the linear predictor. See Examples for an example of this.
+#' where \eqn{f^{-1}(y)} is the inverse of the transformation supplied to `transform` (i.e., corresponding to the inverse link function of a generalized linear model), essentially using nonlinear least squares (NLS) to estimate the effect curve projection. This makes the coefficients in the projection model correspond to the coefficients on the linear predictor \eqn{B(a)\hat{\mathbf{\beta}}}. In this case, the projection is not simply a linear projection, but it may still be more interpretable than the original ADRF. For example, if the outcome model was originally fit using logistic regression and `transform = TRUE` in the call to `curve_projection()` with `model = "linear"`, the resulting projection would be a logistic curve governed by the intercept and slope of the linear predictor. See Examples for an example of this.
 #'
 #' By default, `transform` is `TRUE`, which means that when the original outcome model had a `family` component (e.g., a generalized linear model) and an ADRF is supplied to `curve_projection()`, the link is automatically supplied to `transform` and the projection model will be a nonlinear function of the linear predictor. Set `transform` to `FALSE` to require that the projection curve be simply the linear predictor with no transformation. Note this can lead to invalid estimates when the outcome is bounded.
 #'
@@ -132,8 +132,10 @@ curve_projection <- function(x, model, transform = TRUE) {
   nm <- colnames(mm)
 
   if (!all(is.finite(mm))) {
-    arg::err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
+    arg::err("evaluating the projection model at the values of {.var {(.treat)}} produced non-finite values, which is not allowed")
   }
+
+  .check_proj_mm(mm)
 
   n_by <- get_n_by(.contrast, .by_grid)
 
@@ -162,16 +164,8 @@ curve_projection <- function(x, model, transform = TRUE) {
       proj_boot <- .attr(x, ".boot")
 
       proj_boot[["t0"]] <- fit$coefficients
-      # With one coefficient, dapply() returns a vector, so the result is
-      # coerced to a matrix with one column per coefficient
-      proj_boot[["t"]] <- proj_boot[["t"]] |>
-        dapply(MARGIN = 1L, return = "matrix",
-               FUN = function(esti) {
-                 .nls_fit(x = mm, y = esti, w = w,
-                          transform = transform_list,
-                          start = proj_coefficients)$coefficients
-               }) |>
-        matrix(ncol = length(proj_coefficients))
+      proj_boot[["t"]] <- .proj_coef_draws(mm, proj_boot[["t"]], w,
+                                           transform_list, proj_coefficients)
 
       proj_boot[["call"]] <- NULL
 
@@ -195,14 +189,8 @@ curve_projection <- function(x, model, transform = TRUE) {
       attr(proj_fn, ".proj_boot") <- proj_boot
     }
     else if (.vcov_type == "posterior") {
-      proj_draws <- .attr(x, ".draws") |>
-        dapply(MARGIN = 1L, return = "matrix",
-               FUN = function(esti) {
-                 .nls_fit(x = mm, y = esti, w = w,
-                          transform = transform_list,
-                          start = proj_coefficients)$coefficients
-               }) |>
-        matrix(ncol = length(proj_coefficients))
+      proj_draws <- .proj_coef_draws(mm, .attr(x, ".draws"), w,
+                                     transform_list, proj_coefficients)
 
       proj_vcov <- stats::cov(proj_draws)
 
@@ -286,6 +274,10 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
     .by_grid <- ss(.by_grid, .subset)
 
     .proj_coefficients <- .proj_coefficients[.s]
+
+    if (!is_null(.proj_vcov)) {
+      .proj_vcov <- ss(.proj_vcov, .s, .s)
+    }
   }
 
   # Only do inference if vcov_type is not empty and conf_level is
@@ -315,7 +307,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
 
       res <- make_df(res_names, length(.s))
 
-      se <- sqrt(diag(ss(.proj_vcov, .s, .s)))
+      se <- sqrt(diag(.proj_vcov))
       zeros <- se < 1e-10
 
       res$std.error <- se
@@ -334,7 +326,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
     # Compute p-values
     if (!anyNA(null)) {
       if (ci.type == "wald") {
-        # Compute test statistic on transformed estimates if null is specified
+        # Compute test statistics when a null value is specified
         res[[stat]][!zeros] <- (.proj_coefficients[!zeros] - null) / se[!zeros]
 
         res$p.value[!zeros] <- switch(stat,
@@ -344,7 +336,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
       else if (.vcov_type == "bootstrap") {
         s <- summary(.proj_boot,
                      conf = 0,
-                     parm = .s,
+                     index = .s,
                      ci.type = ci.type,
                      p.value = TRUE,
                      null = null,
@@ -365,7 +357,6 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
                          "z" = abs(qnorm((1 - conf_level) / 2)),
                          "t" = abs(qt((1 - conf_level) / 2, df)))
 
-        # Reverse transformation
         res$conf.low[] <- .proj_coefficients - t_crit * se
         res$conf.high[] <- .proj_coefficients + t_crit * se
       }
@@ -418,7 +409,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
 
   attr(res, ".curve_type") <- get_curve_type(object)
   attr(res, ".contrast") <- .attr(object, ".contrast")
-  attr(res, ".by_grid") <- .attr(object, ".by_grid")
+  attr(res, ".by_grid") <- .by_grid
   attr(res, ".vcov_type") <- .attr(object, ".vcov_type")
 
   attr(res, ".proj_coefficients") <- .proj_coefficients
@@ -496,7 +487,7 @@ model.matrix.curve_projection <- function(object, ...) {
     model.matrix(data = proj_data)
 
   if (!all(is.finite(mm))) {
-    arg::err("evaluation of the projection model produced non-finite values of {.var {(.treat)}}, which is not allowed")
+    arg::err("evaluating the projection model at the values of {.var {(.treat)}} produced non-finite values, which is not allowed")
   }
 
   n_by <- get_n_by(.contrast, .by_grid)
@@ -528,6 +519,10 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   if (!isTRUE(all.equal(.attr(object, ".proj_transformed_est"),
                         .attr(object2, ".proj_transformed_est")))) {
     arg::err("{.arg object} and {.arg object2} must use the same {.arg transform}")
+  }
+
+  if (is_null(stats::vcov(object))) {
+    arg::err("{.fun anova} cannot be used when {.code vcov = \"none\"} in the original call to {.fun adrf}")
   }
 
   # Process df
@@ -674,6 +669,36 @@ print.anova.curve_projection <- function(x, digits = max(4L, getOption("digits")
   qr.solve(H, t(Js * w)) / d
 }
 
+# Coefficients of the projection fit to each row of `Y` (the bootstrap or
+# posterior draws of the effect curve), one row per draw. With the identity
+# transformation the projection is linear in the draws, so every draw is fit at
+# once from a single QR decomposition rather than one fit per draw.
+.proj_coef_draws <- function(x, Y, w, transform, start) {
+  if (.is_identity_transform(transform)) {
+    wsqt <- sqrt(w)
+
+    return(t(qr.coef(qr(wsqt * x), wsqt * t(Y))))
+  }
+
+  # With one coefficient, dapply() returns a vector, so the result is coerced
+  # to a matrix with one column per coefficient
+  Y |>
+    dapply(MARGIN = 1L, return = "matrix",
+           FUN = function(y) {
+             .nls_fit(x = x, y = y, w = w, transform = transform,
+                      start = start)$coefficients
+           }) |>
+    matrix(ncol = length(start))
+}
+
+.is_identity_transform <- function(transform) {
+  v <- c(-2, .3, 5)
+
+  tv <- try(suppressWarnings(transform$transform(v)), silent = TRUE)
+
+  !null_or_error(tv) && isTRUE(all.equal(tv, v))
+}
+
 .nls_fit <- function(x, y, w = NULL, offset = 0, transform, start = NULL,
                      maxit = 50, tol = 1e-8, jac = FALSE) {
 
@@ -733,4 +758,26 @@ print.anova.curve_projection <- function(x, digits = max(4L, getOption("digits")
     fitted.values = finv(.eta),
     jacobian = if (jac) finv_prime(.eta) * x
   )
+}
+
+# Checks that the coefficients of the projection model can be estimated from
+# the values of the treatment at which the effect curve was computed. Columns
+# are scaled to unit length first so that raw powers of a treatment on a large
+# scale are not mistaken for linearly dependent terms.
+.check_proj_mm <- function(mm) {
+  n <- fnrow(mm)
+
+  if (fncol(mm) > n) {
+    arg::err(c("The projection model has {fncol(mm)} coefficients, but the effect curve was computed at only {n} values of the treatment.",
+               i = "Use a simpler projection model or increase {.arg n} in the call to {.fun adrf}."))
+  }
+
+  d <- sqrt(colSums(mm^2))
+  d[d == 0] <- 1
+
+  if (qr(mm / rep(d, each = n))$rank < fncol(mm)) {
+    arg::err("the terms in the projection model are linearly dependent at the values of the treatment at which the effect curve was computed")
+  }
+
+  invisible(mm)
 }

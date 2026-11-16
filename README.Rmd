@@ -101,6 +101,13 @@ summary(adrf_bll, hypothesis = "flat")
 summary(adrf_bll, hypothesis = "linear")
 ```
 
+```{r, include = FALSE}
+# Values reported in the text below
+fmt <- function(x, d) sub("^(-?)0", "\\1", formatC(x, format = "f", digits = d))
+p_linear <- summary(adrf_bll, hypothesis = "linear")$p.value
+range_bll <- round(range(attr(adrf_bll, ".values")), 4)
+```
+
 The results indicate that the ADRF is not flat, but there isn't enough evidence to claim it is nonlinear in the range specified. We might project a linear model onto the ADRF to produce a more interpretable summary:
 
 ```{r}
@@ -119,8 +126,12 @@ To examine the coefficient describing the projection, we can use `summary()` on 
 summary(proj)
 ```
 
+```{r, include = FALSE}
+b_linear <- coef(proj)[["logBLL"]]
+```
+
 Based on the above, we might conclude the following:
 
-> There is some relationship between `logBLL` and `Math` adjusting for the included potential confounders, based on rejection of the hypothesis that the ADRF is flat for `logBLL` values between -0.3567 and 2.4248 (p < .0001). There isn't evidence that the ADRF is nonlinear within this range (p = .3153). The linear projection has a coefficient of -.643 (p < .0001), indicating that the expected potential outcome of `Math` decreases by this amount for each unit increase in `logBLL`.
+> There is some relationship between `logBLL` and `Math` adjusting for the included potential confounders, based on rejection of the hypothesis that the ADRF is flat for `logBLL` values between `r range_bll[1]` and `r range_bll[2]` (p < .0001). There isn't evidence that the ADRF is nonlinear within this range (p = `r fmt(p_linear, 4)`). The linear projection has a coefficient of `r fmt(b_linear, 3)` (p < .0001), indicating that the expected potential outcome of `Math` decreases by this amount for each unit increase in `logBLL`.
 
 See `vignette("adrftools")` for more information on how to use *adrftools* and the other features available.

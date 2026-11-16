@@ -10,7 +10,7 @@
 #'
 #' f({treat}, subset = NULL)}
 #'
-#' @param \{treat\} the values of the treatment at which to evaluate the effect curve.
+#' @param \{treat\} the values of the treatment at which to evaluate the effect curve. These must be within the range of the grid points. See Details.
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to compute estimates. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param x a `curve_est` object; the output of an `effect_curve` object call.
 #' @param digits the number of digits to display.
@@ -21,6 +21,8 @@
 #'
 #' @details
 #' An `effect_curve` object contains a set of grid points on which the effect curve is initially evaluated. The effect curve estimates produced by a call to the `effect_curve` object are interpolated using 3rd-degree local polynomial regression with a Gaussian kernel and bandwidth equal to half the distance between grid points, unless they coincide with the grid points; this means the produced estimates are linear combinations of the grid point estimates.
+#'
+#' The effect curve can only be evaluated within the range of the grid points, which is set by the `range` argument to [adrf()]; local polynomial regression cannot reliably extrapolate beyond it. Values outside the range of the grid points by no more than 0.1% of its width (e.g., an end point supplied as it was printed, after rounding) are treated as the nearest end point, and values farther outside give an error. To estimate the effect curve at more extreme values of the treatment, supply a wider range to `range` in the call to [adrf()].
 #'
 #' @seealso
 #' * [adrf()] for generating an effect curve
@@ -122,7 +124,7 @@ NULL
   fn <- function(x, subset = NULL) {
     values <- get(.treat, inherits = FALSE)
 
-    arg::arg_numeric(values, add_quotes(.treat, "`"))
+    arg::arg_numeric(values, .treat)
 
     # subset
     if (is_null(.contrast) && anyv(rlang::fn_fmls_names(), "subset")) {
@@ -142,14 +144,18 @@ NULL
 
     n <- length(values)
 
+    # Values just outside the grid are moved to its ends; the estimates keep
+    # the values requested as labels
+    values_in <- .snap_to_grid(values, .values, .treat)
+
     val_mat <- matrix(0, nrow = n, ncol = length(.values))
 
-    matches <- max.col(-abs(outer(values, .values, "-")), "first")
+    matches <- max.col(-abs(outer(values_in, .values, "-")), "first")
 
-    to_interp <- abs(values - .values[matches]) > .grid_tol(.values)
+    to_interp <- abs(values_in - .values[matches]) > .grid_tol(.values)
 
     if (any(to_interp)) {
-      val_mat[to_interp, ] <- get_locpoly_w(x = values[to_interp],
+      val_mat[to_interp, ] <- get_locpoly_w(x = values_in[to_interp],
                                             v = .values)
     }
 
@@ -231,7 +237,6 @@ NULL
   attr(fn, ".contrast") <- .contrast
   attr(fn, ".family") <- .family
   attr(fn, ".df") <- .df
-  attr(fn, ".family") <- .family
   attr(fn, ".response") <- .response
   attr(fn, ".call") <- .call
 

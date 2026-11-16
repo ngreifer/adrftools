@@ -415,3 +415,73 @@ all_apply <- function(X, FUN, ...) {
   if (is.finite(df)) max(1, floor(df))
   else Inf
 }
+
+# Simultaneous critical values and p-values for Wald inference, from the
+# multivariate t (or normal) distribution with correlation matrix `corr`. Both
+# use the same settings of the Genz-Bretz algorithm, so intervals from
+# summary() and bands from plot() agree to within its Monte Carlo error. With
+# 51 highly correlated estimates, these settings give critical values within
+# about 1e-3 and p-values within about 1e-4 of their exact values.
+.mvt_maxpts <- 1e5
+.mvt_abseps <- 1e-5
+
+.mvt_crit <- function(conf_level, corr, df = Inf) {
+  t_crit <- try(mvtnorm::qmvt(conf_level,
+                              tail = "both.tails",
+                              df = .mvt_df(df), corr = corr,
+                              maxpts = .mvt_maxpts,
+                              abseps = .mvt_abseps)$quantile,
+                silent = TRUE)
+
+  if (null_or_error(t_crit)) {
+    arg::err(c("There was an error computing simultaneous confidence intervals.",
+               x = if (inherits(t_crit, "try-error")) conditionMessage(.attr(t_crit, "condition"))))
+  }
+
+  t_crit
+}
+
+# P(max_j |T_j| >= |z|) for each value of `z`. The p-value is a decreasing
+# function of |z|, so it is computed once per distinct value and made
+# monotone (taking the larger, i.e., conservative, value when Monte Carlo error
+# reverses the order). It lies between the pointwise p-value and its
+# Bonferroni bound, so when these are within the precision of the algorithm,
+# the bound is used without calling pmvt(); this skips the estimates far from
+# the null, which are the slowest to compute accurately.
+.mvt_p_values <- function(z, corr, df = Inf) {
+  k <- fnrow(corr)
+  df <- .mvt_df(df)
+
+  az <- abs(z)
+  u <- sort(unique(az))
+
+  p_point <- {
+    if (is.finite(df)) 2 * stats::pt(-u, df)
+    else 2 * stats::pnorm(-u)
+  }
+
+  p_bonf <- pmin(1, k * p_point)
+
+  p <- p_bonf
+
+  todo <- which(p_bonf - p_point > 1e-4)
+
+  for (i in todo) {
+    pr <- try(1 - mvtnorm::pmvt(lower = rep.int(-u[i], k),
+                                upper = rep.int(u[i], k),
+                                df = df, corr = corr,
+                                maxpts = .mvt_maxpts,
+                                abseps = .mvt_abseps),
+              silent = TRUE)
+
+    if (null_or_error(pr)) {
+      arg::err("there was an error computing simultaneous p-values")
+    }
+
+    p[i] <- min(max(pr, p_point[i]), p_bonf[i])
+  }
+
+  p <- rev(cummax(rev(p)))
+
+  p[match(az, u)]
+}

@@ -255,32 +255,21 @@ test_that("vcov() of estimates without uncertainty is NULL", {
   expect_named(coef(a(logBLL = c(0, 1))), c("logBLL = 0", "logBLL = 1"))
 })
 
-test_that("a transformation that cannot be applied to every estimate is replaced by the identity", {
+test_that("a transformation that cannot be applied to every estimate gives an error", {
   fit <- lm(Math ~ poly(logBLL, 2) + Male + PIR, data = nhanes3lead)
   a <- adrf(fit, treat = "logBLL", n = 11)
 
   est <- a(logBLL = c(0, 1, 2))
   expect_true(all(coef(est) > 1))
 
-  s_u <- summary(est, simultaneous = FALSE, transform = FALSE)
-
   # The estimates are outside the domain of the logit and probit
   for (tr in list(qlogis, binomial("probit"))) {
-    s_bad <- summary(est, simultaneous = FALSE, transform = tr)
-
-    expect_equal(as.data.frame(s_bad), as.data.frame(s_u), tolerance = 1e-10)
-
-    rb_bad <- ribbon_data(plot(a, simultaneous = FALSE, transform = tr))
-    rb_u <- ribbon_data(plot(a, simultaneous = FALSE, transform = FALSE))
-    expect_equal(rb_bad$ymin, rb_u$ymin, tolerance = 1e-10)
-    expect_equal(rb_bad$ymax, rb_u$ymax, tolerance = 1e-10)
+    expect_error(summary(est, simultaneous = FALSE, transform = tr), "cannot be applied")
+    expect_error(plot(a, simultaneous = FALSE, transform = tr), "cannot be applied")
+    expect_error(summary(a, hypothesis = "flat", method = "satterthwaite", transform = tr),
+                 "cannot be applied")
+    expect_error(curve_projection(a, "linear", transform = tr), "cannot be applied")
   }
-
-  o_bad <- summary(a, hypothesis = "flat", method = "satterthwaite",
-                   transform = qlogis)
-  o_u <- summary(a, hypothesis = "flat", method = "satterthwaite", transform = FALSE)
-  expect_false(attr(o_bad, "transformed"))
-  expect_equal(o_bad$p.value, o_u$p.value, tolerance = 1e-10)
 })
 
 test_that("transform accepts only transformations with a known inverse and derivative", {
@@ -319,4 +308,25 @@ test_that("estimates on a very small scale are printed with enough digits", {
   out <- capture.output(print(s))
   expect_true(any(grepl("0.000008", out, fixed = TRUE)))
   expect_false(any(grepl(" 0 ", out, fixed = TRUE)))
+})
+
+test_that("a null value outside the domain of the transformation gives an error", {
+  fit <- glm(I(Block >= 14) ~ poly(logBLL, 2) + Male + PIR,
+             data = nhanes3lead, family = binomial)
+  a <- adrf(fit, treat = "logBLL", n = 11)
+  est <- a(logBLL = c(0, 1, 2))
+
+  for (nl in c(0, 1, 1.5, -.2)) {
+    expect_error(summary(est, null = nl, simultaneous = FALSE), "outside the domain")
+    expect_error(summary(a, hypothesis = nl, method = "satterthwaite"), "hypothesis")
+
+    # Without the transformation, the test is performed on the original scale
+    s_u <- summary(est, null = nl, simultaneous = FALSE, transform = FALSE)
+    expect_true(all(is.finite(s_u$p.value)))
+    expect_no_error(summary(a, hypothesis = nl, method = "satterthwaite", transform = FALSE))
+  }
+
+  # A null value inside the domain is transformed
+  s_in <- summary(est, null = .1, simultaneous = FALSE)
+  expect_false("std.error" %in% names(s_in))
 })

@@ -31,7 +31,7 @@ curve_projection(x, model, transform = TRUE)
 
 \item{model}{the projection model to be fit. Can be a one-sided formula corresponding to the projection model or one of the following strings: \code{"flat"}, \code{"linear"}, \code{"quadratic"}, \code{"cubic"}.}
 
-\item{transform}{whether to compute the projection using a transformation of the linear predictor. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless \code{object} is an ADRF. See Details.}
+\item{transform}{whether to compute the projection using a transformation of the linear predictor. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless \code{x} is an ADRF. See Details.}
 
 \item{object, object2}{a \code{curve_projection} object; the output of a call to \code{curve_projection()}.}
 
@@ -48,7 +48,7 @@ curve_projection(x, model, transform = TRUE)
 \item{\dots}{ignored.}
 }
 \value{
-\code{curve_projection()} returns an \code{curve_projection} object, which inherits from \code{\link{effect_curve}}. This object is a function that produces estimates of the effect curve projection when called with values of the treatment as inputs. See \code{\link{effect_curve}} for details on calling this function.
+\code{curve_projection()} returns a \code{curve_projection} object, which inherits from \code{\link{effect_curve}}. This object is a function that produces estimates of the effect curve projection when called with values of the treatment as inputs. See \code{\link{effect_curve}} for details on calling this function.
 
 The coefficients and covariance matrix of the fitted projection should be extracted with \code{coef()} and \code{vcov()}, respectively. \code{summary()} produces the coefficients and quantities of interest for inference (test statistics, p-values, and confidence intervals). Using \code{plot()} on a \code{curve_projection} object plots the projection curve as if it was an effect curve; see \code{\link[=plot.effect_curve]{plot.effect_curve()}} for adding the projection curve to the plot of the original effect curve.
 }
@@ -69,7 +69,7 @@ When \code{transform} is specified, the projection minimizes the distance betwee
 
 \deqn{\int_{a_\text{lower}}^{a_\text{upper}}{\left(\hat{\theta}(a)-f^{-1}\left( B(a) \hat{\mathbf{\beta}} \right) \right)^2 da}}
 
-where \eqn{f^{-1}(y)} is the inverse of the transformation supplied to \code{transform} (i.e., corresponding to the inverse link function of a generalized linear model), essentially using nonlinear least squares (NLS) to estimate the effect curve projection. This make the coefficients in the projection model correspond to the coefficients on the linear predictor \eqn{B(a)\hat{\mathbf{\beta}}}. In this case, the projection is not simply a linear projection, but it may still be more interpretable than the original ADRF. For example, if the outcome model was originally fit using logistic regression and \code{transform = TRUE} in the call to \code{curve_projection()} with \code{model = "linear"}, the resulting projection would be a logistic curve governed by the intercept and slope of the linear predictor. See Examples for an example of this.
+where \eqn{f^{-1}(y)} is the inverse of the transformation supplied to \code{transform} (i.e., corresponding to the inverse link function of a generalized linear model), essentially using nonlinear least squares (NLS) to estimate the effect curve projection. This makes the coefficients in the projection model correspond to the coefficients on the linear predictor \eqn{B(a)\hat{\mathbf{\beta}}}. In this case, the projection is not simply a linear projection, but it may still be more interpretable than the original ADRF. For example, if the outcome model was originally fit using logistic regression and \code{transform = TRUE} in the call to \code{curve_projection()} with \code{model = "linear"}, the resulting projection would be a logistic curve governed by the intercept and slope of the linear predictor. See Examples for an example of this.
 
 By default, \code{transform} is \code{TRUE}, which means that when the original outcome model had a \code{family} component (e.g., a generalized linear model) and an ADRF is supplied to \code{curve_projection()}, the link is automatically supplied to \code{transform} and the projection model will be a nonlinear function of the linear predictor. Set \code{transform} to \code{FALSE} to require that the projection curve be simply the linear predictor with no transformation. Note this can lead to invalid estimates when the outcome is bounded.
 }

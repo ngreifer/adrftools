@@ -7,7 +7,7 @@
 \alias{curve_est-class}
 \title{Effect curve objects}
 \arguments{
-\item{\{treat\}}{the values of the treatment at which to evaluate the effect curve.}
+\item{\{treat\}}{the values of the treatment at which to evaluate the effect curve. These must be within the range of the grid points. See Details.}
 
 \item{subset}{an optional logical expression indicating the subset of the subgroups for which to compute estimates. Can only be used when \code{by} was supplied to the original call to \code{\link[=adrf]{adrf()}}, and only to refer to variables defining subgroups.}
 
@@ -31,6 +31,8 @@ f({treat}, subset = NULL)}
 }
 \details{
 An \code{effect_curve} object contains a set of grid points on which the effect curve is initially evaluated. The effect curve estimates produced by a call to the \code{effect_curve} object are interpolated using 3rd-degree local polynomial regression with a Gaussian kernel and bandwidth equal to half the distance between grid points, unless they coincide with the grid points; this means the produced estimates are linear combinations of the grid point estimates.
+
+The effect curve can only be evaluated within the range of the grid points, which is set by the \code{range} argument to \code{\link[=adrf]{adrf()}}; local polynomial regression cannot reliably extrapolate beyond it. Values outside the range of the grid points by no more than 0.1\% of its width (e.g., an end point supplied as it was printed, after rounding) are treated as the nearest end point, and values farther outside give an error. To estimate the effect curve at more extreme values of the treatment, supply a wider range to \code{range} in the call to \code{\link[=adrf]{adrf()}}.
 }
 \examples{
 data("nhanes3lead")

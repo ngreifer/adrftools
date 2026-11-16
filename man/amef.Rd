@@ -9,7 +9,7 @@ amef(x, eps = 1e-05)
 \arguments{
 \item{x}{an \code{adrf_curve} object; the output of a call to \code{\link[=adrf]{adrf()}}.}
 
-\item{eps}{numeric; the step size to use when calculating numerical derivatives. Default is \code{1e-5} (.00001). See Details.}
+\item{eps}{numeric; the step size to use when calculating numerical derivatives, relative to the range of treatment values at which the ADRF was computed: the step is \code{eps} times a quarter of that range. Default is \code{1e-5} (.00001). See Details.}
 }
 \value{
 An object of class \code{amef_curve}, which inherits from \code{\link{effect_curve}}.
@@ -18,7 +18,7 @@ An object of class \code{amef_curve}, which inherits from \code{\link{effect_cur
 \code{amef()} computes the average marginal effect function (AMEF), the derivative of the average dose-response function (ADRF), from an \code{adrf_curve} object.
 }
 \details{
-The AMEF is calculated numerically using the central finite derivative formula:
+The AMEF is calculated numerically using the central finite difference formula:
 
 \deqn{\frac{df(x)}{dx} \approx \frac{f(x + e) - f(x - e)}{2e}}
 
