@@ -3,6 +3,9 @@
 ## To Do
 
 - M19 follow-ups: the omnibus test still rejects 6.6% to 8.0% at .05 with a flexible logistic model (n <= 1000) or errors largest at the treatment extremes (n <= 500), from the variability of the HC2 estimate; consider a degrees-of-freedom correction or another reference distribution. The size of CR2 has not been checked.
+- Decide whether the default `hypothesis` for reference curves should be `"flat"` (identical to the flat ADRF test for any reference) rather than 0, and correct the docs that call the reference-curve and AMEF tests equivalent to the flat test (`?reference_curve` example, vignette); see `_dev/omnibus-size-study/README.md`, equivalent hypotheses.
+- Revisit the default of `integrate` (now `"uniform"`); the test-choice study favors `"empirical"` (`_dev/omnibus-test-choice/README.md`).
+- Implement `shift_curve()` and `ade()` per `_dev/plan-shift-effects.md`; settle its open questions first (default shift size, the name `shift_fun`).
 - Decide which items in `_dev/feature-ideas.md` to pursue.
 - Multivariate treatments (`_dev/adrf_mv.R`), to resume later.
 
@@ -41,3 +44,7 @@
 - 2026-11-16: Checked the HC2 size with a logistic model and three heteroskedastic patterns (`_dev/omnibus-size-study/run-glm-het.R`, README).
 - 2026-11-16: Updated the `_dev` notes for the variance changes: a section on HC2, HC1, CR2, and CR1 in `variance-theory.md`, current results and file descriptions in `test-suite.md` (254 tests, 1,082 expectations, 95.7% line coverage), and implemented ideas struck through in `feature-ideas.md`.
 - 2026-11-16: Finished R38: `adrf()` evaluates the model frame on the whole grid and builds the model matrix one treatment value at a time from it (peak memory on the `?adrf` example 118 MB to 53 MB at `n = 51`, 447 MB to 169 MB at `n = 201`); the bootstrap stores the columns that are identical at every treatment value once, found by comparing them. Adversarial formulas (row-dependent variables, a variable that reads the treatment without naming it, and others) are tested against predictions on the whole grid.
+- 2026-11-17: Compared omnibus tests of equivalent hypotheses (`_dev/omnibus-size-study/run-equiv.R`, README): all hold their size, but their power differs, and the test of a reference curve against 0 depends on the reference.
+- 2026-11-16: Test-choice study (`_dev/omnibus-test-choice/`): with a fixed (oracle) covariance, every statistic holds its size; testing the ADRF itself with empirical treatment weighting had the best or near-best mean and worst-case power for both flatness and linearity.
+- 2026-11-16: Added `integrate = c("uniform", "empirical")` to `summary.effect_curve()` and `curve_projection()`; `adrf()` stores a kernel density estimate of the treatment for each subgroup (`_dev/plan-density-weights.md`).
+- 2026-11-16: Plan for shift-response curves and the average derivative effect (`_dev/plan-shift-effects.md`): `shift_curve()` generalizes the counterfactual treatment in `.adrf_fit_one()` to a function of the observed treatment, and `ade()` is the derivative of a shift curve at 0.

@@ -2205,6 +2205,74 @@ pool_est <- function(est.list, vcov.list = NULL) {
 }
 
 # Get quadrature weights for trapezoidal Riemann sum along given grid
+# Kernel density estimates of the treatment in each subgroup, for weighting
+# the grid by the distribution of the treatment. `A_list`, `w_list`, and
+# `by_list` hold, for each imputed dataset, the treatment values, target
+# weights, and subgroup codes of the units used; with multiply imputed data,
+# each dataset's units get weight 1 / m. Each density uses stats::density()
+# with the default bandwidth of the subgroup's treatment values, and all are
+# evaluated on a common fine grid spanning the treatment values, so a density
+# can be interpolated at any grid point (including points added later, such as
+# a reference value). Returns the fine grid `x`, a matrix `y` with one column
+# per subgroup, and each subgroup's total target weight `tot`, used to pool
+# subgroups for contrasts.
+.get_treat_density <- function(A_list, w_list, by_list, n_by, n_fine = 512L) {
+  m <- length(A_list)
+
+  A <- unlist(A_list)
+  w <- unlist(lapply(w_list, function(wi) wi / m))
+  b <- unlist(by_list)
+
+  bws <- vapply(seq_len(n_by), function(k) {
+    Ak <- A[b == k]
+    if (length(unique(Ak)) > 1L) stats::bw.nrd0(Ak) else 1
+  }, numeric(1L))
+
+  x <- seq(min(A) - 3 * max(bws), max(A) + 3 * max(bws), length.out = n_fine)
+
+  y <- vapply(seq_len(n_by), function(k) {
+    i <- b == k
+    stats::density(A[i], weights = w[i] / sum(w[i]), bw = bws[k],
+                   from = x[1L], to = x[n_fine], n = n_fine)$y
+  }, numeric(n_fine))
+
+  list(x = x,
+       y = matrix(y, nrow = n_fine),
+       tot = vapply(seq_len(n_by), function(k) sum(w[b == k]), numeric(1L)))
+}
+
+# Weights of the grid points for omnibus tests and projections, one vector
+# per block of estimates (subgroup or contrast) in `blocks`: the trapezoidal
+# weights of the grid ("uniform"), or those times the density of the
+# treatment at each grid point ("empirical"), normalized to sum to 1
+get_grid_w <- function(values, integrate = "uniform", treat_density = NULL,
+                       blocks = 1L) {
+  w0 <- get_trapezoidal_w(values)
+
+  if (integrate == "uniform") {
+    return(rep.int(list(w0), length(blocks)))
+  }
+
+  lapply(blocks, function(k) {
+    f <- stats::approx(treat_density[["x"]], treat_density[["y"]][, k],
+                       xout = values, rule = 2L)$y
+    w <- w0 * pmax(f, 0)
+    w / sum(w)
+  })
+}
+
+# Processes the `integrate` argument of summary.effect_curve() and
+# curve_projection()
+process_integrate <- function(integrate, x) {
+  integrate <- arg::match_arg(integrate, c("uniform", "empirical"))
+
+  if (integrate == "empirical" && is_null(.attr(x, ".treat_density"))) {
+    arg::err("{.code integrate = \"empirical\"} requires the distribution of the treatment, which is stored by {.fun adrf} in versions of {.pkg adrftools} after 0.1.0; rerun {.fun adrf} to use it")
+  }
+
+  integrate
+}
+
 get_trapezoidal_w <- function(grid) {
   val_diff <- diff1(grid)
 

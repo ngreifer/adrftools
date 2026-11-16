@@ -13,6 +13,7 @@
   transform = TRUE,
   df = NULL,
   nsim = 1e+06,
+  integrate = "uniform",
   ...
 )
 
@@ -32,6 +33,8 @@
 \item{df}{the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and \code{Inf} otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see \code{\link[=adrf]{adrf()}}).}
 
 \item{nsim}{when \code{method} is \code{"sim"}, the number of iterations used to simulate the p-values. Higher numbers give more accurate p-values subject to less Monte Carlo error but are slower and require more memory. Default is 1,000,000.}
+
+\item{integrate}{string; how the deviations of the effect curve from the hypothesized curve are weighted across treatment values in the test statistic. Allowable options include \code{"uniform"} (the default), which weights all treatment values in the range of the effect curve equally, and \code{"empirical"}, which weights them by an estimate of the density of the treatment. See Details.}
 
 \item{\dots}{when \code{method} is \code{"imhof"} or \code{"davies"}, further arguments passed to \pkgfun{CompQuadForm}{imhof} or \pkgfun{CompQuadForm}{davies}, respectively.}
 
@@ -74,6 +77,13 @@ When the effect curve is an ADRF and the outcomes are bounded (e.g., a probabili
 The tests above assume the estimates along the effect curve are normally distributed (or t-distributed when \code{df} is not \code{Inf}). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. How \code{transform} is used depends on \code{hypothesis}. When \code{hypothesis} is a number, the estimates and that number are transformed to be on an unbounded scale, and the test is performed on the transformed estimates, whose distribution is computed using the delta method (or from the transformed bootstrap or posterior draws). When \code{hypothesis} is a string or formula, the estimates are not transformed; instead, the projection is fit with the inverse of the transformation as its inverse link, as described in \code{\link[=curve_projection]{curve_projection()}}, and the residuals of the estimates around it are tested. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. A value of \code{hypothesis} outside the domain of the transformation (e.g., \code{hypothesis = 0} with a logit transformation) gives an error; set \code{transform = FALSE} to perform the test on the original scale. A transformation supplied to \code{transform} that cannot be applied to every estimate or draw also gives an error, and when \code{transform = TRUE}, the estimates are left untransformed with a warning in that case.
 
 Tests on the transformed and untransformed ADRFs correspond to different hypotheses; the difference is not simply a matter of the appropriate distribution of the statistic. For example, for a binary outcome model with a logistic transformation, testing that the transformed ADRF is linear corresponds to testing whether the ADRF is a sigmoid function, whereas testing that the untransformed ADRF is linear corresponds to testing whether the ADRF is a straight line. These choices correspond to how the projection of the ADRF is formed; see \code{\link[=curve_projection]{curve_projection()}} for details. See Examples for an example with a binary outcome. In the example, there is evidence to reject that the transformed ADRF is linear for one of the groups, indicating that a sigmoid function is not sufficient for describing the ADRF, but there is indeterminate evidence (at the .05 level) to reject that the untransformed ADRF is linear for either group, indicating that a linear function is sufficient for describing the ADRF (at least in the treatment range examined).
+}
+
+\subsection{Weighting treatment values}{
+
+The test statistic integrates the squared deviations of the effect curve from the hypothesized curve over the range of treatment values at which the effect curve was computed, and \code{integrate} controls how treatment values are weighted in that integral. With \code{integrate = "uniform"}, every treatment value in the range counts equally. With \code{integrate = "empirical"}, the integral is weighted by the density of the treatment, so departures from the null hypothesis count in proportion to how common the treatment values at which they occur are; for example, with \code{hypothesis = "flat"}, the statistic is the variance of the ADRF over the distribution of the treatment. The null hypothesis is the same under either option; only the test statistic, and therefore the power against different alternatives, differs. Because the effect curve is estimated least precisely where the treatment is sparse, \code{integrate = "empirical"} gives the least precise estimates the least weight, which can increase power when the treatment is unevenly distributed; when it is evenly distributed, the two options give nearly the same result.
+
+The density is estimated using \code{\link[=density]{density()}} with its default bandwidth from the treatment values of all units used to compute the effect curve (including those outside \code{range}), weighted by \code{wts}, separately within each subgroup defined by \code{by}; a contrast between subgroups uses the density of the two subgroups pooled. The density is treated as known. Because the integral is over the range of the effect curve, with the default \code{range} of .95 in \code{\link[=adrf]{adrf()}}, the test concerns the middle 95\% of the distribution of the treatment; setting \code{range = 1} makes it concern the whole distribution.
 }
 }
 \examples{

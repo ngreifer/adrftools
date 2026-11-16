@@ -8,7 +8,7 @@
 \alias{anova.curve_projection}
 \title{Project an effect curve onto a simpler model}
 \usage{
-curve_projection(x, model, transform = TRUE)
+curve_projection(x, model, transform = TRUE, integrate = "uniform")
 
 \method{summary}{curve_projection}(
   object,
@@ -32,6 +32,8 @@ curve_projection(x, model, transform = TRUE)
 \item{model}{the projection model to be fit. Can be a one-sided formula corresponding to the projection model or one of the following strings: \code{"flat"}, \code{"linear"}, \code{"quadratic"}, \code{"cubic"}.}
 
 \item{transform}{whether to compute the projection using a transformation of the linear predictor. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless \code{x} is an ADRF. See Details.}
+
+\item{integrate}{string; how treatment values are weighted in fitting the projection. Allowable options include \code{"uniform"} (the default), which weights all treatment values in the range of the effect curve equally, and \code{"empirical"}, which weights them by an estimate of the density of the treatment. The weighting defines the projection, so the coefficients differ between the two options. See Details.}
 
 \item{object, object2}{a \code{curve_projection} object; the output of a call to \code{curve_projection()}.}
 
@@ -72,6 +74,11 @@ When \code{transform} is specified, the projection minimizes the distance betwee
 where \eqn{f^{-1}(y)} is the inverse of the transformation supplied to \code{transform} (i.e., corresponding to the inverse link function of a generalized linear model), essentially using nonlinear least squares (NLS) to estimate the effect curve projection. This makes the coefficients in the projection model correspond to the coefficients on the linear predictor \eqn{B(a)\hat{\mathbf{\beta}}}. In this case, the projection is not simply a linear projection, but it may still be more interpretable than the original ADRF. For example, if the outcome model was originally fit using logistic regression and \code{transform = TRUE} in the call to \code{curve_projection()} with \code{model = "linear"}, the resulting projection would be a logistic curve governed by the intercept and slope of the linear predictor. See Examples for an example of this.
 
 By default, \code{transform} is \code{TRUE}, which means that when the original outcome model had a \code{family} component (e.g., a generalized linear model) and an ADRF is supplied to \code{curve_projection()}, the link is automatically supplied to \code{transform} and the projection model will be a nonlinear function of the linear predictor. Set \code{transform} to \code{FALSE} to require that the projection curve be simply the linear predictor with no transformation. Note this can lead to invalid estimates when the outcome is bounded.
+}
+
+\subsection{Weighting treatment values}{
+
+With \code{integrate = "empirical"}, the integrals above are weighted by the density of the treatment, so the projection is the best approximation to the effect curve over the distribution of the treatment rather than over its range, and parts of the curve where the treatment is common count more than parts where it is sparse. The density is estimated as described in \code{\link[=summary.effect_curve]{summary.effect_curve()}}. Because the weighting changes the projection itself, \code{anova()} requires both projections to use the same \code{integrate}.
 }
 
 \subsection{Comparing projection models}{

@@ -329,6 +329,14 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
   attr(vcov_type, "clustered") <- !is_null(cl_list.list[[1L]][["cluster"]])
 
+  # Density of the treatment in each subgroup, from all units used (not only
+  # those within `range`), for weighting by the treatment distribution
+  .treat_density <- .get_treat_density(
+    lapply(seq_len(m), function(.i) model_data.list[[.i]][[treat]][s.list[[.i]]]),
+    lapply(seq_len(m), function(.i) wts.list[[.i]][s.list[[.i]]]),
+    by_codes, n_by
+  )
+
   .make_fun(.est = drop(unname(.est)),
             .vcov = unname(.vcov),
             .values = values,
@@ -340,7 +348,8 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
             .family = .family,
             .df = .df,
             .response = .response,
-            .by_grid = by_grid)
+            .by_grid = by_grid,
+            .treat_density = .treat_density)
 }
 
 # Computes the ADRF estimates for one fitted model: the point estimates and,

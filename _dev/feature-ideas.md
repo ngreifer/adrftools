@@ -20,13 +20,13 @@ Collected while auditing the package and writing the test suite. Ordered roughly
 
 ## Estimands
 
-**Shift and incremental interventions.** `E[Y(A + delta)]` (or `E[Y(A * (1 + delta))]`) averaged over the observed treatment distribution answers "what if everyone's exposure were reduced by delta", which is often the question asked with continuous exposures and needs less extrapolation than the ADRF. The averaging machinery in `.effect_curve_internal()` handles it directly by setting the counterfactual treatment per unit instead of to a constant.
+**Shift and incremental interventions.** `E[Y(A + delta)]` (or `E[Y(A * (1 + delta))]`) averaged over the observed treatment distribution answers "what if everyone's exposure were reduced by delta", which is often the question asked with continuous exposures and needs less extrapolation than the ADRF. The averaging machinery in `.effect_curve_internal()` handles it directly by setting the counterfactual treatment per unit instead of to a constant. Planned (2026-11-16) as `shift_curve()`, with user-supplied shift functions; see `_dev/plan-shift-effects.md`.
 
 **Ratio contrasts.** `reference_curve(type = "ratio")` and `curve_contrast(type = "ratio")` for risk ratios and rate ratios, with inference on the log scale.
 
 **Thresholds.** The treatment value at which the ADRF crosses a given outcome value, or the minimum effective dose, with an interval by inverting the simultaneous band.
 
-**Average derivative effect.** The AMEF averaged over the treatment distribution (a single number summarizing the curve's slope), with its variance from the existing contrast-matrix approach.
+**Average derivative effect.** The AMEF averaged over the treatment distribution (a single number summarizing the curve's slope), with its variance from the existing contrast-matrix approach. Planned (2026-11-16) differently: `ade()` computes $E[\partial_a \mu(A, X)]$, the derivative at 0 of a shift curve, which is not a functional of the ADRF; the AMEF averaged over the treatment density was set aside as hard to interpret, and `curve_projection(integrate = "empirical")` already gives a density-weighted slope. See `_dev/plan-shift-effects.md`.
 
 **Multi-category outcomes.** Ordinal and multinomial models (`polr`, `ordinal_weightit`, `multinom_weightit`, `nnet::multinom`, *brms* `categorical`) return one prediction per category, which `adrf()` cannot currently average. An ADRF per category, labeled like `by` groups, would make them work, and with a `type` suited to each model (`"probs"` for `polr`).
 

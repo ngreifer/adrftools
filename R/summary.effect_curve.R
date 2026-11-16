@@ -8,6 +8,7 @@
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to perform tests. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param transform whether to perform the test on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `object` is an ADRF object. See Details.
 #' @param df the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
+#' @param integrate string; how the deviations of the effect curve from the hypothesized curve are weighted across treatment values in the test statistic. Allowable options include `"uniform"` (the default), which weights all treatment values in the range of the effect curve equally, and `"empirical"`, which weights them by an estimate of the density of the treatment. See Details.
 #' @param nsim when `method` is `"sim"`, the number of iterations used to simulate the p-values. Higher numbers give more accurate p-values subject to less Monte Carlo error but are slower and require more memory. Default is 1,000,000.
 #' @param \dots when `method` is `"imhof"` or `"davies"`, further arguments passed to \pkgfun{CompQuadForm}{imhof} or \pkgfun{CompQuadForm}{davies}, respectively.
 #' @param x a `summary.effect_curve` object.
@@ -44,6 +45,12 @@
 #' The tests above assume the estimates along the effect curve are normally distributed (or t-distributed when `df` is not `Inf`). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. How `transform` is used depends on `hypothesis`. When `hypothesis` is a number, the estimates and that number are transformed to be on an unbounded scale, and the test is performed on the transformed estimates, whose distribution is computed using the delta method (or from the transformed bootstrap or posterior draws). When `hypothesis` is a string or formula, the estimates are not transformed; instead, the projection is fit with the inverse of the transformation as its inverse link, as described in [curve_projection()], and the residuals of the estimates around it are tested. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. A value of `hypothesis` outside the domain of the transformation (e.g., `hypothesis = 0` with a logit transformation) gives an error; set `transform = FALSE` to perform the test on the original scale. A transformation supplied to `transform` that cannot be applied to every estimate or draw also gives an error, and when `transform = TRUE`, the estimates are left untransformed with a warning in that case.
 #'
 #' Tests on the transformed and untransformed ADRFs correspond to different hypotheses; the difference is not simply a matter of the appropriate distribution of the statistic. For example, for a binary outcome model with a logistic transformation, testing that the transformed ADRF is linear corresponds to testing whether the ADRF is a sigmoid function, whereas testing that the untransformed ADRF is linear corresponds to testing whether the ADRF is a straight line. These choices correspond to how the projection of the ADRF is formed; see [curve_projection()] for details. See Examples for an example with a binary outcome. In the example, there is evidence to reject that the transformed ADRF is linear for one of the groups, indicating that a sigmoid function is not sufficient for describing the ADRF, but there is indeterminate evidence (at the .05 level) to reject that the untransformed ADRF is linear for either group, indicating that a linear function is sufficient for describing the ADRF (at least in the treatment range examined).
+#'
+#' ## Weighting treatment values
+#'
+#' The test statistic integrates the squared deviations of the effect curve from the hypothesized curve over the range of treatment values at which the effect curve was computed, and `integrate` controls how treatment values are weighted in that integral. With `integrate = "uniform"`, every treatment value in the range counts equally. With `integrate = "empirical"`, the integral is weighted by the density of the treatment, so departures from the null hypothesis count in proportion to how common the treatment values at which they occur are; for example, with `hypothesis = "flat"`, the statistic is the variance of the ADRF over the distribution of the treatment. The null hypothesis is the same under either option; only the test statistic, and therefore the power against different alternatives, differs. Because the effect curve is estimated least precisely where the treatment is sparse, `integrate = "empirical"` gives the least precise estimates the least weight, which can increase power when the treatment is unevenly distributed; when it is evenly distributed, the two options give nearly the same result.
+#'
+#' The density is estimated using [density()] with its default bandwidth from the treatment values of all units used to compute the effect curve (including those outside `range`), weighted by `wts`, separately within each subgroup defined by `by`; a contrast between subgroups uses the density of the two subgroups pooled. The density is treated as known. Because the integral is over the range of the effect curve, with the default `range` of .95 in [adrf()], the test concerns the middle 95% of the distribution of the treatment; setting `range = 1` makes it concern the whole distribution.
 #'
 #' @references
 #' Kuonen, D. (1999). Saddlepoint approximations for distributions of quadratic forms in normal variables. *Biometrika*, 86(4), 929–935. \doi{10.1093/biomet/86.4.929}
@@ -98,7 +105,8 @@
 
 #' @exportS3Method summary effect_curve
 summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
-                                 transform = TRUE, df = NULL, nsim = 1e6, ...) {
+                                 transform = TRUE, df = NULL, nsim = 1e6,
+                                 integrate = "uniform", ...) {
 
   .vcov_type <- .attr(object, ".vcov_type")
 
@@ -156,6 +164,8 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   arg::arg_number(df)
   arg::arg_gt(df, 0)
+
+  integrate <- process_integrate(integrate, object)
 
   .est0 <- .attr(object, ".est")
   .vcov0 <- .attr(object, ".vcov")
@@ -237,12 +247,21 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     .check_proj_mm(mm)
   }
 
-  #Weights for trapezoidal Riemann sum
-  w <- get_trapezoidal_w(.values)
+  # Weights of the grid points for each block of estimates (the curve, each
+  # subgroup in `subset`, or each contrast), which define the integral the
+  # test statistic approximates
+  blocks <- {
+    if (!is_null(.contrast)) seq_along(.contrast)
+    else if (!is_null(.by_grid)) which(.subset)
+    else 1L
+  }
 
-  wsq <- sqrt(w)
+  w_list <- get_grid_w(.values, integrate, .attr(object, ".treat_density"), blocks)
 
-  p <- vapply(by_list, function(.b) {
+  p <- vapply(seq_along(by_list), function(k) {
+    .b <- by_list[[k]]
+    w <- w_list[[k]]
+    wsq <- sqrt(w)
 
     if (!is_null(.boot)) {
       resid_boot <- .boot
@@ -345,6 +364,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   attr(out, "method") <- method
   attr(out, "hypothesis") <- hypothesis
+  attr(out, "integrate") <- integrate
 
   attr(out, "transformed") <- transformed
   attr(out, "nsim") <- nsim
@@ -411,7 +431,11 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
 
   c(txtbar(width),
     cli::format_inline("{.emph Computed using {method}}") |>
-      cli::ansi_strwrap(width, exdent = 2L)) |>
+      cli::ansi_strwrap(width, exdent = 2L),
+    if (identical(.attr(x, "integrate"), "empirical")) {
+      cli::format_inline("{.emph Deviations weighted by the distribution of {(.treat)}}") |>
+        cli::ansi_strwrap(width, exdent = 2L)
+    }) |>
     cli::cat_line()
 
   invisible(x)

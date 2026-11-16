@@ -66,7 +66,7 @@ NULL
 .make_fun <- function(fn = NULL, .contrast_mat = NULL,
                       .est, .vcov, .values, .treat, .vcov_type, .boot, .draws,
                       .curve_type, .family, .df, .response, .call,
-                      .by_grid, .contrast, .reference) {
+                      .by_grid, .contrast, .reference, .treat_density) {
 
   if (missing(.curve_type) && !is_null(fn)) {
     if (inherits(fn, "adrf_curve")) {
@@ -239,6 +239,7 @@ NULL
   attr(fn, ".df") <- .df
   attr(fn, ".response") <- .response
   attr(fn, ".call") <- .call
+  attr(fn, ".treat_density") <- .treat_density
 
   classes <- c("effect_curve", class(fn))
 

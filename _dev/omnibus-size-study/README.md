@@ -204,6 +204,39 @@ Rejection rate at the .05 level, and the average estimated variance of the stati
 
 **Conclusion.** The HC2 default is a clear improvement over HC0 across these scenarios and never much worse, but with a flexible logistic model at n of 1000 or less, or with error variance concentrated at the extremes of the treatment at n of 500 or less, the omnibus test still rejects 6.6% to 8.0% at the .05 level. The remaining error is variability rather than bias, so a fix would be a degrees-of-freedom correction suited to heavy-tailed contributions or a different reference distribution, not a different leverage adjustment; the influence-function degrees of freedom tried earlier overstated the degrees of freedom by a factor of 2.7 at n = 250 and would not suffice.
 
+## Omnibus tests of equivalent hypotheses (`run-equiv.R`, `analyze-equiv.R`, 2026-11-17)
+
+Several omnibus tests have equivalent null hypotheses: the ADRF is flat if and only if a reference curve is 0 everywhere (for any reference value), if and only if the AMEF is 0 everywhere; and the ADRF is linear if and only if the AMEF is flat. The omnibus statistic is the trapezoid-weighted integral of the squared deviations of a curve from the null set, so tests of equivalent hypotheses use different statistics when they measure different curves:
+
+- **Flat ADRF:** $T = \int (\hat\theta(a) - \bar\theta)^2 \, da$, with $\bar\theta$ the weighted mean of the curve.
+- **Reference curve equal to 0**, with reference $a_0$: $T = \int (\hat\theta(a) - \hat\theta(a_0))^2 \, da$, which equals the flat statistic plus $|\mathcal{A}| (\bar\theta - \hat\theta(a_0))^2$; it adds a comparison of the curve's mean with one estimated point.
+- **Flat reference curve:** a reference curve differs from the ADRF by a constant, which the flat projection removes, so this is identical to the flat ADRF test for any reference value (its deviations matched the ADRF's to $10^{-14}$).
+- **AMEF equal to 0:** $T = \int \hat\theta'(a)^2 \, da$, which weights departures by their slope rather than their size and inherits the noise of numerical derivatives, largest at the ends of the grid, where they are one-sided.
+- **Linear ADRF against flat AMEF:** the deviations of a cubic ADRF from a line and of its quadratic derivative from a constant both span two dimensions, measured in different metrics. When the deviations span one dimension, as for a quadratic ADRF against a linear AMEF, every such statistic is a multiple of the same scaled $\chi^2_1$ and the p-values are identical (.4326 for both on `nhanes3lead`).
+
+On `nhanes3lead` (`Math ~ poly(logBLL, 3) * (Male + PIR + Race)`), the flat ADRF test gave $p = 2.9 \times 10^{-8}$, the test of a reference curve equal to 0 gave $1.8 \times 10^{-4}$, $3.0 \times 10^{-6}$, and $3.2 \times 10^{-4}$ with the reference at the lower end, middle, and upper end of the grid, and the AMEF equal to 0 gave .013; the linear ADRF test gave .358 and the flat AMEF test .413.
+
+In simulation (the outcome model above with HC2, n = 500, 1000 replicates per effect, and an effect of $.1 A$ or $.1 A^2$ added to the outcome), the rejection rates at the .05 level were:
+
+| Test | No effect | Linear effect | Quadratic effect |
+|---|---|---|---|
+| Flat ADRF (= flat reference curve) | .048 | .390 | .608 |
+| Reference curve = 0, reference at the lower end | .050 | .246 | .279 |
+| Reference curve = 0, reference in the middle | .042 | .286 | .733 |
+| Reference curve = 0, reference at the upper end | .069 | .257 | .574 |
+| AMEF = 0 | .058 | .122 | .606 |
+| Linear ADRF | .044 | .052 | .739 |
+| Flat AMEF | .054 | .061 | .673 |
+
+- **Every version holds its size** (4.2% to 6.9%, Monte Carlo SE about .007), so none is invalid; the 6.9% with the reference at the upper end is about 2.7 SEs above .05 and may reflect the large variance of the estimate at the end of the grid.
+- **Their power differs, and for the reference curve it depends on an arbitrary choice.** With a linear effect, the flat ADRF test rejected 39% of the time and the reference-curve tests 25% to 29%; with a quadratic effect, the reference-curve tests ranged from 28% (reference at the lower end) to 73% (in the middle). The same data can give p-values two orders of magnitude apart depending on the reference. Across all 3000 replicates, the flat ADRF test and the reference-curve test with the reference at the lower end reached opposite decisions at the .05 level in 23% of them (10% with the reference in the middle).
+- **The AMEF test against 0 is weak against smooth departures** (12% against a linear effect, where the flat ADRF test had 39%), because differentiation amplifies noise, especially at the ends of the grid.
+- **The linear ADRF and flat AMEF tests are close** (74% and 67% against a quadratic effect; opposite decisions in 4% of all replicates). The flat ADRF test and the AMEF test against 0 reached opposite decisions in 16%.
+
+None of this is a flaw in the validity of the tests: each is a valid test of its null hypothesis, and equivalent null hypotheses do not imply the same statistic. It is a property of the design: the test is a distance in the space of the curve being tested, not a function of the null hypothesis alone, so the choice of curve changes the power, and a reference curve's choice of reference changes it arbitrarily. Testing a reference curve for flatness (`hypothesis = "flat"`) instead of against 0 gives the flat ADRF test exactly, whatever the reference.
+
+**Invariance.** All three hypotheses (flat ADRF, reference curve equal to 0, AMEF equal to 0) restrict the ADRF to the same null set, the constants, through different linear maps ($C\theta$, $R\theta$, and $\Delta\theta$). A Wald statistic depends only on the null set, so it is identical across the three: on `nhanes3lead` (21 grid points, HC2), all three gave $W = 37.21$ ($p = 4.2 \times 10^{-8}$ on 3 df). The omnibus statistic is not, because it measures the deviations in the metric of the curve being tested. The Wald test is not a good default, though: it over-rejects more than the omnibus test with robust covariances (8.0% with HC2 at n = 250 and 500 in the study above) and needs a choice of rank for nonlinear models. Invariance can instead be had by translating each hypothesis about a derived curve to the equivalent hypothesis about the ADRF and always computing the omnibus statistic on the ADRF: a reference curve equal to 0 becomes a flat ADRF, an AMEF equal to $c$ becomes $\theta(a) - c\,a$ flat, and an AMEF that is flat, linear, or quadratic becomes an ADRF that is linear, quadratic, or cubic. In the simulation above, the ADRF-scale test had the highest power or close to it in every case except a quadratic effect with the reference in the middle of the grid (.608 against .733), a gain that depends on where the reference happens to be.
+
 ## The calibration study's misspecified model (`misspecified/`)
 
 The partial results of the first run of `run-diagnostic.R`, with the calibration study's model (no `X1:X2`), are kept in `misspecified/`. With 2000 replicates at n = 250 to 2000, its oracle test rejected 6.0%, 5.4%, 5.9%, and 6.3%; the noncentrality of the statistic relative to its null mean was .024 at n = 500 and .11 at n = 2000 and grows in proportion to n. The README of `_dev/omnibus-pvalue-study/` has been corrected.

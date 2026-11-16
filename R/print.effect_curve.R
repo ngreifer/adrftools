@@ -142,5 +142,10 @@ print.effect_curve <- function(x, ...) {
       cli::format_inline(" - projection model: {(.formula)}") |>
         cli::cat_line()
     }
+
+    if (identical(.attr(x, ".proj_integrate"), "empirical")) {
+      cli::format_inline(" - weighted by the distribution of {(.attr(x, '.treat'))}") |>
+        cli::cat_line()
+    }
   }
 }

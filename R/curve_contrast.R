@@ -93,7 +93,23 @@ curve_contrast <- function(x) {
     )
   }, character(1L))
 
+  # Each contrast is weighted by the pooled distribution of the treatment in
+  # its two subgroups
+  .treat_density <- .attr(x, ".treat_density")
+
+  if (!is_null(.treat_density)) {
+    .treat_density[c("y", "tot")] <- list(
+      vapply(combos, function(combo) {
+        drop(.treat_density[["y"]][, combo, drop = FALSE] %*% .treat_density[["tot"]][combo]) /
+          sum(.treat_density[["tot"]][combo])
+      }, numeric(length(.treat_density[["x"]]))) |>
+        matrix(nrow = length(.treat_density[["x"]])),
+      vapply(combos, function(combo) sum(.treat_density[["tot"]][combo]), numeric(1L))
+    )
+  }
+
   .make_fun(x,
             .contrast_mat = m,
-            .contrast = .contrast)
+            .contrast = .contrast,
+            .treat_density = .treat_density)
 }

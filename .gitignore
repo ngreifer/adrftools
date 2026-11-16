@@ -15,3 +15,5 @@ _dev/omnibus-size-study/*.part-*.rds
 
 # Snippets testthat extracts from failing tests
 tests/testthat/_problems
+_dev/omnibus-test-choice/*.part-*.rds
+_dev/omnibus-test-choice/*-smoke*.rds

@@ -7,6 +7,7 @@
 #' @param x an [`effect_curve`] object; the output of a call to [adrf()].
 #' @param model the projection model to be fit. Can be a one-sided formula corresponding to the projection model or one of the following strings: `"flat"`, `"linear"`, `"quadratic"`, `"cubic"`.
 #' @param transform whether to compute the projection using a transformation of the linear predictor. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless `x` is an ADRF. See Details.
+#' @param integrate string; how treatment values are weighted in fitting the projection. Allowable options include `"uniform"` (the default), which weights all treatment values in the range of the effect curve equally, and `"empirical"`, which weights them by an estimate of the density of the treatment. The weighting defines the projection, so the coefficients differ between the two options. See Details.
 #' @param subset an optional logical expression indicating the subset of subgroups for which to compute the projection. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param object,object2 a `curve_projection` object; the output of a call to `curve_projection()`.
 #' @param null the null value for hypothesis test. Default is 0. Set to `NA` to omit tests.
@@ -36,6 +37,10 @@
 #' where \eqn{f^{-1}(y)} is the inverse of the transformation supplied to `transform` (i.e., corresponding to the inverse link function of a generalized linear model), essentially using nonlinear least squares (NLS) to estimate the effect curve projection. This makes the coefficients in the projection model correspond to the coefficients on the linear predictor \eqn{B(a)\hat{\mathbf{\beta}}}. In this case, the projection is not simply a linear projection, but it may still be more interpretable than the original ADRF. For example, if the outcome model was originally fit using logistic regression and `transform = TRUE` in the call to `curve_projection()` with `model = "linear"`, the resulting projection would be a logistic curve governed by the intercept and slope of the linear predictor. See Examples for an example of this.
 #'
 #' By default, `transform` is `TRUE`, which means that when the original outcome model had a `family` component (e.g., a generalized linear model) and an ADRF is supplied to `curve_projection()`, the link is automatically supplied to `transform` and the projection model will be a nonlinear function of the linear predictor. Set `transform` to `FALSE` to require that the projection curve be simply the linear predictor with no transformation. Note this can lead to invalid estimates when the outcome is bounded.
+#'
+#' ## Weighting treatment values
+#'
+#' With `integrate = "empirical"`, the integrals above are weighted by the density of the treatment, so the projection is the best approximation to the effect curve over the distribution of the treatment rather than over its range, and parts of the curve where the treatment is common count more than parts where it is sparse. The density is estimated as described in [summary.effect_curve()]. Because the weighting changes the projection itself, `anova()` requires both projections to use the same `integrate`.
 #'
 #' ## Comparing projection models
 #'
@@ -90,7 +95,7 @@
 #' anova(proj2, proj1)
 
 #' @export
-curve_projection <- function(x, model, transform = TRUE) {
+curve_projection <- function(x, model, transform = TRUE, integrate = "uniform") {
   arg::arg_supplied(x)
 
   check_effect_curve(x, projection_ok = FALSE)
@@ -114,6 +119,8 @@ curve_projection <- function(x, model, transform = TRUE) {
     #Check that only treat is in model
     arg::err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg model}")
   }
+
+  integrate <- process_integrate(integrate, x)
 
   .est <- .attr(x, ".est")
   .values <- .attr(x, ".values")
@@ -145,9 +152,11 @@ curve_projection <- function(x, model, transform = TRUE) {
 
   transform_list <- process_transform(transform, x, .est)
 
-  # Trapezoidal weights for integral projection
-  w <- rep.int(get_trapezoidal_w(.values),
-               n_by)
+  # Weights of the grid points for the integral projection, one block per
+  # subgroup or contrast; with the block-diagonal model matrix, fitting all
+  # blocks together is the same as fitting each with its own weights
+  w <- get_grid_w(.values, integrate, .attr(x, ".treat_density"), seq_len(n_by)) |>
+    unlist()
 
   fit <- .nls_fit(x = mm, y = .est, w = w,
                   transform = transform_list,
@@ -230,6 +239,7 @@ curve_projection <- function(x, model, transform = TRUE) {
   # that two projections used the same one
   attr(proj_fn, ".proj_transformed_est") <- transform_list$transform(.est)
   attr(proj_fn, ".proj_formula") <- deparse1(mt)
+  attr(proj_fn, ".proj_integrate") <- integrate
 
   class(proj_fn) <- unique(c("curve_projection", class(proj_fn)))
 
@@ -519,6 +529,10 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   if (!isTRUE(all.equal(.attr(object, ".proj_transformed_est"),
                         .attr(object2, ".proj_transformed_est")))) {
     arg::err("{.arg object} and {.arg object2} must use the same {.arg transform}")
+  }
+
+  if (!identical(.attr(object, ".proj_integrate"), .attr(object2, ".proj_integrate"))) {
+    arg::err("{.arg object} and {.arg object2} must use the same {.arg integrate}")
   }
 
   if (is_null(stats::vcov(object))) {
