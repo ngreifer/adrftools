@@ -7,7 +7,7 @@
 #' @param x an [`effect_curve`] object; the output of a call to [adrf()].
 #' @param model the projection model to be fit. Can be a one-sided formula corresponding to the projection model or one of the following strings: `"flat"`, `"linear"`, `"quadratic"`, `"cubic"`.
 #' @param transform whether to compute the projection using a transformation of the linear predictor. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless `x` is an ADRF. See Details.
-#' @param integrate string; how treatment values are weighted in fitting the projection. Allowable options include `"uniform"` (the default), which weights all treatment values in the range of the effect curve equally, and `"empirical"`, which weights them by an estimate of the density of the treatment. The weighting defines the projection, so the coefficients differ between the two options. See Details.
+#' @param integrate string; how treatment values are weighted in fitting the projection. Allowable options include `"uniform"` (the default), which weights all treatment values in the range of the effect curve equally, and `"empirical"`, which weights them by an estimate of the density of the treatment. The weighting defines the projection, so the coefficients differ between the two options. Only `"uniform"` can be used with a shift curve (see [shift_curve()]). See Details.
 #' @param subset an optional logical expression indicating the subset of subgroups for which to compute the projection. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param object,object2 a `curve_projection` object; the output of a call to `curve_projection()`.
 #' @param null the null value for hypothesis test. Default is 0. Set to `NA` to omit tests.
@@ -418,6 +418,7 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
   }
 
   attr(res, ".curve_type") <- get_curve_type(object)
+  attr(res, ".shift") <- .attr(object, ".shift")
   attr(res, ".contrast") <- .attr(object, ".contrast")
   attr(res, ".by_grid") <- .by_grid
   attr(res, ".vcov_type") <- .attr(object, ".vcov_type")
@@ -438,7 +439,7 @@ print.summary.curve_projection <- function(x, digits = max(3L, getOption("digits
   .reference <- .attr(x, ".reference")
   .contrast <- .attr(x, ".contrast")
 
-  main <- paste(c(get_curve_type(x),
+  main <- paste(c(.curve_type_label(x, title = TRUE),
                   if (!is_null(.reference)) "Reference",
                   if (!is_null(.contrast)) "Contrast",
                   "Projection Coefficients"),

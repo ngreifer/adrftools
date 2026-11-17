@@ -32,7 +32,7 @@ If the full range is wanted with a narrower display, a lighter alternative is a 
 
 **What `adrf()` stores.** A new attribute, `.treat_density`: the kernel density estimate of the treatment for each subgroup, evaluated on a fine grid (e.g., 512 points from `stats::density()`, covering the range of the treatment), so that weights can be computed at the grid points and at any added point (e.g., the reference value added by `reference_curve()`) by interpolation, without storing the treatment values.
 
-- Estimated with `stats::density()`, using all treatment values of the units in `subset` and in the subgroup (not only those within `range`), weighted by the target weights `wts` (normalized), with its default bandwidth (`bw.nrd0()`).
+- Estimated with `stats::density()`, using all treatment values of the units in `subset` and in the subgroup (not only those within `range`), weighted by the target weights `wts` (normalized), with the bandwidth from Scott's rule (`bw.nrd()`, computed from `bw.nrd0()`; changed from `bw.nrd0()` on 2026-11-17).
 - With multiply imputed data, from the treatment values of all imputed datasets, each weighted by $1/m$.
 - Each subgroup's total target weight is stored too, for contrasts.
 - With bootstrapping or Bayesian models, the density is from the original sample and treated as fixed, as the grid already is.

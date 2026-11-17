@@ -39,7 +39,7 @@ print.effect_curve <- function(x, ...) {
 }
 
 .get_full_curve_type_name <- function(x) {
-  .curve_type_name <- get_curve_type(x)
+  .curve_type_name <- .curve_type_label(x)
 
   if (inherits(x, "reference_curve")) {
     .curve_type_name <- paste(.curve_type_name, "reference")
@@ -67,13 +67,27 @@ print.effect_curve <- function(x, ...) {
 }
 
 .print_treat <- function(x) {
-  cli::format_inline(' - treatment: {(.attr(x, ".treat"))}') |>
+  .shift <- .attr(x, ".shift")
+
+  cli::format_inline(' - treatment: {(.shift[["treat"]] %or% .attr(x, ".treat"))}') |>
     cli::cat_line()
+
+  if (!is_null(.shift)) {
+    cli::format_inline(' - shift: {(.shift[["label"]])}') |>
+      cli::cat_line()
+  }
 }
 
 .print_range <- function(x) {
   .values <- .attr(x, ".values")
-  cli::format_inline("   + range: {round(min(.values), 4)} to {round(max(.values), 4)}") |>
+  sd_units <- .attr(x, ".shift")[["sd_units"]]
+
+  sd_msg <- {
+    if (is_null(sd_units)) ""
+    else sprintf(" (%s to %s SD)", round(sd_units[1L], 4), round(sd_units[2L], 4))
+  }
+
+  cli::format_inline("   + range: {round(min(.values), 4)} to {round(max(.values), 4)}{sd_msg}") |>
     cli::cat_line()
 }
 

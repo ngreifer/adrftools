@@ -58,6 +58,7 @@
 #' * [reference_curve()] for computing the difference between each point on the ADRF and a specific reference point
 #' * [curve_contrast()] for contrasting ADRFs computed within subgroups
 #' * [amef()] for computing the average marginal effect function (AMEF), the derivative of the ADRF
+#' * [shift_curve()] for estimating the mean outcome when every unit's treatment is shifted from its observed value
 #' * [marginaleffects::avg_predictions()] for computing average adjusted predictions for fitted models (similar to the ADRF)
 #'
 #' @examples
@@ -160,9 +161,15 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 # models, and .adrf_fit_one() computes the estimates for each model. Estimates
 # from multiply imputed data are pooled using Rubin's rules, or, for Bayesian
 # models, by stacking the posterior draws.
+#
+# With `shift_fun` (from process_shift_fun()), the curve is a shift curve: the
+# counterfactual treatment of each unit is `shift_fun(A, delta)` for its
+# observed treatment `A` and each grid value `delta` of `shift`, rather than
+# the grid value itself.
 .effect_curve_internal <- function(x, treat, vcov, range, n,
                                    data, subset, by, wts, cluster = NULL, fwb.args = list(),
-                                   type, .adrf_env = parent.frame(2L), ...) {
+                                   type, .adrf_env = parent.frame(2L),
+                                   shift_fun = NULL, shift = NULL, ...) {
   # type
   arg::arg_string(type)
 
@@ -213,9 +220,13 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   # wts
   wts.list <- process_wts_list(wts, models, eval_data.list)
 
-  # values
-  values <- process_range(range, n, treat_var, w = unlist(wts.list))
-  n <- length(values)
+  is_shift <- !is_null(shift_fun)
+
+  # values; for a shift curve, the grid of shifts is set after `subset`
+  if (!is_shift) {
+    values <- process_range(range, n, treat_var, w = unlist(wts.list))
+    n <- length(values)
+  }
 
   # bayes
   are_bayes <- vapply(seq_len(m), function(.i) {
@@ -255,6 +266,25 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     process_subset(subset, eval_data.list[[.i]], env = .adrf_env)
   })
 
+  .shift <- NULL
+
+  if (is_shift) {
+    A.list <- lapply(seq_len(m), function(.i) {
+      model_data.list[[.i]][[treat]][s.list[[.i]]]
+    })
+
+    .shift <- process_shift(shift, shift_fun, n = n, A.list = A.list,
+                            w.list = lapply(seq_len(m), function(.i) {
+                              wts.list[[.i]][s.list[[.i]]]
+                            }),
+                            treat = treat)
+
+    values <- .shift[["values"]]
+    n <- length(values)
+
+    .shift[["values"]] <- NULL
+  }
+
   # by, with subgroups defined across all models after subsetting
   processed_by_list <- lapply(seq_len(m), function(.i) {
     ss(eval_data.list[[.i]], s.list[[.i]])
@@ -266,7 +296,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   n_by <- get_n_by(.by_grid = by_grid)
 
   by_codes <- as.integer(processed_by_list$by_id) |>
-    split(rep.int(seq_len(m), vlengths(s.list)))
+    gsplit(rep.int(seq_len(m), vlengths(s.list)))
 
   if (any_apply(by_codes, function(b) !all(seq_len(n_by) %in% b))) {
     arg::err("every subgroup defined by {.arg by} must be present in every imputed dataset")
@@ -290,7 +320,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                   wts = wts.list[[.i]], by_id = by_codes[[.i]], n_by = n_by,
                   cl_list = cl_list.list[[.i]], vcov_type = vcov_type,
                   is_bayes = is_bayes, type = type, data = data,
-                  fwb.args = fwb.args, ...)
+                  fwb.args = fwb.args, shift_fun = .shift[["fun"]], ...)
   })
 
   .boot <- .draws <- .vcov <- NULL
@@ -329,18 +359,35 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
   attr(vcov_type, "clustered") <- !is_null(cl_list.list[[1L]][["cluster"]])
 
-  # Density of the treatment in each subgroup, from all units used (not only
-  # those within `range`), for weighting by the treatment distribution
-  .treat_density <- .get_treat_density(
-    lapply(seq_len(m), function(.i) model_data.list[[.i]][[treat]][s.list[[.i]]]),
-    lapply(seq_len(m), function(.i) wts.list[[.i]][s.list[[.i]]]),
-    by_codes, n_by
-  )
+  # The shift function is not stored, so the object does not carry its
+  # environment
+  if (is_shift) {
+    if (!all(is.finite(.est))) {
+      arg::err("some estimates of the shift curve are not finite, possibly because some shifted treatment values are outside the values the model allows; try a narrower {.arg shift}")
+    }
 
+    .shift[["fun"]] <- NULL
+  }
+
+  # Density of the treatment in each subgroup, from all units used (not only
+  # those within `range`), for weighting by the treatment distribution. A
+  # shift curve is a function of the shift, which has no such distribution.
+  .treat_density <- {
+    if (is_shift) NULL
+    else .get_treat_density(
+      lapply(seq_len(m), function(.i) model_data.list[[.i]][[treat]][s.list[[.i]]]),
+      lapply(seq_len(m), function(.i) wts.list[[.i]][s.list[[.i]]]),
+      by_codes, n_by
+    )
+  }
+
+  # `.treat` names the argument of the effect curve, which for a shift curve
+  # is the shift; the treatment is then stored in `.shift`
   .make_fun(.est = drop(unname(.est)),
             .vcov = unname(.vcov),
             .values = values,
-            .treat = treat,
+            .treat = if (is_shift) "shift" else treat,
+            .shift = .shift,
             .vcov_type = vcov_type,
             .boot = .boot,
             .draws = .draws,
@@ -358,7 +405,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 # `subset`, and `n_by` is the number of subgroups.
 .adrf_fit_one <- function(x, treat, values, model_data, s, wts, by_id, n_by,
                           cl_list, vcov_type, is_bayes, type, data = NULL,
-                          fwb.args = list(), ...) {
+                          fwb.args = list(), shift_fun = NULL, ...) {
   vcov <- cl_list[["vcov"]]
   infl <- cl_list[["infl"]]
   cl_list[c("vcov", "infl")] <- NULL
@@ -374,8 +421,25 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     type <- "response"
   }
 
-  # Speed up if treat is the only variable by treating dataset as a single observation
-  if (allv(names(model_data), treat) && all_the_same(by_id) && !isFALSE(...get(".quick"))) {
+  # The counterfactual treatment of every unit at the k-th grid value: the
+  # grid value itself for an ADRF, or the shifted observed treatment for a
+  # shift curve
+  .cf_at <- {
+    if (is_null(shift_fun)) {
+      function(k) rep.int(values[k], fnrow(model_data))
+    }
+    else {
+      A_obs <- model_data[[treat]]
+
+      function(k) shift_fun(A_obs, values[k])
+    }
+  }
+
+  # Speed up if treat is the only variable by treating dataset as a single
+  # observation; not for a shift curve, where the counterfactual treatment
+  # differs across units
+  if (is_null(shift_fun) && allv(names(model_data), treat) && all_the_same(by_id) &&
+      !isFALSE(...get(".quick"))) {
     model_data <- ss(model_data, 1L)
     wts <- 1.0
     s <- 1L
@@ -404,13 +468,16 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   # value, then unit
   .data_at <- function(k) {
     d <- model_data
-    d[[treat]] <- rep.int(values[k], ni)
+    d[[treat]] <- .cf_at(k)
     d
   }
 
   .data_grid <- function() {
     data_grid <- ss(model_data, rep.int(ii, n))
-    data_grid[[treat]] <- values[val_id]
+    data_grid[[treat]] <- {
+      if (is_null(shift_fun)) values[val_id]
+      else unlist(lapply(vi, .cf_at), use.names = FALSE)
+    }
     data_grid
   }
 
@@ -419,8 +486,13 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     round() |>
     funique()
 
-  data_check <- ss(model_data, (rows - 1L) %% ni + 1L)
-  data_check[[treat]] <- values[(rows - 1L) %/% ni + 1L]
+  rows_i <- (rows - 1L) %% ni + 1L
+  rows_k <- (rows - 1L) %/% ni + 1L
+
+  data_check <- ss(model_data, rows_i)
+  data_check[[treat]] <- vapply(seq_along(rows), function(r) {
+    .cf_at(rows_k[r])[rows_i[r]]
+  }, numeric(1L))
 
   switch(.get_model_type(x, type = type, data_grid = data_check,
                          model_data = model_data, is_bayes = is_bayes, ...),
@@ -477,7 +549,12 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     # nrow() rather than fnrow(), which counts the rows of the first column,
     # a matrix for terms like poly()
     if (nrow(mf) != ni * n) {
-      arg::err("the variables in the model could not be computed for every unit at every treatment value")
+      if (is_null(shift_fun)) {
+        arg::err("the variables in the model could not be computed for every unit at every treatment value")
+      }
+      else {
+        arg::err("the variables in the model could not be computed for every unit at every shift, possibly because some shifted treatment values are outside the values the model allows; try a narrower {.arg shift}")
+      }
     }
 
     .rows_at <- function(k) {
@@ -709,13 +786,19 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       # predictions in subgroup b, scaled like the rows of `S`
       N <- fnrow(S)
 
-      phat_split <- gsplit(phat, cross_id)
+      # `phat` is ordered by treatment value, then unit, so its columns as a
+      # matrix are the treatment values; the columns of `S` for subgroup g are
+      # its n treatment values (in the order of `cross_id`)
+      P <- matrix(phat, nrow = ni)
 
       b_split <- gsplit(ii, by_id)
 
-      for (k in seq_along(phat_split)) {
-        b <- s[b_split[[cross_id$groups$by_id[k]]]]
-        S[b, k] <- S[b, k] + wts[b] * (phat_split[[k]] - out[["est"]][k]) * N / sum(wts[b])
+      for (g in seq_len(n_by)) {
+        u <- b_split[[g]]
+        b <- s[u]
+        k <- (g - 1L) * n + vi
+
+        S[b, k] <- S[b, k] + wts[b] * TRA(ss(P, u), out[["est"]][k], "-") * N / sum(wts[b])
       }
     }
 

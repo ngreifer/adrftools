@@ -2,7 +2,20 @@
 
 Adds `shift_curve()`, which estimates the mean outcome when every unit's treatment is shifted from its observed value, and `ade()`, which computes the average derivative effect (ADE) from a shift curve. Implements two items from `_dev/feature-ideas.md` ("Shift and incremental interventions" and "Average derivative effect", the latter reinterpreted as below).
 
-**Decided (2026-11-16):** the ADE is computed from a shift curve, not by a function of its own that takes a fitted model; users can supply their own shift function; no positivity diagnostic in this version; the argument choosing the kind of shift is not named `type`, which `adrf()` already passes to the predictions.
+**Decided (2026-11-16):** the ADE is computed from a shift curve, not by a function of its own that takes a fitted model; users can supply their own shift function; no positivity diagnostic in this version; the argument choosing the kind of shift is not named `type`, which `adrf()` already passes to the predictions; the curve's argument is named `shift`.
+
+**Implemented (2026-11-16, branch `shift-curve`), as planned except:**
+
+- The curve's argument is `shift`. Instead of a separate `.x_name` attribute, the `.treat` attribute holds `"shift"` for shift curves (it names the curve's argument everywhere it is used) and the treatment's name is stored in `.shift$treat`, which the print and plot labels use. This left the ~55 uses of `.treat` unchanged.
+- `.curve_type` stays `"ADRF"`/`"AMEF"`; `.curve_type_label()` gives "shift curve" and "shift curve derivative" for printing and titles.
+- The shift function is not stored in the object (it would carry its environment); `.shift` keeps its label, type, the treatment SD, the SD units of the default range, and whether $g(A_i, 0) = A_i$.
+- Shifted values at which the model cannot be evaluated give an error both when the model frame drops rows and when the estimates are not finite (`log()` of a negative value gives `NaN` predictions, not dropped rows).
+- `ade()` uses the interpolated curve, as planned; the fallback was not needed (see below). Its output is `ade_est`, labeled `"ADE"` through a new `.est_names` attribute read by `.get_curve_est_labels()`.
+- **A bug found on the way:** `amef()` returned all `NA` with 101 or more grid points, for ADRFs as well. The local polynomial in `get_locpoly_w()` used a basis orthogonal over the whole grid, which is nearly collinear within a narrow kernel window, so `qr()` dropped columns and `qr.coef()` returned `NA`. Each local fit now uses coordinates centered at the interpolated point and scaled by the window, and takes the intercept. The fit is the same (the bases span the same space); it was introduced earlier in this development cycle (commit a7d492c replaced the normal equations with QR), so it gets no NEWS item.
+
+**Verification** (`_dev/variance-verification/verify-shift.R`, results in `shift-results.csv`): the unconditional variance matches a hand-computed HC2 influence function and *geex* stacked M-estimation (HC0) to every printed digit, including a logistic model with target weights that differ from the model weights and a user-supplied shift within a subgroup; a fractional weighted bootstrap written independently (10,000 replicates) agrees within 1% for the curve and 1.5% for the ADE. The ADE from the interpolated curve differs from an exact central difference of the predictions by less than $10^{-7}$ standard errors for polynomial, spline, and logistic models at 21, 51, and 101 grid points (up to $2 \times 10^{-5}$ for splines at 21), and matches `marginaleffects::avg_slopes()` (estimate and conditional HC0 standard error). Tests are in `tests/testthat/test-shift-curve.R`.
+
+**Not done:** the vignette section; the open questions below are unchanged.
 
 ## Estimands
 

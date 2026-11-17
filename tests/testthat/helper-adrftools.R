@@ -46,6 +46,31 @@ manual_uncond_vcov_lm <- function(fit, data, treat, values, type = "HC2") {
   crossprod(IF) / N^2
 }
 
+# The same for a shift curve: each unit's treatment is shifted by each value of
+# `shifts` (an additive shift), so the sampling term involves the treatment as
+# well as the covariates
+manual_uncond_shift_vcov_lm <- function(fit, data, treat, shifts) {
+  N <- nrow(data)
+  IFb <- sandwich::estfun(fit) %*% sandwich::bread(fit) /
+    sqrt(1 - stats::hatvalues(fit))
+
+  tt <- stats::delete.response(stats::terms(fit))
+
+  pieces <- lapply(shifts, function(v) {
+    nd <- data
+    nd[[treat]] <- data[[treat]] + v
+    X <- stats::model.matrix(tt, stats::model.frame(tt, nd))
+    list(g = colMeans(X), p = drop(X %*% stats::coef(fit)))
+  })
+
+  G <- do.call("rbind", lapply(pieces, `[[`, "g"))
+  P <- do.call("cbind", lapply(pieces, `[[`, "p"))
+
+  IF <- tcrossprod(IFb, G) + sweep(P, 2L, colMeans(P))
+
+  crossprod(IF) / N^2
+}
+
 get_est <- function(x) unname(attr(x, ".est", exact = TRUE))
 get_vcov <- function(x) unname(attr(x, ".vcov", exact = TRUE))
 get_values <- function(x) attr(x, ".values", exact = TRUE)

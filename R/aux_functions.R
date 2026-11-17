@@ -216,6 +216,139 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   seq(range[1L], range[2L], length.out = n)
 }
 
+# Processes the `shift_fun` argument of shift_curve(): a string naming a
+# built-in shift or a function of the observed treatment values and a single
+# shift value. `label` is how the shift is described in printed output.
+process_shift_fun <- function(shift_fun, label = NULL) {
+  if (is.function(shift_fun)) {
+    fmls <- rlang::fn_fmls_names(shift_fun)
+
+    if (length(fmls) < 2L && !anyv(fmls, "...")) {
+      arg::err("when {.arg shift_fun} is a function, it must take two arguments: the observed treatment values and a single shift value")
+    }
+
+    return(list(fun = shift_fun, type = "custom",
+                label = label %or% "custom"))
+  }
+
+  if (!rlang::is_string(shift_fun)) {
+    arg::err("{.arg shift_fun} must be {.val additive}, {.val multiplicative}, or a function")
+  }
+
+  type <- arg::match_arg(shift_fun, c("additive", "multiplicative"))
+
+  fun <- switch(type,
+                additive = function(a, delta) a + delta,
+                multiplicative = function(a, delta) a * (1 + delta))
+
+  list(fun = fun, type = type, label = type)
+}
+
+# Processes the `shift` argument of shift_curve() and checks the shift
+# function on the observed treatment values, `A.list`, which hold the treatment
+# values of the units in `subset` in each imputed dataset (or in the single
+# dataset), with their target weights in `w.list`. Returns the information
+# stored in the `.shift` attribute of a shift curve, plus the grid of shifts in
+# `values`.
+process_shift <- function(shift, shift_fun, n, A.list, w.list, treat) {
+  arg::arg_count(n)
+  arg::arg_between(n, c(2L, 1000L))
+
+  type <- shift_fun[["type"]]
+  fun <- shift_fun[["fun"]]
+
+  A <- unlist(A.list, use.names = FALSE)
+
+  if (type == "multiplicative" && fmin(A) < 0) {
+    arg::err("{.code shift_fun = \"multiplicative\"} requires the treatment to be nonnegative")
+  }
+
+  sd_A <- sqrt(fvar(A, w = unlist(w.list, use.names = FALSE)))
+
+  if (is_null(shift)) {
+    if (type != "additive") {
+      arg::err("{.arg shift} must be supplied when {.arg shift_fun} is not {.val additive}")
+    }
+
+    shift <- .5
+  }
+
+  arg::arg_numeric(shift)
+  arg::arg_length(shift, 1:2)
+
+  if (!all(is.finite(shift))) {
+    arg::err("{.arg shift} must contain finite values")
+  }
+
+  sd_units <- NULL
+
+  if (length(shift) == 1L) {
+    arg::arg_gt(shift, 0)
+
+    bounds <- c(-shift, shift)
+
+    if (type == "additive") {
+      if (!is.finite(sd_A) || !(sd_A > 0)) {
+        arg::err("the treatment does not vary, so {.arg shift} cannot be in standard deviations of the treatment; supply the bounds of the shift as two numbers")
+      }
+
+      sd_units <- bounds
+      bounds <- bounds * sd_A
+    }
+  }
+  else {
+    bounds <- sort(shift)
+
+    if (bounds[1L] == bounds[2L]) {
+      arg::err("the two values in {.arg shift} must differ")
+    }
+  }
+
+  values <- seq(bounds[1L], bounds[2L], length.out = n)
+
+  # A shift of 0 computed from the bounds can differ from 0 by rounding error
+  values[abs(values) < sqrt(.Machine$double.eps) * diff(bounds)] <- 0
+
+  # The shift function must give a finite treatment value for every unit at
+  # every shift
+  for (A_i in A.list) {
+    for (v in values) {
+      a_new <- try(fun(A_i, v), silent = TRUE)
+
+      if (inherits(a_new, "try-error")) {
+        arg::err(c("{.arg shift_fun} produced an error:",
+                   "!" = conditionMessage(attr(a_new, "condition"))))
+      }
+
+      if (!is.numeric(a_new) || length(a_new) != length(A_i) || !is_null(dim(a_new))) {
+        arg::err("{.arg shift_fun} must return a numeric vector with one value for each value of the treatment")
+      }
+
+      if (!all(is.finite(a_new))) {
+        arg::err("{.arg shift_fun} produced non-finite treatment values for some units at some values of {.arg shift}")
+      }
+    }
+  }
+
+  # Whether a shift of 0 leaves every unit's treatment unchanged, which is
+  # required for ade()
+  identity0 <- all_apply(A.list, function(A_i) {
+    a0 <- try(fun(A_i, 0), silent = TRUE)
+
+    is.numeric(a0) && length(a0) == length(A_i) &&
+      all(abs(a0 - A_i) <= sqrt(.Machine$double.eps) * pmax(1, abs(A_i)))
+  })
+
+  list(values = values,
+       fun = fun,
+       type = type,
+       label = shift_fun[["label"]],
+       treat = treat,
+       sd = sd_A,
+       sd_units = sd_units,
+       identity0 = identity0)
+}
+
 # The local polynomial used to interpolate between grid points cannot
 # extrapolate reliably beyond the grid (just past its ends, the estimates are
 # `NA`), so values outside the grid give an error. Values outside it by at most
@@ -232,7 +365,7 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
                i = "To estimate the effect curve outside this range, supply a wider range to {.arg range} in the call to {.fun adrf}."))
   }
 
-  pmin(pmax(x, r[1L]), r[2L])
+  squish(x, lo = r[1L], hi = r[2L])
 }
 
 check_reference <- function(reference, values, strict = TRUE) {
@@ -1601,6 +1734,28 @@ get_curve_type <- function(x) {
   NULL
 }
 
+# The name of the curve type in printed output and plot titles. A shift curve
+# has the curve type of an ADRF (its estimates are mean outcomes), and its
+# derivative that of an AMEF, but they are described as shift curves.
+.curve_type_label <- function(x, title = FALSE) {
+  .curve_type <- get_curve_type(x)
+
+  if (is_null(.attr(x, ".shift"))) {
+    return(.curve_type)
+  }
+
+  label <- switch(.curve_type,
+                  ADRF = "shift curve",
+                  AMEF = "shift curve derivative",
+                  return(.curve_type))
+
+  if (title) {
+    label <- gsub("\\b([a-z])", "\\U\\1", label, perl = TRUE)
+  }
+
+  label
+}
+
 check_effect_curve <- function(x, amef_ok = TRUE, reference_ok = TRUE,
                                contrast_ok = TRUE, projection_ok = TRUE,
                                nm = rlang::caller_arg(x)) {
@@ -2079,17 +2234,16 @@ get_locpoly_w <- function(x, v = x, w = NULL, p = 3, ...) {
   }
 
   n <- length(v)
-  ind <- seq_len(n)
 
-  v0 <- c(v, x)
+  # A polynomial basis requires fewer degrees than unique points
+  p <- min(p, length(funique(c(v, x))) - 1L)
 
-  # poly() requires fewer degrees than unique points
-  p <- min(p, length(funique(v0)) - 1L)
-
-  dv0 <- cbind(1, poly(v0, degree = p, raw = FALSE, simple = TRUE))
-
-  dx <- ss(dv0, -ind)
-
+  # Each local polynomial is fit in coordinates centered at the point being
+  # interpolated and scaled by the width of the window, so its basis is well
+  # conditioned however narrow the window is relative to the grid, and the
+  # interpolated value is the intercept. A basis orthogonal over the whole grid
+  # is nearly collinear within a narrow window (e.g., with 101 grid points),
+  # which made the decomposition below rank deficient.
   lw <- matrix(0, nrow = length(x), ncol = n)
 
   for (i in seq_along(x)) {
@@ -2103,19 +2257,22 @@ get_locpoly_w <- function(x, v = x, w = NULL, p = 3, ...) {
     wi <- wi[pos]
     wi <- wi / sum(wi)
 
-    # A local polynomial of degree p needs at least p + 1 grid points; the
-    # columns of the orthogonal basis are nested, so the first p_i + 1 columns
-    # span polynomials of degree p_i
-    cols <- seq_len(min(p, length(pos) - 1L) + 1L)
+    # A local polynomial of degree p needs at least p + 1 grid points
+    p_i <- min(p, length(pos) - 1L)
 
-    # Weighted least squares through the QR decomposition of sqrt(w) X. The
+    z <- v[pos] - x[i]
+    z <- z / max(abs(z), .Machine$double.eps)
+
+    Z <- outer(z, 0:p_i, `^`)
+
+    # Weighted least squares through the QR decomposition of sqrt(w) Z. The
     # kernel weights can span many orders of magnitude, so solving the normal
-    # equations (X'WX)^-1 X'W loses precision, which numerical derivatives of
+    # equations (Z'WZ)^-1 Z'W loses precision, which numerical derivatives of
     # the interpolated curve amplify
     sw <- sqrt(wi)
-    qr_i <- qr(ss(dv0, pos, cols) * sw)
+    qr_i <- qr(Z * sw)
 
-    lw[i, pos] <- drop(ss(dx, i, cols) %*% qr.coef(qr_i, diag(sw, nrow = length(pos))))
+    lw[i, pos] <- qr.coef(qr_i, diag(sw, nrow = length(pos)))[1L, ]
   }
 
   lw
@@ -2210,7 +2367,7 @@ pool_est <- function(est.list, vcov.list = NULL) {
 # `by_list` hold, for each imputed dataset, the treatment values, target
 # weights, and subgroup codes of the units used; with multiply imputed data,
 # each dataset's units get weight 1 / m. Each density uses stats::density()
-# with the default bandwidth of the subgroup's treatment values, and all are
+# with the bandwidth from Scott's rule (bw.nrd()) for the subgroup's treatment values, and all are
 # evaluated on a common fine grid spanning the treatment values, so a density
 # can be interpolated at any grid point (including points added later, such as
 # a reference value). Returns the fine grid `x`, a matrix `y` with one column
@@ -2223,22 +2380,24 @@ pool_est <- function(est.list, vcov.list = NULL) {
   w <- unlist(lapply(w_list, function(wi) wi / m))
   b <- unlist(by_list)
 
-  bws <- vapply(seq_len(n_by), function(k) {
-    Ak <- A[b == k]
-    if (length(unique(Ak)) > 1L) stats::bw.nrd0(Ak) else 1
+  A_split <- gsplit(A, b)
+  w_split <- gsplit(w, b)
+  tot <- fsum(w, b, use.g.names = FALSE)
+
+  bws <- vapply(A_split, function(Ak) {
+    if (fnunique(Ak) > 1L) bw.nrd(Ak) else 1
   }, numeric(1L))
 
-  x <- seq(min(A) - 3 * max(bws), max(A) + 3 * max(bws), length.out = n_fine)
+  x <- seq(fmin(A) - 3 * max(bws), fmax(A) + 3 * max(bws), length.out = n_fine)
 
   y <- vapply(seq_len(n_by), function(k) {
-    i <- b == k
-    stats::density(A[i], weights = w[i] / sum(w[i]), bw = bws[k],
+    stats::density(A_split[[k]], weights = w_split[[k]] / tot[k], bw = bws[k],
                    from = x[1L], to = x[n_fine], n = n_fine)$y
   }, numeric(n_fine))
 
   list(x = x,
        y = matrix(y, nrow = n_fine),
-       tot = vapply(seq_len(n_by), function(k) sum(w[b == k]), numeric(1L)))
+       tot = tot)
 }
 
 # Weights of the grid points for omnibus tests and projections, one vector
@@ -2266,8 +2425,14 @@ get_grid_w <- function(values, integrate = "uniform", treat_density = NULL,
 process_integrate <- function(integrate, x) {
   integrate <- arg::match_arg(integrate, c("uniform", "empirical"))
 
-  if (integrate == "empirical" && is_null(.attr(x, ".treat_density"))) {
-    arg::err("{.code integrate = \"empirical\"} requires the distribution of the treatment, which is stored by {.fun adrf} in versions of {.pkg adrftools} after 0.1.0; rerun {.fun adrf} to use it")
+  if (integrate == "empirical") {
+    if (!is_null(.attr(x, ".shift"))) {
+      arg::err("{.code integrate = \"empirical\"} cannot be used with a shift curve, because the shift has no distribution to weight by")
+    }
+
+    if (is_null(.attr(x, ".treat_density"))) {
+      arg::err("{.code integrate = \"empirical\"} requires the distribution of the treatment, which is stored by {.fun adrf} in versions of {.pkg adrftools} after 0.1.0; rerun {.fun adrf} to use it")
+    }
   }
 
   integrate

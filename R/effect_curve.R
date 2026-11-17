@@ -3,7 +3,7 @@
 #' @aliases effect_curve-class curve_est curve_est-class
 #'
 #' @description
-#' An `effect_curve` object is a function that takes in values of the treatment and produces estimates of the effect curve at those values. `effect_curve` objects are produced by [adrf()] and functions that modify effect curves, such as [amef()], [curve_contrast()], [reference_curve()], and [curve_projection()]. The output of an `effect_curve` object is a `curve_est` object containing the effect curve estimates. This page describes `effect_curve` and `curve_est` objects.
+#' An `effect_curve` object is a function that takes in values of the treatment and produces estimates of the effect curve at those values. `effect_curve` objects are produced by [adrf()] and [shift_curve()] and by functions that modify effect curves, such as [amef()], [curve_contrast()], [reference_curve()], and [curve_projection()]. The output of an `effect_curve` object is a `curve_est` object containing the effect curve estimates. This page describes `effect_curve` and `curve_est` objects.
 #'
 #' ## Usage
 #' \preformatted{f <- adrf(x, ...)
@@ -66,7 +66,7 @@ NULL
 .make_fun <- function(fn = NULL, .contrast_mat = NULL,
                       .est, .vcov, .values, .treat, .vcov_type, .boot, .draws,
                       .curve_type, .family, .df, .response, .call,
-                      .by_grid, .contrast, .reference, .treat_density) {
+                      .by_grid, .contrast, .reference, .treat_density, .shift) {
 
   if (missing(.curve_type) && !is_null(fn)) {
     if (inherits(fn, "adrf_curve")) {
@@ -213,6 +213,7 @@ NULL
     attr(res, ".family") <- .family
     attr(res, ".df") <- .df
     attr(res, ".reference") <- .reference
+    attr(res, ".shift") <- .shift
 
     class(res) <- unique(c("curve_est", class(res)))
 
@@ -240,8 +241,13 @@ NULL
   attr(fn, ".response") <- .response
   attr(fn, ".call") <- .call
   attr(fn, ".treat_density") <- .treat_density
+  attr(fn, ".shift") <- .shift
 
   classes <- c("effect_curve", class(fn))
+
+  if (!is_null(.shift)) {
+    classes <- c("shift_curve", classes)
+  }
 
   if (.curve_type == "ADRF") {
     classes <- c("adrf_curve", classes)

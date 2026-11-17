@@ -4,9 +4,11 @@
 # with the target weights, evaluated at `values`. adrf() interpolates from a
 # 512-point grid, so its weights agree with these to about 1e-3.
 manual_density <- function(A, w, values) {
-  dens <- stats::density(A, weights = w / sum(w), bw = stats::bw.nrd0(A), n = 4096,
-                         from = min(A) - 3 * stats::bw.nrd0(A),
-                         to = max(A) + 3 * stats::bw.nrd0(A))
+  # Scott's rule (bw.nrd()), computed as adrftools does from bw.nrd0()
+  bw <- stats::bw.nrd0(A) * 1.06 / .9
+
+  dens <- stats::density(A, weights = w / sum(w), bw = bw, n = 4096,
+                         from = min(A) - 3 * bw, to = max(A) + 3 * bw)
   stats::approx(dens$x, dens$y, xout = values)$y
 }
 

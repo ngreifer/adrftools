@@ -3,6 +3,8 @@ adrftools News and Updates
 
 # *adrftools* (development version)
 
+* New functions `shift_curve()` and `ade()`. `shift_curve()` estimates the mean outcome when every unit's treatment is shifted from its observed value (by a fixed amount, by a fixed proportion, or by a user-supplied function), as a function of the size of the shift, and so requires less extrapolation than the ADRF when the treatment is strongly related to the covariates. `ade()` computes the average derivative effect, the derivative of the shift curve at 0. Both support the same inference options as `adrf()`. See the new `vignette("shift-effects")` for details.
+
 * Error messages now use *arg*, which is a new dependency.
 
 * `summary.effect_curve()` and `curve_projection()` have a new argument, `integrate`, which controls how treatment values are weighted in the omnibus test statistic and in the projection. The default, `"uniform"`, weights all treatment values in the range of the effect curve equally, as before; `"empirical"` weights them by a kernel density estimate of the treatment, computed by `adrf()` from all units used (within each subgroup, and weighted by `wts`). Empirical weighting gives less weight to sparse regions of the treatment, where the effect curve is estimated least precisely, and had higher power in simulations with an unevenly distributed treatment.

@@ -374,7 +374,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
     p <- p + geom_hline(yintercept = null, color = "black")
   }
 
-  p + labs(x = .treat, y = .get_y_axis(x),
+  p + labs(x = .get_x_axis(x), y = .get_y_axis(x),
            title = .get_title(x),
            subtitle = .get_subtitle(x, conf_level, simultaneous)) +
     coord_cartesian(expand = c(left = FALSE, right = FALSE),
@@ -385,6 +385,19 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
           geom = element_geom(ink = "#E41A1C"),
           plot.title = element_text(hjust = .5),
           plot.subtitle = element_text(hjust = .5))
+}
+
+.get_x_axis <- function(x) {
+  .shift <- .attr(x, ".shift")
+
+  if (is_null(.shift)) {
+    return(.attr(x, ".treat"))
+  }
+
+  switch(.shift[["type"]],
+         additive = sprintf("Shift in %s", .shift[["treat"]]),
+         multiplicative = sprintf("Proportional change in %s", .shift[["treat"]]),
+         sprintf("Shift (%s)", .shift[["label"]]))
 }
 
 .get_y_axis <- function(x) {
@@ -401,7 +414,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   label <- curve_atom
 
   if (!is_null(.reference)) {
-    label <- bquote(.(label) ~ .(bquote(~ - ~ .(curve_atom) * group("(", .(.reference), ")"))))
+    label <- bquote(.(label) ~ .(bquote(~ - ~ .(curve_atom) * group("(", .(round(.reference, 4L)), ")"))))
   }
 
   if (!is_null(.contrast)) {
@@ -415,7 +428,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .reference <- .attr(x, ".reference")
   .contrast <- .attr(x, ".contrast")
 
-  paste(c(get_curve_type(x),
+  paste(c(.curve_type_label(x, title = TRUE),
           if (!is_null(.reference)) "Reference",
           if (!is_null(.contrast)) "Contrast",
           if (inherits(x, "curve_projection")) "Projection"),

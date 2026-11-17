@@ -5,7 +5,7 @@
 - M19 follow-ups: the omnibus test still rejects 6.6% to 8.0% at .05 with a flexible logistic model (n <= 1000) or errors largest at the treatment extremes (n <= 500), from the variability of the HC2 estimate; consider a degrees-of-freedom correction or another reference distribution. The size of CR2 has not been checked.
 - Decide whether the default `hypothesis` for reference curves should be `"flat"` (identical to the flat ADRF test for any reference) rather than 0, and correct the docs that call the reference-curve and AMEF tests equivalent to the flat test (`?reference_curve` example, vignette); see `_dev/omnibus-size-study/README.md`, equivalent hypotheses.
 - Revisit the default of `integrate` (now `"uniform"`); the test-choice study favors `"empirical"` (`_dev/omnibus-test-choice/README.md`).
-- Implement `shift_curve()` and `ade()` per `_dev/plan-shift-effects.md`; settle its open questions first (default shift size, the name `shift_fun`).
+- `shift_curve()` and `ade()` (branch `shift-curve`): settle the open questions in `_dev/plan-shift-effects.md` (default shift size, the name `shift_fun`, a default reference of 0 for shift curves).
 - Decide which items in `_dev/feature-ideas.md` to pursue.
 - Multivariate treatments (`_dev/adrf_mv.R`), to resume later.
 
@@ -48,3 +48,5 @@
 - 2026-11-16: Test-choice study (`_dev/omnibus-test-choice/`): with a fixed (oracle) covariance, every statistic holds its size; testing the ADRF itself with empirical treatment weighting had the best or near-best mean and worst-case power for both flatness and linearity.
 - 2026-11-16: Added `integrate = c("uniform", "empirical")` to `summary.effect_curve()` and `curve_projection()`; `adrf()` stores a kernel density estimate of the treatment for each subgroup (`_dev/plan-density-weights.md`).
 - 2026-11-16: Plan for shift-response curves and the average derivative effect (`_dev/plan-shift-effects.md`): `shift_curve()` generalizes the counterfactual treatment in `.adrf_fit_one()` to a function of the observed treatment, and `ade()` is the derivative of a shift curve at 0.
+- 2026-11-16: Implemented `shift_curve()` and `ade()` on branch `shift-curve` (`_dev/plan-shift-effects.md`), with tests (`test-shift-curve.R`) and an independent check of the variance (`_dev/variance-verification/verify-shift.R`); fixed `amef()` returning `NA` with 101 or more grid points.
+- 2026-11-17: New vignette `vignettes/shift-effects.Rmd` on shift interventions and the ADE; collapse rewrites of grouped operations in `.adrf_fit_one()` (covariate-sampling term of `S`), `.get_treat_density()`, `.zero_var()`, `.draw_zeta()`, and `.mvt_p_values()`, checked identical to the previous code end to end; reference values rounded in printed notes and plot labels; `shift_curve()` and `ade()` added to `_pkgdown.yml`.

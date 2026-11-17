@@ -22,6 +22,10 @@ reference:
   - amef
   - reference_curve
   - curve_contrast
+- title: Compute shift curves and the average derivative effect
+- contents:
+  - shift_curve
+  - ade
 - title: Example data
 - contents:
   - nhanes3lead

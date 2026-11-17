@@ -318,11 +318,21 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
     else "Estimates"
   }
 
-  main <- paste(c(get_curve_type(x),
-                  if (!is_null(.reference)) "Reference",
-                  if (!is_null(.contrast)) "Contrast",
-                  label),
-                collapse = " ")
+  main <- {
+    if (inherits(x, "ade_est")) {
+      paste(c("Average Derivative Effect",
+              if (!is_null(.contrast)) "Contrast",
+              label),
+            collapse = " ")
+    }
+    else {
+      paste(c(.curve_type_label(x, title = TRUE),
+              if (!is_null(.reference)) "Reference",
+              if (!is_null(.contrast)) "Contrast",
+              label),
+            collapse = " ")
+    }
+  }
 
   .print_estimate_table(x = x, digits = digits, topn = Inf,
                         main = main, rownames = FALSE,
@@ -334,7 +344,8 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
 }
 
 .get_curve_est_labels <- function(x) {
-  .est_names <- .attr(x, ".proj_coefficient_names") %or%
+  .est_names <- .attr(x, ".est_names") %or%
+    .attr(x, ".proj_coefficient_names") %or%
     .attr(x, ".contrast_names") %or%
     sprintf("%s = %s", .attr(x, ".treat"), .attr(x, "values"))
 
@@ -404,7 +415,7 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
   .treat <- .attr(x, ".treat")
 
   null_ref <- c(if (!is_null(.reference)) sprintf("Reference: %s = %s",
-                                                     .treat, .reference),
+                                                     .treat, round(.reference, 4L)),
                 if (!is_null(null)) sprintf("Null value: %s",
                                                format(null, digits = 4L, drop0trailing = TRUE)))
 

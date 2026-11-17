@@ -174,6 +174,18 @@ The variance above is an HC0-type sandwich: it replaces each unit's error with i
 
 **What remains.** HC2 nearly removes the bias with a logistic model and with heteroskedastic errors, but when the high-leverage units also have large residual variance, the estimate is variable enough that the omnibus test still rejects 6.6% to 8.0% at the .05 level in moderate samples. The size of the test with CR2 has not been studied.
 
+## Shift curves (2026-11-16)
+
+`shift_curve()` averages $m_i(g(A_i, \delta); \hat\beta)$, the prediction for unit $i$ at its shifted treatment, in place of $m_i(a; \hat\beta)$. Because the shifted treatment depends only on unit $i$'s own data, the stacked estimating equations above hold with $m_i(g(A_i, \delta); \beta)$ in the second equation, and nothing else changes: the influence function is
+
+$$\mathrm{IF}_i\{\psi_b(\delta)\} = \frac{N}{W_b} \, b_i w_i \, \{ m_i(g(A_i, \delta); \hat\beta) - \hat\psi_b(\delta) \} + \bar g_b(\delta)^\top A_{\beta\beta}^{-1} \psi_i(\hat\beta),$$
+
+with $\bar g_b(\delta)$ the weighted mean gradient of the shifted predictions. The first term is now the sampling of the treatment as well as the covariates. The HC2/CR2 adjustments, survey designs, and clustering apply unchanged, since they act on the second term or on the sum of both. The grid of shifts is treated as fixed, even when it comes from the sample standard deviation of the treatment (the default), just as the quantile-based `range` of `adrf()` is; the ADE does not depend on the grid.
+
+The one place the ADRF code relied on every unit sharing a counterfactual treatment value was the shortcut for models with only the treatment, which collapses the data to one row and so drops the first term; it is skipped for shift curves.
+
+The ADE is the derivative at 0 of the interpolated curve, a fixed linear combination of the grid estimates, so its influence function is the same combination of the grid influence functions, which approximates the exact influence function $\frac{N}{W_b} b_i w_i \{\dot g(A_i)\, \partial_a m_i(A_i) - \widehat{\mathrm{ADE}}\} + \dots$ to within the interpolation error. The checks are in `_dev/variance-verification/verify-shift.R` and summarized in `_dev/plan-shift-effects.md`.
+
 ## References
 
 Binder, D. A. (1983). On the variances of asymptotically normal estimators from complex surveys. *International Statistical Review*, 51(3), 279–292. https://doi.org/10.2307/1402588

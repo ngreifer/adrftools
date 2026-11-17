@@ -1,0 +1,14 @@
+"check","method","se1","se2","se3"
+"A lm, additive, HC2","by hand",0.080184090687427,0.0658255814013836,0.0766395362583146
+"A lm, additive, HC2","shift_curve",0.0801840906874268,0.0658255814013833,0.0766395362583147
+"B1 logistic, additive, model wts != target wts, HC0","geex",0.0197648664635497,0.0160271307939007,0.0153010147295752
+"B1 logistic, additive, model wts != target wts, HC0","shift_curve",0.019764866416351,0.0160271307470178,0.0153010144774304
+"B2 logistic, user-supplied proportional shift, subgroup Male = 1, HC0","geex",0.0277478782729387,0.023068921646011,0.0219031599865552
+"B2 logistic, user-supplied proportional shift, subgroup Male = 1, HC0","shift_curve",0.0277478780737894,0.0230689214987431,0.0219031593594063
+"D lm, additive (bootstrap SEs: 3 shifts; ADE in se3 row below)","bootstrap",0.0790858495198577,0.0652862751433969,0.0759346916197121
+"D lm, additive (bootstrap SEs: 3 shifts; ADE in se3 row below)","shift_curve HC2",0.0801840906874268,0.0658255814013833,0.0766395362583147
+"D lm, additive (bootstrap SEs: 3 shifts; ADE in se3 row below)","shift_curve HC0",0.0799161487202668,0.0656796439457844,0.0763640264965403
+"D lm, ADE","bootstrap (exact ADE)",NA,NA,0.0943656735813004
+"D lm, ADE","ade() HC2",NA,NA,0.0961958761850509
+"D lm, ADE","ade() HC0",NA,NA,0.0957607855319837
+"D lm, ADE","marginaleffects::avg_slopes() (conditional)",NA,NA,0.095069983372876

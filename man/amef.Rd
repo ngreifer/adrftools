@@ -58,6 +58,6 @@ amef1(logBLL = c(0, 1, 2)) |>
 \item \code{\link[=curve_projection]{curve_projection()}} for projecting a simpler model onto the AMEF
 \item \code{\link[=reference_curve]{reference_curve()}} for computing the difference between each point on the AMEF and a specific reference point
 \item \code{\link[=curve_contrast]{curve_contrast()}} for contrasting AMEFs computed within subgroups
-\item \code{\link[marginaleffects:avg_slopes]{marginaleffects::avg_slopes()}} for computing average adjusted slopes for fitted models (similar to the AMEF)
+\item \code{\link[=ade]{ade()}} for computing the average derivative effect, the average of each unit's slope at the treatment it received, also computed by \code{\link[marginaleffects:avg_slopes]{marginaleffects::avg_slopes()}}
 }
 }

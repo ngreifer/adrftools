@@ -59,9 +59,7 @@ posterior_p_value <- function(draws, parm, null = 0, simultaneous = FALSE) {
 
 # Columns of draws with no variance, judged relative to the scale of the draws
 .zero_var <- function(draws) {
-  ranges <- vapply(seq_len(fncol(draws)), function(j) {
-    diff1(.range(draws[, j]))
-  }, numeric(1L))
+  ranges <- unname(fmax(draws, na.rm = FALSE) - fmin(draws, na.rm = FALSE))
 
   ranges <= sqrt(.Machine$double.eps) * max(abs(draws), .Machine$double.xmin)
 }
@@ -92,7 +90,8 @@ posterior_p_value <- function(draws, parm, null = 0, simultaneous = FALSE) {
   lo <- apply(draws, 2L, rank, ties.method = "min")
   hi <- apply(draws, 2L, rank, ties.method = "max")
 
-  apply(pmin(hi - 1L, R - lo), 1L, min) / (R - 1)
+  # The minimum of each row, as column minima of the transpose
+  unname(fmin(t(pmin(hi - 1L, R - lo)))) / (R - 1)
 }
 
 # The largest tail probability at which `null` is inside the equal-tailed

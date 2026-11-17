@@ -147,6 +147,7 @@ Reiter, J. P. (2007). Small-sample degrees of freedom for multi-component signif
 \item \code{\link[=reference_curve]{reference_curve()}} for computing the difference between each point on the ADRF and a specific reference point
 \item \code{\link[=curve_contrast]{curve_contrast()}} for contrasting ADRFs computed within subgroups
 \item \code{\link[=amef]{amef()}} for computing the average marginal effect function (AMEF), the derivative of the ADRF
+\item \code{\link[=shift_curve]{shift_curve()}} for estimating the mean outcome when every unit's treatment is shifted from its observed value
 \item \code{\link[marginaleffects:avg_predictions]{marginaleffects::avg_predictions()}} for computing average adjusted predictions for fitted models (similar to the ADRF)
 }
 }

@@ -8,7 +8,7 @@
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to perform tests. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
 #' @param transform whether to perform the test on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `object` is an ADRF object. See Details.
 #' @param df the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
-#' @param integrate string; how the deviations of the effect curve from the hypothesized curve are weighted across treatment values in the test statistic. Allowable options include `"uniform"` (the default), which weights all treatment values in the range of the effect curve equally, and `"empirical"`, which weights them by an estimate of the density of the treatment. See Details.
+#' @param integrate string; how the deviations of the effect curve from the hypothesized curve are weighted across treatment values in the test statistic. Allowable options include `"uniform"` (the default), which weights all treatment values in the range of the effect curve equally, and `"empirical"`, which weights them by an estimate of the density of the treatment. Only `"uniform"` can be used with a shift curve (see [shift_curve()]). See Details.
 #' @param nsim when `method` is `"sim"`, the number of iterations used to simulate the p-values. Higher numbers give more accurate p-values subject to less Monte Carlo error but are slower and require more memory. Default is 1,000,000.
 #' @param \dots when `method` is `"imhof"` or `"davies"`, further arguments passed to \pkgfun{CompQuadForm}{imhof} or \pkgfun{CompQuadForm}{davies}, respectively.
 #' @param x a `summary.effect_curve` object.
@@ -50,7 +50,7 @@
 #'
 #' The test statistic integrates the squared deviations of the effect curve from the hypothesized curve over the range of treatment values at which the effect curve was computed, and `integrate` controls how treatment values are weighted in that integral. With `integrate = "uniform"`, every treatment value in the range counts equally. With `integrate = "empirical"`, the integral is weighted by the density of the treatment, so departures from the null hypothesis count in proportion to how common the treatment values at which they occur are; for example, with `hypothesis = "flat"`, the statistic is the variance of the ADRF over the distribution of the treatment. The null hypothesis is the same under either option; only the test statistic, and therefore the power against different alternatives, differs. Because the effect curve is estimated least precisely where the treatment is sparse, `integrate = "empirical"` gives the least precise estimates the least weight, which can increase power when the treatment is unevenly distributed; when it is evenly distributed, the two options give nearly the same result.
 #'
-#' The density is estimated using [density()] with its default bandwidth from the treatment values of all units used to compute the effect curve (including those outside `range`), weighted by `wts`, separately within each subgroup defined by `by`; a contrast between subgroups uses the density of the two subgroups pooled. The density is treated as known. Because the integral is over the range of the effect curve, with the default `range` of .95 in [adrf()], the test concerns the middle 95% of the distribution of the treatment; setting `range = 1` makes it concern the whole distribution.
+#' The density is estimated using [density()] with the bandwidth given by Scott's rule (i.e., [bw.nrd()]) from the treatment values of all units used to compute the effect curve (including those outside `range`), weighted by `wts`, separately within each subgroup defined by `by`; a contrast between subgroups uses the density of the two subgroups pooled. The density is treated as known. Because the integral is over the range of the effect curve, with the default `range` of .95 in [adrf()], the test concerns the middle 95% of the distribution of the treatment; setting `range = 1` makes it concern the whole distribution.
 #'
 #' @references
 #' Kuonen, D. (1999). Saddlepoint approximations for distributions of quadratic forms in normal variables. *Biometrika*, 86(4), 929–935. \doi{10.1093/biomet/86.4.929}
@@ -373,6 +373,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   attr(out, ".treat") <- .attr(object, ".treat")
   attr(out, ".values") <- .values
   attr(out, ".curve_type") <- get_curve_type(object)
+  attr(out, ".shift") <- .attr(object, ".shift")
   attr(out, ".contrast") <- .contrast
   attr(out, ".by_grid") <- .by_grid
   attr(out, ".reference") <- .attr(object, ".reference")
@@ -397,7 +398,7 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
   width <- min(55L, getOption("width", 55L))
 
   qoi <- paste(c(if (isTRUE(transformed) && is.numeric(hypothesis)) "transformed",
-                 get_curve_type(x),
+                 .curve_type_label(x),
                  if (!is_null(.contrast)) "contrast",
                  if (!is_null(.reference)) sprintf("difference from reference (%s = %s)",
                                                       .treat, round(.reference, 4L))),

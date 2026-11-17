@@ -1,0 +1,416 @@
+---
+title: "Shift Interventions and Average Derivative Effects"
+author: "Noah Greifer"
+date: "`r Sys.Date()`"
+output:
+    html_vignette:
+      toc: true
+vignette: >
+  %\VignetteIndexEntry{Shift Interventions and Average Derivative Effects}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown_notangle}
+bibliography: references.bib
+link-citations: true
+editor_options:
+  chunk_output_type: console
+---
+
+```{=html}
+<style>
+/* Make output scroll */
+pre {overflow-x: auto;}
+pre code {word-wrap: normal; white-space: pre;}
+</style>
+```
+
+```{r, echo = FALSE}
+splines_ok <- rlang::is_installed("splines")
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "##",
+  fig.width = 5.5,
+  fig.height = 3.5,
+  fig.align = "center",
+  eval = splines_ok,
+  message = FALSE
+)
+
+rlang::local_options(width = 200)
+
+test <- FALSE #set to FALSE to run the whole thing, TRUE for speed
+fwb_ok <- rlang::is_installed("fwb") && splines_ok && !test
+
+set.seed(123456)
+```
+
+## Introduction
+
+The average dose-response function (ADRF), $\theta_\text{ADRF}(a) = E[Y(a)]$, describes the expected outcome if every unit in the population received treatment value $a$. Estimating it requires that every unit could have received every treatment value in the range of the ADRF, which is a strong requirement when the treatment is strongly related to the covariates. For example, if children from low-income households rarely have low blood lead levels, the ADRF at low blood lead levels depends on what the outcome model predicts for low-income children at blood lead levels few such children have, which involves extrapolation from the model rather than information in the data [@lundbergCausalInferenceContinuous2026]. See `vignette("adrftools")` for estimating and characterizing the ADRF itself.
+
+An alternative is to ask what would happen if each unit's treatment were changed from the value it actually received rather than set to the same value for everyone. Interventions of this kind, which depend on the treatment each unit would otherwise have received, are known as modified treatment policies or shift interventions [@diazmunozPopulationInterventionCausal2012; @haneuseEstimationEffectInterventions2013]. For a function $g(a, \delta)$ that maps a unit's observed treatment $a$ and a shift $\delta$ to a new treatment value, the shift curve is $$
+\psi(\delta) = E[Y(g(A, \delta))]
+$$where $A$ is the treatment each unit received. The simplest and most common choice is the additive shift, $g(a, \delta) = a + \delta$, for which $\psi(\delta)$ is the expected outcome if every unit's treatment were increased by $\delta$ (or decreased, when $\delta$ is negative). With $\delta = 0$, every unit receives the treatment it actually received, so $\psi(0)$ is the mean outcome in the population. Under the usual causal assumptions, the shift curve is identified as $$
+E[Y(g(A, \delta))] = E\left[ \mu(g(A, \delta), X) \right]
+$$where $\mu(a, x) = E[Y|A = a, X = x]$ is the expected outcome given treatment $a$ and covariates $x$ and the outer expectation is over the joint distribution of the treatment and covariates [@haneuseEstimationEffectInterventions2013]. This requires that units could have received treatment values near those they actually received, which is a much weaker requirement than that every unit could have received every value, as long as the shift is small.
+
+The derivative of the additive shift curve at a shift of 0 is the average derivative effect (ADE), $$
+\theta_\text{ADE} = \frac{d\psi(\delta)}{d\delta}\Bigr|_{\delta = 0} = E\left[\frac{\partial \mu(A, X)}{\partial a}\right]
+$$The ADE is the slope of the outcome with respect to the treatment for each unit at the treatment it actually received, averaged over units; it is the change in the mean outcome per unit of an infinitesimal shift in every unit's treatment. Because it involves only treatment values arbitrarily close to those actually received, it requires positivity only locally, and because it is a single number, it can serve as a summary of the effect of a continuous treatment much as the average treatment effect does for a binary one [@hinesParameterizingEffectContinuous2026].
+
+### Shift Curves and the ADE in *adrftools*
+
+*adrftools* estimates shift curves using g-computation with `shift_curve()`, which works like `adrf()`: it takes a fitted outcome model and the name of the treatment and returns an `<effect_curve>` object, but its argument is the shift rather than the treatment. All functions that operate on effect curves work with shift curves as well, including `plot()`, `summary()`, `reference_curve()`, `curve_contrast()`, `curve_projection()`, and `amef()`. `ade()` computes the ADE from a shift curve.
+
+Inference uses the same machinery as `adrf()`. By default, standard errors are unconditional, accounting for sampling from the population as well as for estimation of the outcome model [@hansenVarianceEstimationAverage2024]. Because the shifted treatment of each unit depends on the treatment it received, the unconditional standard errors account for the sampling of the treatment along with that of the covariates. The ADE can also be computed with `marginaleffects::avg_slopes()` [@arel-bundockHowInterpretStatistical2024], which by default treats the sample as fixed; we compare the two below.
+
+### This Guide
+
+In this guide, we will walk through an analysis of the effect of blood lead levels on cognitive test scores using shift interventions. First we'll fit the outcome model and compute and plot the shift curve. Next we'll consider the size of the shift and compute the effects of specific shifts and the ADE, and compare the ADE to the summaries of the ADRF described in `vignette("adrftools")`. Then we'll examine subgroup differences and other kinds of shifts, and finally other scenarios that require special attention. First we'll load *adrftools* using `library()`.
+
+```{r}
+library(adrftools)
+```
+
+## The Data
+
+We use the `nhanes3lead` dataset that comes with *adrftools*, a subset of the NHANES III survey, also used in `vignette("adrftools")`.
+
+```{r}
+data("nhanes3lead")
+```
+
+The treatment is `logBLL`, the natural log of blood lead levels in μg/dL, and the outcome is `Math`, the score on the WISC Math test. Covariates include `Age`, `Male`, `Race`, `PIR`, `Enough_Food`, `Smoke_in_Home`, `Smoke_Pregnant`, and `NICU`.
+
+## Analysis
+
+We will use *adrftools* to answer the following research questions:
+
+-   How would the average Math score change if every child's blood lead level were shifted up or down?
+-   What is the effect of a small change in blood lead levels, summarized as a single number?
+-   How does that number relate to the ADRF?
+-   Do the effects of shifts in blood lead levels differ between boys and girls?
+-   What would happen if blood lead levels were reduced by a given proportion or capped at a given level?
+
+### Fitting the outcome model
+
+As with the ADRF, the first step is to fit a flexible outcome model, whose coefficients we will not interpret. Below, we use `lm()` to fit a linear regression of `Math` on `logBLL`, entered as a natural cubic spline with 5 degrees of freedom, the covariates, and their interactions, allowing the relationship to differ by `Male`. This is the same model used in `vignette("adrftools")`.
+
+```{r}
+fit <- lm(Math ~ splines::ns(logBLL, df = 5) * Male *
+            (Age + Race + PIR + Enough_Food +
+               Smoke_in_Home + Smoke_Pregnant + NICU),
+          data = nhanes3lead)
+```
+
+### Computing and plotting the shift curve
+
+To compute the shift curve, we supply the outcome model to `shift_curve()` along with the name of the treatment.
+
+```{r}
+sc_bll <- shift_curve(fit, treat = "logBLL")
+```
+
+Printing the object displays information about the shift curve.
+
+```{r}
+sc_bll
+```
+
+By default, the shift is additive (`shift_fun = "additive"`), and the shift curve is computed for shifts from half a standard deviation of the treatment below to half a standard deviation above the treatment each unit received. The standard deviation of `logBLL` is `r round(sd(nhanes3lead$logBLL), 3)`, so the shifts range from `r round(min(attr(sc_bll, ".values")), 3)` to `r round(max(attr(sc_bll, ".values")), 3)` on the log scale. The range is printed in the units of the treatment and, in parentheses, in standard deviations.
+
+Like an ADRF, a shift curve is a function. To display the estimates at shifts of -.3, 0, and .3, we supply those values to the `shift` argument and call `summary()` on the output:
+
+```{r}
+sc_bll(shift = c(-.3, 0, .3)) |>
+  summary()
+```
+
+The estimate at a shift of 0 is the mean of the predicted outcomes at the treatment values the children actually received, which, for a linear model with an intercept, is the mean of `Math` in the sample. The estimate at a shift of -.3 is the expected mean Math score if every child's `logBLL` were .3 lower than it was, which corresponds to blood lead levels about `r round(100 * (1 - exp(-.3)))`% lower.
+
+We can plot the shift curve with `plot()`:
+
+```{r}
+plot(sc_bll)
+```
+
+The x-axis is the shift and the y-axis is the expected outcome under that shift. As with the ADRF, the shaded region is the 95% simultaneous confidence band. The shift curve slopes downward, indicating that shifting every child's blood lead level upward would lower average Math scores and shifting it downward would raise them.
+
+### Choosing the size of the shift
+
+The size of the shift is controlled by the `shift` argument. A single number `s` requests shifts from `-s` to `s`; for an additive shift, it is in standard deviations of the treatment, so the default `shift = .5` means half a standard deviation in each direction. Two numbers request the lower and upper bounds of the shift in the units of the treatment; for example, `shift = c(-1, 0)` requests shifts from a decrease of 1 to no change.
+
+The advantage of shift interventions over the ADRF holds only for small shifts. A large shift moves some units to treatment values that units like them rarely receive, at which point the shift curve depends on extrapolation from the outcome model just as the ADRF does [@lundbergCausalInferenceContinuous2026]. One simple check is how many units are moved beyond the range of the observed treatment values. Below, we compute the proportion of children whose `logBLL` would fall below the smallest observed value or above the largest observed value under the largest shifts in the default range:
+
+```{r}
+s <- .5 * sd(nhanes3lead$logBLL)
+
+# Proportion moved below the smallest observed value
+mean(nhanes3lead$logBLL - s < min(nhanes3lead$logBLL))
+
+# Proportion moved above the largest observed value
+mean(nhanes3lead$logBLL + s > max(nhanes3lead$logBLL))
+```
+
+About `r round(100 * mean(nhanes3lead$logBLL - s < min(nhanes3lead$logBLL)))`% of children would be moved below the lowest observed blood lead level by the largest downward shift, because many children have blood lead levels near the minimum, whereas very few would be moved above the highest one. Estimates for large downward shifts therefore rely on extrapolation for some children, which suggests focusing on smaller shifts in that direction. This check concerns the marginal distribution of the treatment; a shift can also move units to values that are within the observed range but rare among units with similar covariates. Ideally, the size of the shift should be chosen to be substantively meaningful (e.g., corresponding to a feasible intervention) and small relative to the variation of the treatment among units with similar covariates.
+
+The grid of shifts is treated as fixed in computing standard errors, as the range of the ADRF is in `adrf()`, even though, when `shift` is a single number, it depends on the standard deviation of the treatment in the sample.
+
+### Effects of shifts
+
+The shift curve gives expected outcomes under each shift; the effect of a shift is the difference between the expected outcome under that shift and that under no shift. We can compute these differences using `reference_curve()` with `reference = 0`:
+
+```{r}
+sc_bll_ref <- reference_curve(sc_bll, reference = 0)
+```
+
+Plotting the reference curve displays the effect of each shift, with a horizontal line at 0 indicating no effect.
+
+```{r}
+plot(sc_bll_ref)
+```
+
+The confidence band narrows near a shift of 0, because the effects of small shifts are estimated more precisely. Below, we estimate the effects of a few specific shifts:
+
+```{r}
+est_ref <- sc_bll_ref(shift = c(-.3, -.1, .1, .3))
+
+summary(est_ref)
+```
+
+For example, decreasing every child's `logBLL` by .3 would increase the average Math score by an estimated `r round(est_ref$estimate[1], 3)` points, with a 95% simultaneous confidence interval excluding 0.
+
+To test whether any shift in the range changes the average outcome, we can use `summary()` on the shift curve itself, which tests whether the shift curve is flat (see `vignette("adrftools")` for details on these tests):
+
+```{r}
+summary(sc_bll)
+```
+
+The small p-value indicates that at least some shifts in the range change the average Math score. We can also test whether the shift curve is linear in the range of shifts:
+
+```{r}
+summary(sc_bll, hypothesis = "linear")
+```
+
+We cannot reject the null hypothesis that the shift curve is linear, so there isn't evidence that the effects of the shifts in this range depart from being proportional to their size. This makes the ADE, described next, a reasonable summary of the effects of the shifts.
+
+### The average derivative effect
+
+To compute the ADE, we supply the shift curve to `ade()` and use `summary()` on the output to perform inference:
+
+```{r}
+ade_bll <- ade(sc_bll)
+
+summary(ade_bll)
+```
+
+The ADE of `r round(coef(ade_bll), 3)` means that shifting every child's `logBLL` upward by a small amount would change the average Math score by approximately `r round(coef(ade_bll), 3)` times the size of that shift. For example, a shift of -.1 would increase the average Math score by approximately `r round(-.1 * coef(ade_bll), 3)` points, which is close to the estimate of `r round(est_ref$estimate[2], 3)` for that shift computed above. The confidence interval excludes 0, so we can conclude that small shifts in blood lead levels affect Math scores.
+
+`ade()` computes the ADE as the derivative of the shift curve at a shift of 0, using the same numerical differentiation as `amef()`, and computes its standard error from that of the shift curve using the delta method (or from the bootstrap replicates or posterior draws when those are used). For smooth outcome models such as this one, the result does not depend on the range of shifts in the shift curve, as long as it includes 0, and agrees with the ADE computed directly from the slopes of the predictions, as `marginaleffects::avg_slopes()` does:
+
+```{r}
+marginaleffects::avg_slopes(fit, variables = "logBLL")
+```
+
+The estimates are the same, but the standard error from `avg_slopes()` is smaller because by default it is conditional on the sample, treating the covariates and treatment values as fixed. The unconditional standard error from `ade()` additionally accounts for the variation of the slope across children, which is appropriate when the ADE is to generalize to the population from which the sample was drawn. Setting `vcov = "conditional"` in the call to `shift_curve()` reproduces the conditional standard error; we demonstrate this in the section "Additional Scenarios" below.
+
+### The ADE, the AMEF, and the projection of the ADRF
+
+`vignette("adrftools")` describes other ways of summarizing the effect of a continuous treatment, in particular the average marginal effect function (AMEF), the derivative of the ADRF, and the slope of the linear projection of the ADRF. These are related to the ADE but answer different questions.
+
+The AMEF at a treatment value $a$ averages the slope of the outcome at $a$ over the distribution of the covariates in the whole population, whereas the ADE averages each unit's slope at the treatment value it actually received. The slope of the linear projection of the ADRF is a weighted average of the AMEF across treatment values, with weights determined by `integrate`; with `integrate = "empirical"`, the weights depend on the distribution of the treatment, but at each treatment value, the slope is still averaged over the covariates of all units. When the treatment is unrelated to the covariates (e.g., in a randomized trial), these quantities coincide, but when it is related to them, they differ: the ADE gives more weight to the slopes of the units most likely to receive each treatment value, and it does not require that every unit could have received every treatment value. The projection slopes are computed below:
+
+```{r}
+adrf_bll <- adrf(fit, treat = "logBLL")
+
+# Projection with uniform weighting
+curve_projection(adrf_bll, "linear") |>
+  summary()
+
+# Projection weighted by the treatment density
+curve_projection(adrf_bll, "linear", integrate = "empirical") |>
+  summary()
+```
+
+Here, the slopes of the linear projections are somewhat steeper than the ADE, though all three indicate a similar negative effect. Which summary to report depends on the question of interest: the projection slope describes the shape of the ADRF, the effect of setting everyone's treatment to each value, whereas the ADE describes the effect of small changes to the treatment children actually received, which relies on weaker assumptions [@hinesParameterizingEffectContinuous2026].
+
+### Subgroup shift curves and ADEs
+
+As with `adrf()`, the `by` argument to `shift_curve()` computes shift curves within subgroups. Below, we compute the shift curve within levels of `Male`:
+
+```{r}
+sc_bll_by_male <- shift_curve(fit, treat = "logBLL",
+                              by = ~Male)
+```
+
+With an additive shift and `shift` supplied as a single number, the shifts are in standard deviations of the treatment computed over both subgroups pooled, so the subgroups have the same grid of shifts and their shift curves can be contrasted. We can plot the shift curves for both groups:
+
+```{r}
+plot(sc_bll_by_male)
+```
+
+Calling `ade()` on the subgroup shift curve computes the ADE within each subgroup:
+
+```{r}
+ade(sc_bll_by_male) |>
+  summary()
+```
+
+To compare subgroups, we can use `curve_contrast()`. It is important to choose what is being contrasted. Contrasting the shift curves themselves compares the expected outcomes under each shift, which differ when the subgroups differ in their average outcomes even if the shifts have the same effects in both. Below, we test whether the shift curves differ between boys and girls:
+
+```{r}
+curve_contrast(sc_bll_by_male) |>
+  summary()
+```
+
+The small p-value indicates that the expected Math scores differ between boys and girls, but not necessarily that the effects of the shifts differ. To compare the effects of the shifts, we can contrast the reference curves, which compare the effect of each shift relative to no shift:
+
+```{r}
+sc_bll_ref_contrast <- sc_bll_by_male |>
+  reference_curve(reference = 0) |>
+  curve_contrast()
+
+summary(sc_bll_ref_contrast)
+```
+
+Here, we cannot reject the null hypothesis that the effects of the shifts are the same for boys and girls. Similarly, `ade()` applied to a contrast of shift curves computes the difference between the ADEs in the subgroups:
+
+```{r}
+curve_contrast(sc_bll_by_male) |>
+  ade() |>
+  summary()
+```
+
+The confidence interval for the difference between the ADEs is wide and includes 0, so there isn't evidence that small shifts in blood lead levels affect Math scores differently for boys and girls. For other approaches to characterizing the heterogeneity of the effects of shift interventions, see @palHeterogeneousEffectsContinuous2026 and @lundbergCausalInferenceContinuous2026.
+
+### Other shift interventions
+
+The additive shift is not the only intervention of interest. The `shift_fun` argument to `shift_curve()` controls how each unit's treatment is changed by the shift. Setting `shift_fun = "multiplicative"` multiplies each unit's treatment by 1 plus the shift, so that a shift of -.1 corresponds to a 10% decrease; this can only be used when the treatment is nonnegative. More generally, `shift_fun` can be a function of two arguments, the vector of observed treatment values and a single value of the shift, that returns the vector of shifted treatment values. This allows for a wide range of modified treatment policies [@haneuseEstimationEffectInterventions2013].[^1]
+
+[^1]: As an extreme example, supplying `shift_fun = function(a, delta) {a[] <- delta; a}` sets every unit's treatment to `delta` regardless of the treatment it received, so the shift curve is the ADRF. The estimates and their standard errors are identical to those computed by `adrf()` over the same range.
+
+#### Proportional reductions
+
+Interventions on blood lead levels might be more naturally described as reducing them by a proportion, e.g., by 10%, rather than by a fixed amount on the log scale. Because our treatment is the log of blood lead levels, multiplying blood lead levels by $1 + \delta$ adds $\log(1 + \delta)$ to `logBLL`, so we can't use `shift_fun = "multiplicative"`, which would multiply `logBLL` itself. Instead, we define a function that performs the corresponding shift on the log scale and supply it to `shift_fun`. Giving the function a name means the name is used to describe the shift when the shift curve is printed and plotted.
+
+```{r}
+# Multiply each child's blood lead level by 1 + delta
+proportional <- function(a, delta) a + log1p(delta)
+
+sc_bll_prop <- shift_curve(fit, treat = "logBLL",
+                           shift = c(-.5, 0),
+                           shift_fun = proportional)
+
+sc_bll_prop
+```
+
+Here, the shifts range from -.5 (i.e., halving every child's blood lead level) to 0 (no change). As before, we use `reference_curve()` to compute the effects of the shifts relative to no shift and plot the result:
+
+```{r}
+sc_bll_prop_ref <- reference_curve(sc_bll_prop, reference = 0)
+
+plot(sc_bll_prop_ref)
+```
+
+The x-axis is the proportional change in blood lead levels. Below, we estimate the effects of specific proportional reductions:
+
+```{r}
+sc_bll_prop_ref(shift = c(-.5, -.25, -.1)) |>
+  summary()
+```
+
+Reducing every child's blood lead level by 10% would increase the average Math score by an estimated `r round(sc_bll_prop_ref(shift = -.1)$estimate, 3)` points, and halving it would increase the average Math score by `r round(sc_bll_prop_ref(shift = -.5)$estimate, 3)` points, though the latter involves large shifts that rely more on extrapolation.
+
+Because $\log(1 + \delta)$ has a derivative of 1 at $\delta = 0$, the ADE of this shift curve is the same as that of the additive shift curve, but it has a different interpretation: it is the change in the average Math score per unit proportional change in every child's blood lead level, so multiplying it by .01 gives the change for a 1% increase.
+
+```{r}
+ade(sc_bll_prop) |>
+  summary()
+```
+
+More generally, the ADE for a shift function $g(a, \delta)$ averages each unit's slope weighted by the derivative of $g$ with respect to $\delta$ at 0. With `shift_fun = "multiplicative"`, this is $E[A \, \partial \mu(A, X)/\partial a]$, which differs from the additive ADE unless the slope is unrelated to the treatment.
+
+#### Capping the treatment
+
+A policy might aim to ensure that no child has a blood lead level above a given threshold, leaving children below the threshold unaffected. The shift curve for such a policy has the threshold as its argument, and the shift function caps each unit's treatment at the threshold using `pmin()`. Below, we define this function and consider thresholds from 2 μg/dL to 30 μg/dL, which is above the largest observed blood lead level, so that a cap at that value leaves every child's blood lead level unchanged:
+
+```{r}
+# Cap each child's logBLL at delta
+cap <- function(a, delta) pmin(a, delta)
+
+sc_bll_cap <- shift_curve(fit, treat = "logBLL",
+                          shift = log(c(2, 30)),
+                          shift_fun = cap)
+```
+
+We use `reference_curve()` with `reference = log(30)` to compute the effects of each cap relative to no cap, and plot the result:
+
+```{r}
+sc_bll_cap_ref <- reference_curve(sc_bll_cap, reference = log(30))
+
+plot(sc_bll_cap_ref)
+```
+
+The x-axis is the cap on `logBLL`, labeled with the name of the shift function. Lower caps affect more children and have larger effects. We can estimate the effects of caps at a few thresholds, such as 3.5, 5, and 10 μg/dL:
+
+```{r}
+sc_bll_cap_ref(shift = log(c(3.5, 5, 10))) |>
+  summary()
+```
+
+Capping blood lead levels at 3.5 μg/dL would increase the average Math score by an estimated `r round(sc_bll_cap_ref(shift = log(3.5))$estimate, 3)` points. Positivity is a concern here as well: a low cap moves children with high blood lead levels to values that may be rare among children with their characteristics, and the estimates for those children rely on the outcome model. `ade()` cannot be used with this shift curve because a shift of 0 does not leave every child's treatment unchanged.
+
+## Additional Scenarios
+
+All the scenarios described in `vignette("adrftools")`, including nonlinear outcome models, balancing and sampling weights, multiply imputed data, and Bayesian models, work the same way with `shift_curve()` as with `adrf()`. Below, we briefly describe the differences specific to shift curves and the ADE.
+
+### Inference
+
+As with `adrf()`, the `vcov` argument to `shift_curve()` controls how uncertainty is estimated. Setting `vcov = "conditional"` computes standard errors that treat the sample as fixed, which reproduces those computed by `marginaleffects::avg_slopes()` for the ADE:
+
+```{r}
+sc_bll_cond <- shift_curve(fit, treat = "logBLL",
+                           vcov = "conditional")
+
+ade(sc_bll_cond) |>
+  summary()
+```
+
+Setting `vcov = "fwb"` or `vcov = "boot"` uses the fractional weighted or traditional bootstrap, respectively, which, like the default unconditional standard errors, accounts for sampling from the population. With the bootstrap, the ADE is computed in each bootstrap replicate from that replicate's shift curve, and percentile confidence intervals are computed by default.
+
+```{r, eval = fwb_ok}
+sc_bll_boot <- shift_curve(fit, treat = "logBLL",
+                           vcov = "fwb",
+                           fwb.args = list(R = 500, verbose = FALSE))
+
+ade(sc_bll_boot) |>
+  summary()
+```
+
+### Nonlinear outcome models
+
+For a binary outcome, the shift curve is on the probability scale by default, and its confidence intervals are computed on the transformed (e.g., logit) scale and back-transformed, as for the ADRF. The ADE is the average of each unit's slope of the probability with respect to the treatment. Below, we use a binarized version of `Block` as the outcome, as in `vignette("adrftools")`:
+
+```{r}
+nhanes3lead$Block_bin <- as.integer(nhanes3lead$Block >= 12)
+
+fit_bin <- glm(Block_bin ~ splines::ns(logBLL, df = 5) *
+                 (Age + Male + Race + PIR + Enough_Food +
+                    Smoke_in_Home + Smoke_Pregnant + NICU),
+               data = nhanes3lead,
+               family = binomial)
+
+sc_bll_bin <- shift_curve(fit_bin, treat = "logBLL")
+
+ade_bll_bin <- ade(sc_bll_bin)
+
+summary(ade_bll_bin)
+```
+
+The ADE of `r round(coef(ade_bll_bin), 4)` means that a small increase in every child's `logBLL` would change the probability of a high Block score by about `r round(100 * coef(ade_bll_bin), 2)` percentage points per unit of the shift.
+
+### Bayesian models
+
+With Bayesian models, the posterior draws of the shift curve are used for inference on the shift curve and the ADE, as for the ADRF. One caveat applies to models whose predictions are step functions of the treatment, such as Bayesian additive regression trees [BART; @hillBayesianNonparametricModeling2011]. For such models, the derivative of each unit's prediction with respect to the treatment is 0 almost everywhere, so the ADE computed directly from the slopes of the predictions is not meaningful. The ADE computed by `ade()` reflects the change in the mean outcome over the spacing of the grid of shifts instead, which depends on the `shift` and `n` arguments to `shift_curve()`. In this case, it can be more informative to report the effects of specific, small shifts using `reference_curve()`.
+
+## References

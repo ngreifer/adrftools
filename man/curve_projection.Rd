@@ -33,7 +33,7 @@ curve_projection(x, model, transform = TRUE, integrate = "uniform")
 
 \item{transform}{whether to compute the projection using a transformation of the linear predictor. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless \code{x} is an ADRF. See Details.}
 
-\item{integrate}{string; how treatment values are weighted in fitting the projection. Allowable options include \code{"uniform"} (the default), which weights all treatment values in the range of the effect curve equally, and \code{"empirical"}, which weights them by an estimate of the density of the treatment. The weighting defines the projection, so the coefficients differ between the two options. See Details.}
+\item{integrate}{string; how treatment values are weighted in fitting the projection. Allowable options include \code{"uniform"} (the default), which weights all treatment values in the range of the effect curve equally, and \code{"empirical"}, which weights them by an estimate of the density of the treatment. The weighting defines the projection, so the coefficients differ between the two options. Only \code{"uniform"} can be used with a shift curve (see \code{\link[=shift_curve]{shift_curve()}}). See Details.}
 
 \item{object, object2}{a \code{curve_projection} object; the output of a call to \code{curve_projection()}.}
 

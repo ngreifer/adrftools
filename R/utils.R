@@ -453,7 +453,7 @@ all_apply <- function(X, FUN, ...) {
   df <- .mvt_df(df)
 
   az <- abs(z)
-  u <- sort(unique(az))
+  u <- funique(az, sort = TRUE)
 
   p_point <- {
     if (is.finite(df)) 2 * stats::pt(-u, df)
@@ -483,5 +483,5 @@ all_apply <- function(X, FUN, ...) {
 
   p <- rev(cummax(rev(p)))
 
-  p[match(az, u)]
+  p[fmatch(az, u)]
 }
