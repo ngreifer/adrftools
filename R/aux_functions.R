@@ -223,7 +223,7 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   if (fun == "adrf") {
     bad <- intersect(c("shift", "shift_fun"), dots_names)
 
-    if (length(bad) > 0L) {
+    if (!is_null(bad)) {
       arg::err("{.arg {bad}} can only be used with {.fun shift_curve}, which estimates the mean outcome when each unit's treatment is shifted from its observed value")
     }
   }
@@ -643,7 +643,7 @@ process_model_data_mi <- function(model, data = NULL) {
 
     m <- data[["m"]]
 
-    if (!is.numeric(m) || length(m) != 1L || m != length(model[["analyses"]])) {
+    if (!is_number(m) || m != length(model[["analyses"]])) {
       arg::err("the {.cls mids} object supplied to {.arg data} must have the same number of imputed datasets as models fit in {.arg x}")
     }
 
@@ -1197,7 +1197,7 @@ process_response <- function(model) {
   n <- fnrow(X)
 
   if (!is.matrix(Vp) || fncol(X) != fncol(Vp) || length(w) != n || length(r) != n ||
-      !is.numeric(scale) || length(scale) != 1L || !is.finite(scale) || scale <= 0) {
+      !is_number(scale) || !is.finite(scale) || scale <= 0) {
     return(NULL)
   }
 
@@ -1208,8 +1208,7 @@ process_response <- function(model) {
   # Scaled like sandwich::bread(), by the number of units with nonzero weight
   n_bread <- try(stats::nobs(model), silent = TRUE)
 
-  if (null_or_error(n_bread) || !is.numeric(n_bread) || length(n_bread) != 1L ||
-      !is.finite(n_bread)) {
+  if (null_or_error(n_bread) || !is_number(n_bread) || !is.finite(n_bread)) {
     n_bread <- sum(w > 0)
   }
 
@@ -1365,7 +1364,7 @@ process_response <- function(model) {
 .n_fit_units <- function(model, infl) {
   n <- try(stats::nobs(model), silent = TRUE)
 
-  if (null_or_error(n) || !is.numeric(n) || length(n) != 1L || !is.finite(n)) {
+  if (null_or_error(n) || !is_number(n) || !is.finite(n)) {
     n <- sum(rowSums(abs(infl)) > 0)
   }
 

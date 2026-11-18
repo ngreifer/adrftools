@@ -422,7 +422,7 @@ all_apply <- function(X, FUN, ...) {
   TRUE
 }
 
-#-------#cli utilities-------
+# cli utilities
 .it <- function(...) cli::style_italic(...)
 
 # mvtnorm::pmvt() and mvtnorm::qmvt() require integer degrees of freedom (and

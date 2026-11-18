@@ -773,7 +773,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       # zero model weights, so the scales are matched
       n_bread <- try(stats::nobs(x), silent = TRUE)
 
-      if (!null_or_error(n_bread) && is.numeric(n_bread) && length(n_bread) == 1L &&
+      if (!null_or_error(n_bread) && is_number(n_bread) &&
           n_bread > 0 && n_bread < fnrow(infl)) {
         infl <- infl * fnrow(infl) / n_bread
 

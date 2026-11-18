@@ -32,7 +32,7 @@ Collected while auditing the package and writing the test suite. Ordered roughly
 
 **Survival outcomes.** `coxph_weightit` and other survival models with `type = "survival"` at a chosen time, or restricted mean survival time.
 
-**Doubly robust estimation.** The pseudo-outcome kernel-smoothing estimator of Kennedy et al. (2017) for continuous treatments, taking a treatment-density model and an outcome model. It would fit the existing object design: the result is an `effect_curve` with an influence-function variance.
+**Doubly robust estimation.** The pseudo-outcome kernel-smoothing estimator of Kennedy et al. (2017) for continuous treatments, taking a treatment-density model and an outcome model. It would fit the existing object design: the result is an `effect_curve` with an influence-function variance. Planned (2026-11-18): a constructor for curves estimated elsewhere (with the `adrf()` method for *discoverHTE*'s `<erf>` objects in *discoverHTE*), then possibly Kennedy's estimator from the user's outcome model and GPS values or stabilized weights; see `_dev/plan-doubly-robust.md`.
 
 ## Data handling
 
