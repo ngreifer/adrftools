@@ -1226,3 +1226,73 @@ test_that("models without hat values use HC1, and models without CR2 use CR1", {
   })
 })
 
+
+test_that("unconditional variance of a gam() fit without smooths equals that of lm()", {
+  skip_if_not_installed("mgcv")
+
+  f <- Math ~ poly(logBLL, 2) * Male + PIR + Race
+
+  fit_lm <- lm(f, data = nhanes3lead)
+  fit_gam <- mgcv::gam(f, data = nhanes3lead)
+
+  a_lm <- adrf(fit_lm, treat = "logBLL", n = 5)
+
+  # The leverages are found, so there is no HC1 message
+  expect_no_message(a_gam <- adrf(fit_gam, treat = "logBLL", n = 5))
+
+  expect_equal(get_est(a_gam), get_est(a_lm), tolerance = 1e-8)
+  expect_equal(get_vcov(a_gam), get_vcov(a_lm), tolerance = 1e-8)
+})
+
+test_that("the influence of the units on the coefficients of a gam() fit matches mgcv's sandwich", {
+  skip_if_not_installed("mgcv")
+  skip_if_not_installed("patrick")
+
+  d <- nhanes3lead
+  d$wt <- rep(c(1, 2, 3), length.out = nrow(d))
+
+  patrick::with_parameters_test_that(
+    "{family$family}",
+    {
+      fit <- mgcv::gam(update(f, . ~ s(logBLL) + Male + PIR), data = d,
+                       family = family, method = "REML")
+
+      infl <- adrftools:::.coef_influence(fit, hc2 = FALSE)
+      n <- nrow(infl)
+
+      # vcov.gam(sandwich = TRUE) multiplies by n / (n - edf) and leaves out
+      # the prior weights (which are all 1 here)
+      V <- stats::vcov(fit, sandwich = TRUE, freq = TRUE) * (n - sum(fit$edf)) / n
+
+      expect_equal(crossprod(infl) / n^2, V, tolerance = 1e-8, ignore_attr = TRUE)
+
+      # The leverages are those of the penalized fit, which sum to the
+      # effective degrees of freedom
+      expect_equal(sum(adrftools:::.hat_values(fit, n)), sum(fit$edf), tolerance = 1e-8)
+    },
+    family = list(gaussian(), binomial(), poisson()),
+    f = list(Math ~ 1, I(Block >= 12) ~ 1, Block ~ 1)
+  )
+
+  # With prior weights, the coefficients' influence is that of a weighted
+  # sandwich: sum_i w_i^2 s_i s_i', with s_i the unweighted score
+  fit_w <- mgcv::gam(Math ~ s(logBLL) + Male + PIR, data = d, weights = wt,
+                     method = "REML")
+  infl_w <- adrftools:::.coef_influence(fit_w, hc2 = FALSE)
+  X <- stats::model.matrix(fit_w)
+  s <- X * d$wt * stats::residuals(fit_w, "response") / fit_w$sig2
+  expect_equal(crossprod(infl_w) / nrow(d)^2,
+               fit_w$Vp %*% crossprod(s) %*% fit_w$Vp,
+               tolerance = 1e-8, ignore_attr = TRUE)
+})
+
+test_that("gam() fits with extended families fall back to the conditional variance", {
+  skip_if_not_installed("mgcv")
+
+  fit <- mgcv::gam(Block ~ s(logBLL) + Male, data = nhanes3lead,
+                   family = mgcv::nb())
+
+  expect_warning(a <- adrf(fit, treat = "logBLL", n = 3),
+                 "unconditional")
+  expect_identical(as.character(attr(a, ".vcov_type")), "conditional")
+})

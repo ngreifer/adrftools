@@ -23,6 +23,8 @@ adrftools News and Updates
 
 * With `cluster`, the unconditional variance in `adrf()` now uses the CR2 adjustment described by Pustejovsky and Tipton (2018), the clustered analog of HC2, for `lm()` and `glm()` models, in place of the $G/(G-1)$ adjustment. Other models use the CR1 adjustment, $\frac{G}{G-1}\frac{n-1}{n-p}$, with a message.
 
+* Fixed a bug in `adrf()` in which unconditional standard errors for models fit with `mgcv::gam()` or `mgcv::bam()` were too small for families with an estimated dispersion (e.g., `gaussian()`), because the bread *sandwich* computes for these models leaves out the dispersion that its estimating functions divide by. Models with extended families, such as `mgcv::nb()`, now use the conditional variance with a warning.
+
 * Error messages now use *arg*, which is a new dependency.
 
 * *fwb* (>= 1.0.0) is now required for bootstrapping.

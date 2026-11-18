@@ -39,6 +39,7 @@ Suggests:
     brms,
     estimatr,
     fixest,
+    mgcv,
     rstanarm,
     stan4bart
 License: GPL (>=2)

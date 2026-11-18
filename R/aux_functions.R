@@ -1100,6 +1100,37 @@ process_response <- function(model) {
     return(fnrow(infl) * infl)
   }
 
+  eb <- {
+    if (inherits(model, "gam")) .gam_estfun_bread(model)
+    else .sandwich_estfun_bread(model)
+  }
+
+  if (is_null(eb)) {
+    return(NULL)
+  }
+
+  ef <- eb[["ef"]]
+  br <- eb[["br"]]
+
+  infl <- tcrossprod(ef, br)
+
+  if (hc2) {
+    infl <- .hc2_adjust(infl, model)
+  }
+
+  if (!is_null(cluster)) {
+    cr2 <- lapply(cluster, function(f) .cr2_estfun(model, ef, f))
+
+    if (!any_apply(cr2, is_null)) {
+      attr(infl, "cr2") <- lapply(cr2, tcrossprod, br)
+    }
+  }
+
+  infl
+}
+
+# estfun() and bread() from sandwich, as a list, or NULL when either fails
+.sandwich_estfun_bread <- function(model) {
   ef <- try({
     # A WeightIt fit with `vcov = "HC0"` treats the weights as fixed, so the
     # estimation of the weights is left out of the influence function
@@ -1127,21 +1158,62 @@ process_response <- function(model) {
     return(NULL)
   }
 
-  infl <- tcrossprod(ef, br)
+  list(ef = ef, br = br)
+}
 
-  if (hc2) {
-    infl <- .hc2_adjust(infl, model)
+# The equivalents of estfun() and bread() for mgcv's gam() and bam() fits, as
+# a list, or NULL when they cannot be computed. In sandwich 3.1-3 and
+# earlier, the methods do not agree for these fits: bread() has a gam method,
+# which omits the dispersion, but estfun() falls back to the glm method, which
+# divides by it, so with an estimated scale the standard errors are too small
+# by a factor of the dispersion. This is fixed in the development version
+# (3.1-3.99), with which the two give the same influence values for the
+# families supported here; this function can be replaced by
+# .sandwich_estfun_bread() once adrftools requires the fixed version.
+# mgcv::vcov.gam(sandwich = TRUE) cannot be used instead
+# because it omits the prior weights. The penalized coefficients solve
+# X'W(z - X beta) - S beta = 0, so the influence of unit i on them is
+# (X'WX + S)^(-1) x_i w_i r_i = Vp x_i w_i r_i / scale, with w_i and r_i the
+# working weights (which include the prior weights) and residuals. The
+# uncertainty in the smoothing parameters is not included. Extended families
+# (e.g., nb(), tw(), ocat()) estimate other parameters (theta) jointly with the coefficients,
+# which this leaves out, so they are not supported.
+.gam_estfun_bread <- function(model) {
+  if (!inherits(model[["family"]], "family") ||
+      inherits(model[["family"]], c("extended.family", "general.family"))) {
+    return(NULL)
   }
 
-  if (!is_null(cluster)) {
-    cr2 <- lapply(cluster, function(f) .cr2_estfun(model, ef, f))
+  X <- try(stats::model.matrix(model), silent = TRUE)
 
-    if (!any_apply(cr2, is_null)) {
-      attr(infl, "cr2") <- lapply(cr2, tcrossprod, br)
-    }
+  if (null_or_error(X)) {
+    return(NULL)
   }
 
-  infl
+  Vp <- model[["Vp"]]
+  scale <- model[["sig2"]]
+  w <- model[["weights"]]
+  r <- model[["residuals"]]
+  n <- fnrow(X)
+
+  if (!is.matrix(Vp) || fncol(X) != fncol(Vp) || length(w) != n || length(r) != n ||
+      !is.numeric(scale) || length(scale) != 1L || !is.finite(scale) || scale <= 0) {
+    return(NULL)
+  }
+
+  ef <- X * (w * r / scale)
+  attr(ef, "lpi") <- NULL
+  attr(ef, "model.offset") <- NULL
+
+  # Scaled like sandwich::bread(), by the number of units with nonzero weight
+  n_bread <- try(stats::nobs(model), silent = TRUE)
+
+  if (null_or_error(n_bread) || !is.numeric(n_bread) || length(n_bread) != 1L ||
+      !is.finite(n_bread)) {
+    n_bread <- sum(w > 0)
+  }
+
+  list(ef = ef, br = n_bread * Vp)
 }
 
 # The CR2 adjustment for the clustering factor `f`, as described by
@@ -1256,11 +1328,12 @@ process_response <- function(model) {
 
 # The HC1 factor n / (n - p), with n the number of units with nonzero weight
 # and p the number of estimated parameters (columns of estfun(), including
-# ancillary parameters such as thresholds); the leverages of any model sum to
-# p, so this corrects the bias for the average leverage. It is 1 when n <= p.
+# ancillary parameters such as thresholds, or the effective degrees of
+# freedom of a penalized fit); the leverages of any model sum to p, so this
+# corrects the bias for the average leverage. It is 1 when n <= p.
 .hc1_factor <- function(model, infl) {
   n <- .n_fit_units(model, infl)
-  p <- fncol(infl)
+  p <- .n_params(model, infl)
 
   if (n <= p) 1
   else n / (n - p)
@@ -1270,10 +1343,22 @@ process_response <- function(model) {
 # sandwich::vcovCL() with its default type. It is 1 when n <= p.
 .cr1_factor <- function(model, infl) {
   n <- .n_fit_units(model, infl)
-  p <- fncol(infl)
+  p <- .n_params(model, infl)
 
   if (n <= p) 1
   else (n - 1) / (n - p)
+}
+
+# The number of estimated parameters: the columns of estfun(), or the
+# effective degrees of freedom of a gam() or bam() fit, whose penalized
+# coefficients are not free parameters
+.n_params <- function(model, infl) {
+  if (inherits(model, "gam") && is.numeric(model[["edf"]]) &&
+      length(model[["edf"]]) == fncol(infl)) {
+    return(sum(model[["edf"]]))
+  }
+
+  fncol(infl)
 }
 
 # The number of units used to fit the model with nonzero weight
@@ -1291,7 +1376,8 @@ process_response <- function(model) {
 # they cannot be found. For lm() and glm() fits (and models inheriting from
 # them), they are computed from the QR decomposition stored in the fit, which
 # covers only the units with positive (working) weights; the others get a
-# leverage of 0. For other models, hatvalues() is used.
+# leverage of 0. gam() fits store their leverages. For other models,
+# hatvalues() is used.
 .hat_values <- function(model, n) {
   q <- model[["qr"]]
 
@@ -1311,6 +1397,17 @@ process_response <- function(model) {
       h <- numeric(n)
       h[pos] <- h0
       return(h)
+    }
+  }
+
+  # gam() fits store the leverages of the penalized fit, which sum to the
+  # effective degrees of freedom; bam() fits store something else in `hat`
+  if (inherits(model, "gam") && !inherits(model, "bam")) {
+    h <- model[["hat"]]
+
+    if (is.numeric(h) && length(h) == n && !anyNA(h) && all(h >= 0) &&
+        all(h <= 1 + sqrt(.Machine$double.eps))) {
+      return(unname(h))
     }
   }
 
