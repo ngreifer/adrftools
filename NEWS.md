@@ -5,8 +5,6 @@ adrftools News and Updates
 
 * New functions `shift_curve()` and `ade()`. `shift_curve()` estimates the mean outcome when every unit's treatment is shifted from its observed value (by a fixed amount, by a fixed proportion, or by a user-supplied function), as a function of the size of the shift, and so requires less extrapolation than the ADRF when the treatment is strongly related to the covariates. `ade()` computes the average derivative effect, the derivative of the shift curve at 0. Both support the same inference options as `adrf()`. See the new `vignette("shift-effects")` for details.
 
-* Error messages now use *arg*, which is a new dependency.
-
 * `summary.effect_curve()` and `curve_projection()` have a new argument, `integrate`, which controls how treatment values are weighted in the omnibus test statistic and in the projection. The default, `"uniform"`, weights all treatment values in the range of the effect curve equally, as before; `"empirical"` weights them by a kernel density estimate of the treatment, computed by `adrf()` from all units used (within each subgroup, and weighted by `wts`). Empirical weighting gives less weight to sparse regions of the treatment, where the effect curve is estimated least precisely, and had higher power in simulations with an unevenly distributed treatment.
 
 * With `svyglm` models, unconditional standard errors now account for the survey design, including clusters, strata, finite population corrections, calibration, and replicate weights. Previously, only the survey weights were used. `cluster` is now ignored with a warning for these models.
@@ -21,9 +19,11 @@ adrftools News and Updates
 
 * With `glm_weightit()` models fit with `vcov = "HC0"`, unconditional standard errors in `adrf()` now treat the weights as fixed, consistent with the model's own covariance matrix. Previously, the estimation of the weights was always accounted for.
 
-* The unconditional variance in `adrf()`, the default, now applies the HC2 small-sample adjustment of MacKinnon and White (1985), dividing each unit's influence on the model coefficients by $\sqrt{1 - h_i}$, where $h_i$ is its leverage. Previously, the variance had the downward bias of the HC0 sandwich estimator, which is largest at the extremes of the treatment and made the omnibus tests in `summary.effect_curve()` reject a true null hypothesis too often in small samples. The adjustment is not used with `svyglm` models; for models whose leverages cannot be found, the HC1 adjustment $n/(n-p)$ is used instead with a message.
+* The unconditional variance in `adrf()`, the default, now applies the HC2 small-sample adjustment of MacKinnon and White (1985), dividing each unit's influence on the model coefficients by $\sqrt{1 - h_i}$, where $h_i$ is its leverage. Previously, the variance had the downward bias of the HC0 sandwich estimator, which is largest at the extremes of the treatment and made the omnibus tests in `summary.effect_curve()` reject a true null hypothesis too often in small samples. The adjustment is not used with `svyglm` models; for models whose leverages cannot be found, the HC1 adjustment $\frac{n}{n-p}$ is used instead with a message.
 
 * With `cluster`, the unconditional variance in `adrf()` now uses the CR2 adjustment described by Pustejovsky and Tipton (2018), the clustered analog of HC2, for `lm()` and `glm()` models, in place of the $G/(G-1)$ adjustment. Other models use the CR1 adjustment, $\frac{G}{G-1}\frac{n-1}{n-p}$, with a message.
+
+* Error messages now use *arg*, which is a new dependency.
 
 * *fwb* (>= 1.0.0) is now required for bootstrapping.
 

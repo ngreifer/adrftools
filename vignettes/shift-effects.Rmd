@@ -86,11 +86,11 @@ The treatment is `logBLL`, the natural log of blood lead levels in μg/dL, and t
 
 We will use *adrftools* to answer the following research questions:
 
--   How would the average Math score change if every child's blood lead level were shifted up or down?
--   What is the effect of a small change in blood lead levels, summarized as a single number?
--   How does that number relate to the ADRF?
--   Do the effects of shifts in blood lead levels differ between boys and girls?
--   What would happen if blood lead levels were reduced by a given proportion or capped at a given level?
+- How would the average Math score change if every child's blood lead level were shifted up or down?
+- What is the effect of a small change in blood lead levels, summarized as a single number?
+- How does that number relate to the ADRF?
+- Do the effects of shifts in blood lead levels differ between boys and girls?
+- What would happen if blood lead levels were reduced by a given proportion or capped at a given level?
 
 ### Fitting the outcome model
 
