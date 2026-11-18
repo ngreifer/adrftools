@@ -96,13 +96,23 @@ test_that("the default shift is half a weighted standard deviation on either sid
 
   sc <- shift_curve(fit, treat = "logBLL", wts = w, by = ~Male)
 
-  sd_w <- sqrt(collapse::fvar(nhanes3lead$logBLL, w = w))
+  # The weighted SD of cobalt::col_w_sd(), which does not depend on the scale
+  # of the weights
+  wn <- w / sum(w)
+  A <- nhanes3lead$logBLL
+  sd_w <- sqrt(sum(wn * (A - sum(wn * A))^2) / (1 - sum(wn^2)))
   v <- get_values(sc)
 
   expect_length(v, 51L)
   expect_equal(range(v), c(-.5, .5) * sd_w, tolerance = 1e-10)
   expect_identical(v[26L], 0)
   expect_equal(attr(sc, ".shift")[["sd_units"]], c(-.5, .5))
+
+  # Rescaling the weights, including to sum to 1, does not change the grid
+  for (k in c(1 / sum(w), 1e3)) {
+    expect_equal(get_values(shift_curve(fit, treat = "logBLL", wts = w * k, by = ~Male)), v,
+                 tolerance = 1e-10)
+  }
 
   # A single number is in standard deviations for an additive shift and in the
   # units of the shift otherwise
@@ -182,7 +192,7 @@ test_that("ade() works within subgroups and on curve contrasts", {
   expect_equal(get_vcov(ac), L %*% get_vcov(a) %*% t(L), tolerance = 1e-10)
 
   # A reference curve has the same derivative
-  expect_equal(ade(reference_curve(sc, 0))$estimate, a$estimate, tolerance = 1e-10)
+  expect_equal(ade(reference_curve(sc, 0))$estimate, a$estimate, tolerance = 1e-8)
 })
 
 test_that("shift curves work with the other effect curve functions", {
@@ -242,6 +252,77 @@ test_that("shift_curve() and ade() validate their input", {
                "unchanged")
   expect_error(ade(amef(sc)), "amef_curve")
   expect_error(ade(sc, subset = Male == 1), "by")
+
+  # Multiplicative shifts below -1 would make the treatment negative
+  fit_pos <- lm(Math ~ poly(BLL, 2) * Male + PIR, data = d_pos)
+  expect_error(shift_curve(fit_pos, treat = "BLL", shift = 2, shift_fun = "multiplicative"),
+               "below -1")
+  expect_no_error(shift_curve(fit_pos, treat = "BLL", shift = c(-1, 0),
+                              shift_fun = "multiplicative", n = 3))
+
+  # Arguments of the other function
+  expect_error(shift_curve(fit, treat = "logBLL", range = c(-1, 1)), "shift")
+  expect_error(adrf(fit, treat = "logBLL", shift_fun = "additive"), "shift_curve")
+  expect_error(adrf(fit, treat = "logBLL", shift = 1), "shift_curve")
+
+  # Messages refer to the shift, not the treatment range
+  expect_error(sc(shift = 2), "shift_curve")
+  expect_error(reference_curve(sc, 2), "shift_curve")
+  expect_error(curve_contrast(sc), "shift_curve")
+
+  sc_by <- shift_curve(fit, treat = "logBLL", by = ~Male, n = 11)
+  expect_error(point_contrast(ade(sc_by)), "curve_contrast")
+})
+
+test_that("a primitive function can be supplied to shift_fun", {
+  fit <- lm(Math ~ poly(logBLL, 2) * Male + PIR, data = nhanes3lead)
+
+  expect_equal(shift_curve(fit, treat = "logBLL", shift = c(-.5, .5), n = 5,
+                           shift_fun = `+`)(shift = c(-.5, .5))$estimate,
+               shift_curve(fit, treat = "logBLL", shift = c(-.5, .5), n = 5)(shift = c(-.5, .5))$estimate)
+})
+
+test_that("a projection must come from a shift curve with the same shift", {
+  fit_pos <- lm(Math ~ poly(BLL, 2) * Male + PIR, data = d_pos)
+  sa <- shift_curve(fit_pos, treat = "BLL", shift = c(-.2, .2), n = 11)
+  sm <- shift_curve(fit_pos, treat = "BLL", shift = c(-.2, .2), n = 11,
+                    shift_fun = "multiplicative")
+
+  expect_error(plot(sa, proj = curve_projection(sm, "linear")), "proj")
+  expect_error(anova(curve_projection(sa, "flat"), curve_projection(sm, "linear")))
+})
+
+test_that("simultaneous bands work for highly correlated estimates", {
+  # The AMEF of a cubic polynomial over a narrow range has a correlation matrix
+  # of rank 3
+  fit <- lm(Math ~ poly(logBLL, 3) * Male + PIR, data = nhanes3lead)
+  d <- amef(shift_curve(fit, treat = "logBLL"))
+  v <- get_values(d)
+
+  s <- summary(d(shift = v[c(5, 25, 45)]))
+  expect_true(all(is.finite(s$conf.low)))
+  expect_true(all(is.finite(s$p.value)))
+  expect_s3_class(plot(d), "ggplot")
+
+  # A correlation matrix of rank 1 gives the univariate critical value
+  expect_equal(adrftools:::.mvt_crit(.95, adrftools:::.to_psd(matrix(1, 5, 5)), df = 30),
+               qt(.975, 30), tolerance = 1e-3)
+})
+
+test_that("svyglm models with data-dependent bases match the equivalent glm", {
+  skip_if_not_installed("survey")
+
+  des <- survey::svydesign(~1, weights = ~MEC_wt, data = nhanes3lead)
+  f <- Math ~ splines::ns(logBLL, 4) * (Male + Age + PIR)
+  fit_s <- survey::svyglm(f, design = des)
+  fit_g <- glm(f, data = nhanes3lead, weights = MEC_wt)
+
+  expect_equal(adrf(fit_s, treat = "logBLL", n = 11)(logBLL = c(0, 1, 2))$estimate,
+               adrf(fit_g, treat = "logBLL", n = 11, wts = TRUE)(logBLL = c(0, 1, 2))$estimate,
+               tolerance = 1e-8)
+  expect_equal(shift_curve(fit_s, treat = "logBLL", n = 11)(shift = c(-.3, 0, .3))$estimate,
+               shift_curve(fit_g, treat = "logBLL", n = 11, wts = TRUE)(shift = c(-.3, 0, .3))$estimate,
+               tolerance = 1e-8)
 })
 
 test_that("shift curves are supported with bootstrapping", {

@@ -63,7 +63,7 @@ test_that("curve_projection() validates its input", {
   expect_error(curve_projection(a), "model")
   expect_error(curve_projection(a, "wiggly"))
   expect_error(curve_projection(a, Math ~ logBLL), "one-sided")
-  expect_error(curve_projection(a, ~ logBLL + PIR), "Only the treatment")
+  expect_error(curve_projection(a, ~ logBLL + PIR), "is allowed to appear")
   expect_error(curve_projection(curve_projection(a, "linear"), "flat"),
                "curve_projection")
 })
@@ -279,9 +279,9 @@ test_that("projections and anova() give informative errors for unusable models",
   fit <- lm(Math ~ poly(logBLL, 3) + Male + PIR, data = nhanes3lead)
 
   a3 <- adrf(fit, treat = "logBLL", n = 3)
-  expect_error(curve_projection(a3, "cubic"), "only 3 values")
-  expect_error(summary(a3, "cubic"), "only 3 values")
-  expect_error(summary(a3, ~ logBLL + I(logBLL^2) + I(logBLL^3)), "only 3 values")
+  expect_error(curve_projection(a3, "cubic"), "only 3 grid points")
+  expect_error(summary(a3, "cubic"), "only 3 grid points")
+  expect_error(summary(a3, ~ logBLL + I(logBLL^2) + I(logBLL^3)), "only 3 grid points")
 
   a <- adrf(fit, treat = "logBLL", n = 11)
   expect_error(curve_projection(a, ~ logBLL + I(2 * logBLL)), "linearly dependent")

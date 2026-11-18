@@ -5,7 +5,7 @@
 #'
 #' @inheritParams adrf
 #' @param shift numeric; the sizes of the shift at which to compute the shift curve. Can be two numbers corresponding to the lower and upper bounds of the shift or a single number `s` corresponding to the range from `-s` to `s`. When `shift_fun = "additive"`, a single number is in standard deviations of the treatment; otherwise, it is in the units of the shift. Default is .5 when `shift_fun = "additive"`, i.e., shifts of up to half a standard deviation of the treatment in either direction; `shift` must be supplied otherwise. See Details.
-#' @param shift_fun how each unit's treatment is to be shifted. Allowable options include `"additive"` (the default), which adds the shift to the treatment, `"multiplicative"`, which multiplies the treatment by 1 plus the shift (e.g., a shift of .1 is a 10% increase), and a function of two arguments, the vector of observed treatment values and a single value of the shift, that returns the vector of shifted treatment values. `"multiplicative"` can only be used when the treatment is nonnegative. See Details.
+#' @param shift_fun how each unit's treatment is to be shifted. Allowable options include `"additive"` (the default), which adds the shift to the treatment, `"multiplicative"`, which multiplies the treatment by 1 plus the shift (e.g., a shift of .1 is a 10% increase), and a function of two arguments, the vector of observed treatment values and a single value of the shift, that returns the vector of shifted treatment values. `"multiplicative"` can only be used when the treatment is nonnegative, and the shifts cannot be below -1. See Details.
 #'
 #' @returns
 #' An object of class `shift_curve`, which inherits from `adrf_curve` and [`effect_curve`]. Its first argument is named `shift` rather than after the treatment, so estimates are requested as, e.g., `f(shift = c(-.2, 0, .2))`. See [`effect_curve-class`] for details on this function and its outputs.
@@ -19,7 +19,7 @@
 #'
 #' When `shift` is a single number and `shift_fun = "additive"`, the shifts are in standard deviations of the treatment, computed over the units in `subset`, weighted by `wts`, and pooled over the subgroups defined by `by` (and over the imputed datasets for multiply imputed data), so that every subgroup has the same grid of shifts and their shift curves can be contrasted. The grid itself is in the units of the treatment and is treated as fixed in computing standard errors, as the range of the ADRF is in [adrf()]. With the default `n` (odd) and a symmetric range, a shift of 0 is one of the grid points.
 #'
-#' A function supplied to `shift_fun` is called once for each grid value of the shift with the observed treatment values of all units, so it can be used to define other modified treatment policies. For example, `shift_fun = function(a, delta) pmin(a, delta)` caps every unit's treatment at `delta`, so the shift curve gives the mean outcome as a function of the cap, and `shift` gives the range of caps to consider. The function must return a finite treatment value for every unit at every shift, and the outcome model must be able to make predictions at those values. [ade()] can only be used when a shift of 0 leaves every unit's treatment unchanged, which is not the case for a cap.
+#' A function supplied to `shift_fun` is called once for each grid value of the shift with the observed treatment values of all units in `subset` (in all subgroups defined by `by` together), so it can be used to define other modified treatment policies. For example, `shift_fun = function(a, delta) pmin(a, delta)` caps every unit's treatment at `delta`, so the shift curve gives the mean outcome as a function of the cap, and `shift` gives the range of caps to consider. The function must return a finite treatment value for every unit at every shift, and the outcome model must be able to make predictions at those values. The function must also be deterministic (i.e., it must give the same result each time it is called with the same inputs). When it depends on the distribution of the observed treatment values (e.g., shifting each unit to a quantile of the treatment), that dependence is treated as fixed in computing standard errors. [ade()] can only be used when a shift of 0 leaves every unit's treatment unchanged, which is not the case for a cap.
 #'
 #' ## Inference
 #'
@@ -88,6 +88,8 @@ shift_curve.default <- function(x, treat, shift = NULL, shift_fun = "additive",
 
   arg::arg_supplied(treat)
 
+  .check_misplaced_args(...names(), "shift_curve")
+
   subset_substitute <- substitute(subset)
 
   shift_fun <- process_shift_fun(shift_fun,
@@ -109,6 +111,8 @@ shift_curve.mira <- function(x, treat, shift = NULL, shift_fun = "additive",
                              n = 51, ...) {
 
   arg::arg_supplied(treat)
+
+  .check_misplaced_args(...names(), "shift_curve")
 
   subset_substitute <- substitute(subset)
 

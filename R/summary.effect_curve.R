@@ -111,7 +111,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   .vcov_type <- .attr(object, ".vcov_type")
 
   if (.vcov_type == "none") {
-    arg::err('{.fun summary} cannot be used when {.code vcov = "none"} in the original call to {.fun adrf}')
+    arg::err('{.fun summary} cannot be used when {.code vcov = "none"} in the original call to {.fun {(.curve_fun(object))}}')
   }
 
   if (missing(hypothesis) || is_null(hypothesis)) {
@@ -131,7 +131,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     vars_in_formula <- get_varnames(hypothesis)
 
     if (!all(get_varnames(hypothesis) %in% .treat)) {
-      arg::err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg hypothesis} when supplied as a formula")
+      arg::err("only {.var {(.treat)}} is allowed to appear in {.arg hypothesis} when supplied as a formula")
     }
   }
   else if (!is_number(hypothesis)) {

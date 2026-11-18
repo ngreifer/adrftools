@@ -146,7 +146,7 @@ NULL
 
     # Values just outside the grid are moved to its ends; the estimates keep
     # the values requested as labels
-    values_in <- .snap_to_grid(values, .values, .treat)
+    values_in <- .snap_to_grid(values, .values, .treat, shift = !is_null(.shift))
 
     val_mat <- matrix(0, nrow = n, ncol = length(.values))
 

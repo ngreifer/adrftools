@@ -172,6 +172,23 @@ squish <- function(p, lo = 1e-6, hi = 1 - lo) {
 }
 
 #Statistics
+# Weighted standard deviation as computed by cobalt::col_w_sd(): the weights
+# are normalized to sum to 1 and the variance uses the denominator
+# 1 - sum(w^2), so it does not depend on the scale of the weights and equals
+# sd() when the weights are equal. (collapse::fvar() treats the weights as
+# frequencies, so its result depends on their scale.)
+.w_sd <- function(x, w = NULL) {
+  if (is_null(w)) {
+    return(stats::sd(x))
+  }
+
+  w <- w / sum(w)
+
+  xc <- x - sum(w * x)
+
+  sqrt(sum(w * xc^2) / (1 - sum(w^2)))
+}
+
 bw.nrd <- function(x) {
   #R's bw.nrd doesn't always work, but bw.nrd0 does
   stats::bw.nrd0(x) * 1.06 / .9

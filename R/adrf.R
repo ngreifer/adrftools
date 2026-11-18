@@ -125,6 +125,8 @@ adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type 
 
   arg::arg_supplied(treat)
 
+  .check_misplaced_args(...names(), "adrf")
+
   subset_substitute <- substitute(subset)
 
   .effect_curve_internal(
@@ -142,6 +144,8 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
                       range = .95, n = 51, ...) {
 
   arg::arg_supplied(treat)
+
+  .check_misplaced_args(...names(), "adrf")
 
   subset_substitute <- substitute(subset)
 

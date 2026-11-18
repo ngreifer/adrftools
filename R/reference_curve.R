@@ -54,7 +54,8 @@ reference_curve <- function(x, reference) {
   check_effect_curve(x, reference_ok = FALSE, projection_ok = FALSE)
 
   arg::arg_supplied(reference)
-  reference <- check_reference(reference, values = .attr(x, ".values"))
+  reference <- check_reference(reference, values = .attr(x, ".values"),
+                               shift = !is_null(.attr(x, ".shift")))
 
   x <- .add_values(x, reference)
 

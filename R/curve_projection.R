@@ -117,7 +117,7 @@ curve_projection <- function(x, model, transform = TRUE, integrate = "uniform") 
   }
   else if (!all(get_varnames(model) %in% .treat)) {
     #Check that only treat is in model
-    arg::err("only the treatment variable {.var {(.treat)}} is allowed to appear in {.arg model}")
+    arg::err("only {.var {(.treat)}} is allowed to appear in {.arg model}")
   }
 
   integrate <- process_integrate(integrate, x)
@@ -522,7 +522,7 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   arg::arg_is(object2, "curve_projection")
 
   if (any_apply(c(".values", ".treat", ".vcov_type", ".curve_type", ".response",
-                  ".by_grid", ".contrast", ".reference", ".family", ".df"),
+                  ".by_grid", ".contrast", ".reference", ".family", ".df", ".shift"),
                 function(a) !identical(.attr(object, a), .attr(object2, a)))) {
     arg::err("{.arg object} and {.arg object2} must be the outputs of {.fun curve_projection} applied to the same {.cls effect_curve} object")
   }
@@ -537,7 +537,7 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   }
 
   if (is_null(stats::vcov(object))) {
-    arg::err("{.fun anova} cannot be used when {.code vcov = \"none\"} in the original call to {.fun adrf}")
+    arg::err("{.fun anova} cannot be used when {.code vcov = \"none\"} in the original call to {.fun {(.curve_fun(object))}}")
   }
 
   # Process df
@@ -783,15 +783,15 @@ print.anova.curve_projection <- function(x, digits = max(4L, getOption("digits")
   n <- fnrow(mm)
 
   if (fncol(mm) > n) {
-    arg::err(c("The projection model has {fncol(mm)} coefficients, but the effect curve was computed at only {n} values of the treatment.",
-               i = "Use a simpler projection model or increase {.arg n} in the call to {.fun adrf}."))
+    arg::err(c("The projection model has {fncol(mm)} coefficients, but the effect curve was computed at only {n} grid points.",
+               i = "Use a simpler projection model or increase {.arg n} in the call to {.fun adrf} or {.fun shift_curve}."))
   }
 
   d <- sqrt(colSums(mm^2))
   d[d == 0] <- 1
 
   if (qr(mm / rep(d, each = n))$rank < fncol(mm)) {
-    arg::err("the terms in the projection model are linearly dependent at the values of the treatment at which the effect curve was computed")
+    arg::err("the terms in the projection model are linearly dependent at the grid points at which the effect curve was computed")
   }
 
   invisible(mm)

@@ -135,13 +135,13 @@ process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL)
   }
 
   if (is_null(.by_grid)) {
-    arg::err("{.arg subset} cannot be specified when {.arg by} was not used in the original call to {.fun adrf}")
+    arg::err("{.arg subset} cannot be specified when {.arg by} was not used in the original call to {.fun adrf} or {.fun shift_curve}")
   }
 
   vars_in_subset <- get_varnames(index.sub)
 
   if (!all(vars_in_subset %in% names(.by_grid))) {
-    arg::err("all variables named in {.arg subset} must be present in the original {.arg by} argument supplied to {.fun adrf}")
+    arg::err("all variables named in {.arg subset} must be present in the original {.arg by} argument supplied to {.fun adrf} or {.fun shift_curve}")
   }
 
   subset <- eval(index.sub, .by_grid)
@@ -216,14 +216,32 @@ process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
   seq(range[1L], range[2L], length.out = n)
 }
 
+# Arguments of shift_curve() supplied to adrf(), or of adrf() supplied to
+# shift_curve(), which would otherwise be passed through `...` and give
+# confusing errors or be ignored
+.check_misplaced_args <- function(dots_names, fun) {
+  if (fun == "adrf") {
+    bad <- intersect(c("shift", "shift_fun"), dots_names)
+
+    if (length(bad) > 0L) {
+      arg::err("{.arg {bad}} can only be used with {.fun shift_curve}, which estimates the mean outcome when each unit's treatment is shifted from its observed value")
+    }
+  }
+  else if (anyv(dots_names, "range")) {
+    arg::err("{.arg range} cannot be used with {.fun shift_curve}; supply the range of shifts to {.arg shift}")
+  }
+}
+
 # Processes the `shift_fun` argument of shift_curve(): a string naming a
 # built-in shift or a function of the observed treatment values and a single
 # shift value. `label` is how the shift is described in printed output.
 process_shift_fun <- function(shift_fun, label = NULL) {
   if (is.function(shift_fun)) {
-    fmls <- rlang::fn_fmls_names(shift_fun)
+    # args() gives the formals of primitive functions too (or NULL, in which
+    # case the function is checked only when it is called)
+    fmls <- names(formals(args(shift_fun)))
 
-    if (length(fmls) < 2L && !anyv(fmls, "...")) {
+    if (!is_null(args(shift_fun)) && length(fmls) < 2L && !anyv(fmls, "...")) {
       arg::err("when {.arg shift_fun} is a function, it must take two arguments: the observed treatment values and a single shift value")
     }
 
@@ -263,7 +281,7 @@ process_shift <- function(shift, shift_fun, n, A.list, w.list, treat) {
     arg::err("{.code shift_fun = \"multiplicative\"} requires the treatment to be nonnegative")
   }
 
-  sd_A <- sqrt(fvar(A, w = unlist(w.list, use.names = FALSE)))
+  sd_A <- .w_sd(A, w = unlist(w.list, use.names = FALSE))
 
   if (is_null(shift)) {
     if (type != "additive") {
@@ -302,6 +320,10 @@ process_shift <- function(shift, shift_fun, n, A.list, w.list, treat) {
     if (bounds[1L] == bounds[2L]) {
       arg::err("the two values in {.arg shift} must differ")
     }
+  }
+
+  if (type == "multiplicative" && bounds[1L] < -1) {
+    arg::err("with {.code shift_fun = \"multiplicative\"}, {.arg shift} cannot be below -1, which would make the treatment negative")
   }
 
   values <- seq(bounds[1L], bounds[2L], length.out = n)
@@ -354,12 +376,22 @@ process_shift <- function(shift, shift_fun, n, A.list, w.list, treat) {
 # `NA`), so values outside the grid give an error. Values outside it by at most
 # 0.1% of its width (e.g., an end point typed as printed, after rounding) are
 # moved to the nearest end.
-.snap_to_grid <- function(x, v, arg_name) {
+# The function that created the effect curve `x`, for messages
+.curve_fun <- function(x) {
+  if (is_null(.attr(x, ".shift"))) "adrf" else "shift_curve"
+}
+
+.snap_to_grid <- function(x, v, arg_name, shift = FALSE) {
   r <- .range(v)
   leeway <- .001 * (r[2L] - r[1L])
 
   if (any(x < r[1L] - leeway | x > r[2L] + leeway, na.rm = TRUE)) {
     rf <- format(r, digits = 10L, drop0trailing = TRUE)
+
+    if (shift) {
+      arg::err(c("All values of {.arg {arg_name}} must be within the range of shifts at which the shift curve was computed ({rf[1L]} to {rf[2L]}).",
+                 i = "To estimate the shift curve outside this range, supply a wider range to {.arg shift} in the call to {.fun shift_curve}."))
+    }
 
     arg::err(c("All values of {.arg {arg_name}} must be within the range of treatment values at which the effect curve was computed ({rf[1L]} to {rf[2L]}).",
                i = "To estimate the effect curve outside this range, supply a wider range to {.arg range} in the call to {.fun adrf}."))
@@ -368,7 +400,7 @@ process_shift <- function(shift, shift_fun, n, A.list, w.list, treat) {
   squish(x, lo = r[1L], hi = r[2L])
 }
 
-check_reference <- function(reference, values, strict = TRUE) {
+check_reference <- function(reference, values, strict = TRUE, shift = FALSE) {
   arg::arg_number(reference)
 
   range_t <- .range(values)
@@ -376,7 +408,7 @@ check_reference <- function(reference, values, strict = TRUE) {
   range_diff <- range_t[2L] - range_t[1L]
 
   if (strict) {
-    return(.snap_to_grid(reference, values, "reference"))
+    return(.snap_to_grid(reference, values, "reference", shift = shift))
   }
   else {
     if (any(reference < range_t[1L] - .1 * range_diff) ||
@@ -1709,7 +1741,7 @@ check_proj <- function(x, proj = NULL) {
     arg::arg_is(proj, "curve_projection")
 
     if (any_apply(c(".values", ".treat", ".vcov_type", ".curve_type", ".response",
-                    ".by_grid", ".contrast", ".reference", ".family", ".df"),
+                    ".by_grid", ".contrast", ".reference", ".family", ".df", ".shift"),
                   function(a) !identical(.attr(x, a), .attr(proj, a)))) {
       arg::err("{.arg proj} must be the output of {.fun curve_projection} applied to the {.cls effect_curve} object")
     }
@@ -2027,25 +2059,33 @@ add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = 
   res
 }
 
-# Make nearest positive semidefinite matrix; adapted from
-# corpcor::make.positive.definite()
-.to_psd <- function(m) {
-  d <- fnrow(m)
-
+# Prepares the correlation matrix `m` of a set of estimates for
+# mvtnorm::qmvt() and pmvt(). A matrix of full rank is returned unchanged. The
+# correlation matrix of estimates along an effect curve often has low rank
+# (e.g., rank 3 for the AMEF of a cubic polynomial), and qmvt() and pmvt() fail
+# on such a matrix or on one nudged only slightly away from singularity. In
+# that case, the matrix is rebuilt from its eigenvectors with eigenvalues
+# above `rel_tol` times the largest, rescaled to have a unit diagonal, and
+# combined with the identity matrix with weight `ridge`. With this
+# regularization, critical values agree with those simulated from the
+# low-rank factor to within Monte Carlo error.
+.to_psd <- function(m, rel_tol = 1e-8, ridge = 1e-6) {
   es <- eigen(m, symmetric = TRUE)
   esv <- es$values
 
-  tol <- d * max(abs(esv)) * .Machine$double.eps
+  keep <- esv > rel_tol * max(esv)
 
-  if (all(esv > tol)) {
+  if (all(keep)) {
     return(m)
   }
 
-  delta <- 2 * tol
+  L <- es$vectors[, keep, drop = FALSE] %*% diag(sqrt(esv[keep]), sum(keep))
 
-  tau <- pmax(0, delta - esv)
+  out <- (1 - ridge) * stats::cov2cor(tcrossprod(L)) + ridge * diag(fnrow(m))
 
-  m + tcrossprod(es$vectors %*% diag(sqrt(tau), d))
+  dimnames(out) <- dimnames(m)
+
+  out
 }
 
 .is_pure_adrf <- function(x) {

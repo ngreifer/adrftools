@@ -61,6 +61,11 @@ point_contrast <- function(object) {
 
   n <- length(values)
 
+  if (inherits(object, "ade_est")) {
+    fn_name <- rlang::current_call() |> rlang::call_name()
+    arg::err("{.fun {fn_name}} cannot be used with the output of {.fun ade}; to compare ADEs across subgroups, use {.code ade(curve_contrast(x))}")
+  }
+
   if (n < 2L) {
     fn_name <- rlang::current_call() |> rlang::call_name()
     arg::err("{.fun {fn_name}} can only be used when the {.cls effect_curve} object was called with two or more values")

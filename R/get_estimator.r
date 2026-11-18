@@ -37,7 +37,7 @@
       fast <- (drop(ss(X, j = !aliased) %*% beta[!aliased]) + off) |>
         .family$linkinv()
 
-      p <- marginaleffects::get_predict(x, newdata = nd, type = type, ...)[["estimate"]]
+      p <- .get_predict(x, newdata = nd, type = type, ...)
 
       length(p) == length(fast) &&
         isTRUE(all.equal(unname(p), unname(fast), tolerance = 1e-8,
@@ -194,15 +194,33 @@
         model <- marginaleffects::set_coef(model, beta0)
       }
 
-      rlang::with_options(marginaleffects_posterior_center = "mean", {
-        p <- marginaleffects::get_predict(model = model, newdata = data_grid,
-                                          type = type, ...)
-      })
-
-      out <- p$estimate
-      attr(out, "posterior_draws") <- .attr(p, "posterior_draws")
-
-      out
+      .get_predict(model, newdata = data_grid, type = type, ...)
     }
   }
+}
+
+# Predictions from marginaleffects::get_predict(), with the posterior draws (if
+# any) in the "posterior_draws" attribute. For svyglm models,
+# stats::predict.glm() is used instead, because survey::predict.svyglm() (which
+# get_predict() calls) rebuilds the model terms without their stored
+# `predvars`, so terms whose basis depends on the data, such as ns(), poly(),
+# or scale(), are recomputed from `newdata` and give wrong predictions on
+# counterfactual data.
+.get_predict <- function(model, newdata, type = "response", ...) {
+  if (inherits(model, "svyglm") && anyv(c("response", "link"), type)) {
+    out <- stats::predict.glm(model, newdata = newdata, type = type) |>
+      as.numeric()
+
+    return(out)
+  }
+
+  rlang::with_options(marginaleffects_posterior_center = "mean", {
+    p <- marginaleffects::get_predict(model = model, newdata = newdata,
+                                      type = type, ...)
+  })
+
+  out <- p[["estimate"]]
+  attr(out, "posterior_draws") <- .attr(p, "posterior_draws")
+
+  out
 }

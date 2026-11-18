@@ -164,7 +164,7 @@ test_that("summary.effect_curve() validates its input", {
 
   expect_error(summary(a, hypothesis = "wiggly"))
   expect_error(summary(a, hypothesis = Math ~ logBLL), "one-sided")
-  expect_error(summary(a, hypothesis = ~ PIR), "Only the treatment")
+  expect_error(summary(a, hypothesis = ~ PIR), "is allowed to appear")
   expect_error(summary(a, hypothesis = list(1)), "string, formula, or a number")
   expect_error(summary(a, method = "exact"))
   expect_error(summary(a, method = "sim", nsim = 10))
