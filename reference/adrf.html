@@ -133,8 +133,10 @@
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>adrf()</code> estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When <code>vcov = "unconditional"</code>, the variance is computed using the formulas in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires <code><a href="https://zeileis.codeberg.page/sandwich/reference/estfun.html" class="external-link">sandwich::estfun()</a></code> and <code><a href="https://zeileis.codeberg.page/sandwich/reference/bread.html" class="external-link">sandwich::bread()</a></code> methods for the supplied object to be available.</p>
-<p>In the unconditional variance, each unit's contribution to the influence function of the model coefficients is divided by \(\sqrt{1 - h_i}\), where \(h_i\) is the unit's leverage (i.e., hat value), as in the HC2 estimator of MacKinnon and White (1985). Without this adjustment, the variance would share the downward bias of the HC0 sandwich estimator, which is largest for estimates that depend on units with high leverage, such as the ADRF at the extremes of the treatment, and which can make the omnibus tests in <code><a href="summary.effect_curve.html">summary.effect_curve()</a></code> reject a true null hypothesis too often in small samples. The leverages are computed from the fitted model for <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> models and extracted using <code><a href="https://rdrr.io/r/stats/influence.measures.html" class="external-link">hatvalues()</a></code> for other models; when they cannot be found, the HC1 adjustment is used instead with a message, which multiplies the variance contributed by the model coefficients by \(n/(n-p)\), where \(n\) is the number of units and \(p\) the number of estimated parameters, and corrects the bias only for the average leverage. The adjustment is not used with <code>svyglm</code> models, whose variance is computed from the survey design.</p>
+    <p><code>adrf()</code> estimates the ADRF by computing average predicted outcomes in the sample for counterfactual treatment values, optionally stratified by grouping variables and accounting for estimation uncertainty via unconditional or conditional variance estimation or bootstrapping. Unconditional variance estimation and bootstrapping treat the sample as random. When <code>vcov = "unconditional"</code>, the variance is computed using the formulas in Hansen et al. (2024), which involves augmenting the influence function with a term to account for sampling from the superpopulation. Unconditional variance estimation requires <code><a href="https://zeileis.codeberg.page/sandwich/reference/estfun.html" class="external-link">sandwich::estfun()</a></code> and <code><a href="https://zeileis.codeberg.page/sandwich/reference/bread.html" class="external-link">sandwich::bread()</a></code> methods for the supplied object to be available. For models fit with <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>
+ or <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam()</a></code>
+, these are computed from the penalized fit instead, treating the smoothing parameters as fixed, so the variance does not account for their selection, which can make it noticeably smaller than a bootstrap variance that does; models with extended families (e.g., <code><a href="https://rdrr.io/pkg/mgcv/man/negbin.html" class="external-link">mgcv::nb()</a></code>) are not supported.</p>
+<p>In the unconditional variance, each unit's contribution to the influence function of the model coefficients is divided by \(\sqrt{1 - h_i}\), where \(h_i\) is the unit's leverage (i.e., hat value), as in the HC2 estimator of MacKinnon and White (1985). Without this adjustment, the variance would share the downward bias of the HC0 sandwich estimator, which is largest for estimates that depend on units with high leverage, such as the ADRF at the extremes of the treatment, and which can make the omnibus tests in <code><a href="summary.effect_curve.html">summary.effect_curve()</a></code> reject a true null hypothesis too often in small samples. The leverages are computed from the fitted model for <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> models, taken from the fit for <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code> models (in which they are the leverages of the penalized fit, which sum to the effective degrees of freedom), and extracted using <code><a href="https://rdrr.io/r/stats/influence.measures.html" class="external-link">hatvalues()</a></code> for other models; when they cannot be found, the HC1 adjustment is used instead with a message, which multiplies the variance contributed by the model coefficients by \(n/(n-p)\), where \(n\) is the number of units and \(p\) the number of estimated parameters (the effective degrees of freedom for <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code> and <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam()</a></code> models), and corrects the bias only for the average leverage. The adjustment is not used with <code>svyglm</code> models, whose variance is computed from the survey design.</p>
 <p>When <code>cluster</code> is supplied, the unconditional variance uses the CR2 adjustment described by Pustejovsky and Tipton (2018), the cluster-level analog of HC2: within each cluster, the vector of residuals is multiplied by \((I - H_{gg})^{-1/2}\), where \(H_{gg}\) is the block of the hat matrix for the units in the cluster, in place of the usual \(G/(G-1)\) adjustment, where \(G\) is the number of clusters. With clusters of one unit, it is the HC2 adjustment. CR2 is available only for <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> models (including those whose influence function is that of an ordinary <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> fit, such as <code>glm_weightit()</code> models with fixed weights); for other models, the CR1 adjustment, \(\frac{G}{G-1}\frac{n-1}{n-p}\) (the default of <code><a href="https://zeileis.codeberg.page/sandwich/reference/vcovCL.html" class="external-link">sandwich::vcovCL()</a></code>), is used with a message. For generalized linear models, the residuals and hat matrix are those of the final iteratively reweighted least squares fit, so the adjusted variance can differ from that of <code>sandwich::vcovCL(type = "HC2")</code> when the working weights vary within clusters.</p>
 <p>When a <code>&lt;mira&gt;</code> object from <span class="pkg">mice</span> or a <code>&lt;mimira&gt;</code> object from <span class="pkg">MatchThem</span> is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. The degrees of freedom used for tests and confidence intervals are those of Reiter (2007), or of Li, Raghunathan, and Rubin (1991) when the complete-data degrees of freedom are infinite (e.g., for generalized linear models). These account for the number of imputations and the fraction of missing information, which is assumed to be the same for all points on the curve, so a single value is used for every point and for joint inference. Bootstrapping is not allowed with such objects.</p><div class="section">
 <h3 id="range"><code>range</code><a class="anchor" aria-label="anchor" href="#range"></a></h3>
@@ -238,23 +240,23 @@
 <span class="r-in"><span>               vcov <span class="op">=</span> <span class="st">"fwb"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 
   |                                                  | 0 % ~calculating  
-  |+                                                 | 1 % ~32s          
-  |+                                                 | 2 % ~24s          
+  |+                                                 | 1 % ~31s          
+  |+                                                 | 2 % ~23s          
   |++                                                | 3 % ~21s          
   |++                                                | 4 % ~20s          
   |+++                                               | 5 % ~19s          
   |+++                                               | 6 % ~18s          
-  |++++                                              | 7 % ~17s          
-  |++++                                              | 8 % ~17s          
-  |+++++                                             | 9 % ~16s          
-  |+++++                                             | 10% ~16s          
-  |++++++                                            | 11% ~16s          
-  |++++++                                            | 12% ~16s          
-  |+++++++                                           | 13% ~15s          
-  |+++++++                                           | 14% ~15s          
-  |++++++++                                          | 15% ~15s          
-  |++++++++                                          | 16% ~15s          
-  |+++++++++                                         | 17% ~15s          
+  |++++                                              | 7 % ~19s          
+  |++++                                              | 8 % ~20s          
+  |+++++                                             | 9 % ~20s          
+  |+++++                                             | 10% ~19s          
+  |++++++                                            | 11% ~18s          
+  |++++++                                            | 12% ~18s          
+  |+++++++                                           | 13% ~17s          
+  |+++++++                                           | 14% ~17s          
+  |++++++++                                          | 15% ~16s          
+  |++++++++                                          | 16% ~16s          
+  |+++++++++                                         | 17% ~16s          
   |+++++++++                                         | 18% ~15s          
   |++++++++++                                        | 19% ~15s          
   |++++++++++                                        | 20% ~15s          
@@ -263,18 +265,18 @@
   |++++++++++++                                      | 23% ~14s          
   |++++++++++++                                      | 24% ~14s          
   |+++++++++++++                                     | 25% ~14s          
-  |+++++++++++++                                     | 26% ~14s          
-  |++++++++++++++                                    | 27% ~14s          
-  |++++++++++++++                                    | 28% ~14s          
+  |+++++++++++++                                     | 26% ~13s          
+  |++++++++++++++                                    | 27% ~13s          
+  |++++++++++++++                                    | 28% ~13s          
   |+++++++++++++++                                   | 29% ~13s          
-  |+++++++++++++++                                   | 30% ~13s          
-  |++++++++++++++++                                  | 31% ~13s          
-  |++++++++++++++++                                  | 32% ~13s          
+  |+++++++++++++++                                   | 30% ~12s          
+  |++++++++++++++++                                  | 31% ~12s          
+  |++++++++++++++++                                  | 32% ~12s          
   |+++++++++++++++++                                 | 33% ~12s          
   |+++++++++++++++++                                 | 34% ~12s          
-  |++++++++++++++++++                                | 35% ~12s          
-  |++++++++++++++++++                                | 36% ~12s          
-  |+++++++++++++++++++                               | 37% ~12s          
+  |++++++++++++++++++                                | 35% ~11s          
+  |++++++++++++++++++                                | 36% ~11s          
+  |+++++++++++++++++++                               | 37% ~11s          
   |+++++++++++++++++++                               | 38% ~11s          
   |++++++++++++++++++++                              | 39% ~11s          
   |++++++++++++++++++++                              | 40% ~11s          
@@ -289,18 +291,18 @@
   |+++++++++++++++++++++++++                         | 49% ~09s          
   |+++++++++++++++++++++++++                         | 50% ~09s          
   |++++++++++++++++++++++++++                        | 51% ~09s          
-  |++++++++++++++++++++++++++                        | 52% ~09s          
+  |++++++++++++++++++++++++++                        | 52% ~08s          
   |+++++++++++++++++++++++++++                       | 53% ~08s          
   |+++++++++++++++++++++++++++                       | 54% ~08s          
   |++++++++++++++++++++++++++++                      | 55% ~08s          
   |++++++++++++++++++++++++++++                      | 56% ~08s          
-  |+++++++++++++++++++++++++++++                     | 57% ~08s          
+  |+++++++++++++++++++++++++++++                     | 57% ~07s          
   |+++++++++++++++++++++++++++++                     | 58% ~07s          
   |++++++++++++++++++++++++++++++                    | 59% ~07s          
   |++++++++++++++++++++++++++++++                    | 60% ~07s          
   |+++++++++++++++++++++++++++++++                   | 61% ~07s          
   |+++++++++++++++++++++++++++++++                   | 62% ~07s          
-  |++++++++++++++++++++++++++++++++                  | 63% ~07s          
+  |++++++++++++++++++++++++++++++++                  | 63% ~06s          
   |++++++++++++++++++++++++++++++++                  | 64% ~06s          
   |+++++++++++++++++++++++++++++++++                 | 65% ~06s          
   |+++++++++++++++++++++++++++++++++                 | 66% ~06s          
@@ -317,7 +319,7 @@
   |+++++++++++++++++++++++++++++++++++++++           | 77% ~04s          
   |+++++++++++++++++++++++++++++++++++++++           | 78% ~04s          
   |++++++++++++++++++++++++++++++++++++++++          | 79% ~04s          
-  |++++++++++++++++++++++++++++++++++++++++          | 80% ~04s          
+  |++++++++++++++++++++++++++++++++++++++++          | 80% ~03s          
   |+++++++++++++++++++++++++++++++++++++++++         | 81% ~03s          
   |+++++++++++++++++++++++++++++++++++++++++         | 82% ~03s          
   |++++++++++++++++++++++++++++++++++++++++++        | 83% ~03s          

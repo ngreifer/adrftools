@@ -105,6 +105,19 @@
   \\G/(G-1)\\ adjustment. Other models use the CR1 adjustment,
   \\\frac{G}{G-1}\frac{n-1}{n-p}\\, with a message.
 
+- Fixed a bug in
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) in
+  which unconditional standard errors for models fit with
+  [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) or
+  [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html) were too small
+  for families with an estimated dispersion (e.g.,
+  [`gaussian()`](https://rdrr.io/r/stats/family.html)), because the
+  bread *sandwich* computes for these models leaves out the dispersion
+  that its estimating functions divide by. Models with extended
+  families, such as
+  [`mgcv::nb()`](https://rdrr.io/pkg/mgcv/man/negbin.html), now use the
+  conditional variance with a warning.
+
 - Error messages now use *arg*, which is a new dependency.
 
 - *fwb* (\>= 1.0.0) is now required for bootstrapping.

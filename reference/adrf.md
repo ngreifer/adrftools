@@ -157,7 +157,15 @@ superpopulation. Unconditional variance estimation requires
 [`sandwich::estfun()`](https://zeileis.codeberg.page/sandwich/reference/estfun.html)
 and
 [`sandwich::bread()`](https://zeileis.codeberg.page/sandwich/reference/bread.html)
-methods for the supplied object to be available.
+methods for the supplied object to be available. For models fit with
+[`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) or
+[`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html) , these are
+computed from the penalized fit instead, treating the smoothing
+parameters as fixed, so the variance does not account for their
+selection, which can make it noticeably smaller than a bootstrap
+variance that does; models with extended families (e.g.,
+[`mgcv::nb()`](https://rdrr.io/pkg/mgcv/man/negbin.html)) are not
+supported.
 
 In the unconditional variance, each unit's contribution to the influence
 function of the model coefficients is divided by \\\sqrt{1 - h_i}\\,
@@ -171,14 +179,20 @@ the omnibus tests in
 reject a true null hypothesis too often in small samples. The leverages
 are computed from the fitted model for
 [`lm()`](https://rdrr.io/r/stats/lm.html) and
-[`glm()`](https://rdrr.io/r/stats/glm.html) models and extracted using
+[`glm()`](https://rdrr.io/r/stats/glm.html) models, taken from the fit
+for [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) models (in
+which they are the leverages of the penalized fit, which sum to the
+effective degrees of freedom), and extracted using
 [`hatvalues()`](https://rdrr.io/r/stats/influence.measures.html) for
 other models; when they cannot be found, the HC1 adjustment is used
 instead with a message, which multiplies the variance contributed by the
 model coefficients by \\n/(n-p)\\, where \\n\\ is the number of units
-and \\p\\ the number of estimated parameters, and corrects the bias only
-for the average leverage. The adjustment is not used with `svyglm`
-models, whose variance is computed from the survey design.
+and \\p\\ the number of estimated parameters (the effective degrees of
+freedom for [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) and
+[`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html) models), and
+corrects the bias only for the average leverage. The adjustment is not
+used with `svyglm` models, whose variance is computed from the survey
+design.
 
 When `cluster` is supplied, the unconditional variance uses the CR2
 adjustment described by Pustejovsky and Tipton (2018), the cluster-level
@@ -377,23 +391,23 @@ adrf_b <- adrf(fit, treat = "logBLL",
                vcov = "fwb")
 #> 
   |                                                  | 0 % ~calculating  
-  |+                                                 | 1 % ~32s          
-  |+                                                 | 2 % ~24s          
+  |+                                                 | 1 % ~31s          
+  |+                                                 | 2 % ~23s          
   |++                                                | 3 % ~21s          
   |++                                                | 4 % ~20s          
   |+++                                               | 5 % ~19s          
   |+++                                               | 6 % ~18s          
-  |++++                                              | 7 % ~17s          
-  |++++                                              | 8 % ~17s          
-  |+++++                                             | 9 % ~16s          
-  |+++++                                             | 10% ~16s          
-  |++++++                                            | 11% ~16s          
-  |++++++                                            | 12% ~16s          
-  |+++++++                                           | 13% ~15s          
-  |+++++++                                           | 14% ~15s          
-  |++++++++                                          | 15% ~15s          
-  |++++++++                                          | 16% ~15s          
-  |+++++++++                                         | 17% ~15s          
+  |++++                                              | 7 % ~19s          
+  |++++                                              | 8 % ~20s          
+  |+++++                                             | 9 % ~20s          
+  |+++++                                             | 10% ~19s          
+  |++++++                                            | 11% ~18s          
+  |++++++                                            | 12% ~18s          
+  |+++++++                                           | 13% ~17s          
+  |+++++++                                           | 14% ~17s          
+  |++++++++                                          | 15% ~16s          
+  |++++++++                                          | 16% ~16s          
+  |+++++++++                                         | 17% ~16s          
   |+++++++++                                         | 18% ~15s          
   |++++++++++                                        | 19% ~15s          
   |++++++++++                                        | 20% ~15s          
@@ -402,18 +416,18 @@ adrf_b <- adrf(fit, treat = "logBLL",
   |++++++++++++                                      | 23% ~14s          
   |++++++++++++                                      | 24% ~14s          
   |+++++++++++++                                     | 25% ~14s          
-  |+++++++++++++                                     | 26% ~14s          
-  |++++++++++++++                                    | 27% ~14s          
-  |++++++++++++++                                    | 28% ~14s          
+  |+++++++++++++                                     | 26% ~13s          
+  |++++++++++++++                                    | 27% ~13s          
+  |++++++++++++++                                    | 28% ~13s          
   |+++++++++++++++                                   | 29% ~13s          
-  |+++++++++++++++                                   | 30% ~13s          
-  |++++++++++++++++                                  | 31% ~13s          
-  |++++++++++++++++                                  | 32% ~13s          
+  |+++++++++++++++                                   | 30% ~12s          
+  |++++++++++++++++                                  | 31% ~12s          
+  |++++++++++++++++                                  | 32% ~12s          
   |+++++++++++++++++                                 | 33% ~12s          
   |+++++++++++++++++                                 | 34% ~12s          
-  |++++++++++++++++++                                | 35% ~12s          
-  |++++++++++++++++++                                | 36% ~12s          
-  |+++++++++++++++++++                               | 37% ~12s          
+  |++++++++++++++++++                                | 35% ~11s          
+  |++++++++++++++++++                                | 36% ~11s          
+  |+++++++++++++++++++                               | 37% ~11s          
   |+++++++++++++++++++                               | 38% ~11s          
   |++++++++++++++++++++                              | 39% ~11s          
   |++++++++++++++++++++                              | 40% ~11s          
@@ -428,18 +442,18 @@ adrf_b <- adrf(fit, treat = "logBLL",
   |+++++++++++++++++++++++++                         | 49% ~09s          
   |+++++++++++++++++++++++++                         | 50% ~09s          
   |++++++++++++++++++++++++++                        | 51% ~09s          
-  |++++++++++++++++++++++++++                        | 52% ~09s          
+  |++++++++++++++++++++++++++                        | 52% ~08s          
   |+++++++++++++++++++++++++++                       | 53% ~08s          
   |+++++++++++++++++++++++++++                       | 54% ~08s          
   |++++++++++++++++++++++++++++                      | 55% ~08s          
   |++++++++++++++++++++++++++++                      | 56% ~08s          
-  |+++++++++++++++++++++++++++++                     | 57% ~08s          
+  |+++++++++++++++++++++++++++++                     | 57% ~07s          
   |+++++++++++++++++++++++++++++                     | 58% ~07s          
   |++++++++++++++++++++++++++++++                    | 59% ~07s          
   |++++++++++++++++++++++++++++++                    | 60% ~07s          
   |+++++++++++++++++++++++++++++++                   | 61% ~07s          
   |+++++++++++++++++++++++++++++++                   | 62% ~07s          
-  |++++++++++++++++++++++++++++++++                  | 63% ~07s          
+  |++++++++++++++++++++++++++++++++                  | 63% ~06s          
   |++++++++++++++++++++++++++++++++                  | 64% ~06s          
   |+++++++++++++++++++++++++++++++++                 | 65% ~06s          
   |+++++++++++++++++++++++++++++++++                 | 66% ~06s          
@@ -456,7 +470,7 @@ adrf_b <- adrf(fit, treat = "logBLL",
   |+++++++++++++++++++++++++++++++++++++++           | 77% ~04s          
   |+++++++++++++++++++++++++++++++++++++++           | 78% ~04s          
   |++++++++++++++++++++++++++++++++++++++++          | 79% ~04s          
-  |++++++++++++++++++++++++++++++++++++++++          | 80% ~04s          
+  |++++++++++++++++++++++++++++++++++++++++          | 80% ~03s          
   |+++++++++++++++++++++++++++++++++++++++++         | 81% ~03s          
   |+++++++++++++++++++++++++++++++++++++++++         | 82% ~03s          
   |++++++++++++++++++++++++++++++++++++++++++        | 83% ~03s          
