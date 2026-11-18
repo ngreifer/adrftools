@@ -59,7 +59,7 @@ The ADRF is one of a variety of functions we call “effect curves”, which
 are functions of the treatment. The following are the effect curves
 available in *adrftools*:
 
-- The ARDF: \\\theta\_\text{ADRF}(a) = E\[Y(a)\]\\
+- The ADRF: \\\theta\_\text{ADRF}(a) = E\[Y(a)\]\\
 - A subgroup ADRF (where \\G\\ is a grouping variable and \\g\\ is a
   level of \\G\\): \\\theta\_{\text{ADRF},g}(a) =
   E\left\[Y(a)\|G=g\right\]\\
@@ -85,6 +85,7 @@ how we can use *adrftools* to perform the tasks above. First we’ll load
 *adrftools* using [`library()`](https://rdrr.io/r/base/library.html).
 
 ``` r
+
 library(adrftools)
 ```
 
@@ -103,6 +104,7 @@ will estimate and characterize the effect of blood lead levels on
 cognitive test scores, adjusting for potential confounders.
 
 ``` r
+
 data("nhanes3lead")
 
 head(nhanes3lead)
@@ -115,10 +117,10 @@ head(nhanes3lead)
 ## 6  8.250000    1    Other 1.746           1             1              0    0  1.3609766   12      10    11     8 11979.76
 ```
 
-The treatment variables is `logBLL`, the natural log of blood lead
-levels in μg/dL, and for this analysis, we will use `Math` as the
-outcome variable, which is the score on the WISC Math test. Covariates
-include `Age`, `Male`, `Race`, `PIR`, `Enough_Food`, `Smoke_in_Home`,
+The treatment variable is `logBLL`, the natural log of blood lead levels
+in μg/dL, and for this analysis, we will use `Math` as the outcome
+variable, which is the score on the WISC Math test. Covariates include
+`Age`, `Male`, `Race`, `PIR`, `Enough_Food`, `Smoke_in_Home`,
 `Smoke_Pregnant`, and `NICU`.
 
 ## Analysis
@@ -141,7 +143,7 @@ We will use *adrftools* to answer the following research questions:
 ### Fitting the outcome model
 
 The first step is to fit the outcome model. This model is not to be
-interpreted and should flexible enough to capture nonlinear
+interpreted and should be flexible enough to capture nonlinear
 relationships, especially between the treatment and the outcome.
 *adrftools* supports any model also supported by
 [*marginaleffects*](https://cran.r-project.org/package=marginaleffects),
@@ -158,6 +160,7 @@ the full ADRF to vary across levels of `Male` to allow us to examine sex
 differences later.
 
 ``` r
+
 fit <- lm(Math ~ splines::ns(logBLL, df = 5) * Male *
             (Age + Race + PIR + Enough_Food +
                Smoke_in_Home + Smoke_Pregnant + NICU),
@@ -175,13 +178,14 @@ To compute the ADRF, we supply the outcome model to
 which also requires the name of the treatment to be supplied to `treat`.
 
 ``` r
+
 adrf_bll <- adrf(fit, treat = "logBLL")
 ```
 
 The ADRF is only evaluated for a range of treatment values. That range
 can be controlled by the `range` argument to
 [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md). By
-default, the range is the middle 95% of treatment values, which in the
+default, the range is the middle 95% of treatment values, which in this
 case corresponds to values from -0.3567 to 2.4248. It is important to
 know this range because all inferences made generalize only to treatment
 values in this range. Typically, values on the edges of the observed
@@ -192,8 +196,10 @@ observed treatment range involve extrapolation.
 provides options for uncertainty estimation using the `vcov` argument.
 The default, `vcov = "unconditional"`, uses M-estimation to account for
 uncertainty in estimation and sampling analytically as described by
-Hansen and Overgaard ([2024](#ref-hansenVarianceEstimationAverage2024));
-this requires the model object to have `estfun()` and `bread()` methods.
+Hansen and Overgaard ([2024](#ref-hansenVarianceEstimationAverage2024)),
+with a small-sample adjustment based on the leverages of the units (see
+[`?adrf`](https://ngreifer.github.io/adrftools/reference/adrf.md)); this
+requires the model object to have `estfun()` and `bread()` methods.
 Setting `vcov = "boot"` or `vcov = "fwb"` use the traditional or
 fractional weighted bootstrap ([Xu et al. 2020](#ref-xu2020)),
 respectively, as implemented in
@@ -213,6 +219,7 @@ The output of
 about the effect curve.
 
 ``` r
+
 adrf_bll
 ## An <effect_curve> object
 ## 
@@ -229,6 +236,7 @@ example, to display the ADRF estimates at values of `logBLL` equal to 0,
 1, and 2, we can run the following:
 
 ``` r
+
 adrf_bll(logBLL = c(0, 1, 2))
 ##  ADRF Estimates
 ## ────────────────
@@ -245,6 +253,7 @@ can produce simply by running
 `<effect_curve>` object:
 
 ``` r
+
 plot(adrf_bll)
 ```
 
@@ -256,7 +265,7 @@ is the ADRF and the pink ribbon is the 95% uniform confidence band.
 
 By default, confidence bands are computed providing uniform coverage,
 meaning the nominal rate refers to simultaneous coverage of all points
-on the line rather for a single given point ([Montiel Olea and
+on the line rather than to a single given point ([Montiel Olea and
 Plagborg-Møller 2019](#ref-montielolea2019)). Pointwise confidence bands
 can instead be requested by setting `simultaneous = FALSE` in the call
 to [`plot()`](https://rdrr.io/r/graphics/plot.default.html). This is
@@ -276,14 +285,15 @@ can use [`summary()`](https://rdrr.io/r/base/summary.html) on the output
 of the `<effect_curve>` object:
 
 ``` r
+
 adrf_bll(logBLL = c(0, 1, 2)) |>
   summary()
 ##               ADRF Estimates
 ## ──────────────────────────────────────────
 ##  logBLL Estimate Std. Error CI Low CI High
-##       0    8.421     0.1678  8.021   8.822
-##       1    8.025     0.1124  7.757   8.293
-##       2    7.146     0.2162  6.630   7.661
+##       0    8.421     0.1742  8.006   8.837
+##       1    8.025     0.1146  7.751   8.298
+##       2    7.146     0.2268  6.604   7.687
 ## ──────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.386, df = 2401)
@@ -304,18 +314,19 @@ on the output of the `<effect_curve>` object (and then using
 [`summary()`](https://rdrr.io/r/base/summary.html) on that output):
 
 ``` r
+
 adrf_bll(logBLL = c(0, 1, 2)) |>
   point_contrast() |>
   summary()
 ##                               ADRF Point Contrasts
 ## ────────────────────────────────────────────────────────────────────────────────
 ##                         Term Estimate Std. Error      t  P-value  CI Low CI High
-##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2127 -1.863   0.1476 -0.8938  0.1010
-##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2800 -4.556 < 0.0001 -1.9305 -0.6210
-##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2642 -3.328   0.0025 -1.4972 -0.2615
+##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2193 -1.807   0.1648 -0.9089  0.1161
+##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2925 -4.362 < 0.0001 -1.9592 -0.5923
+##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2748 -3.200   0.0028 -1.5214 -0.2373
 ## ────────────────────────────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
-## Confidence level: 95% (t* = 2.338, df = 2401)
+## Confidence level: 95% (t* = 2.337, df = 2401)
 ## Null value: 0
 ```
 
@@ -332,11 +343,12 @@ the `<effect_curve>` object itself, rather than on its output. In
 particular, [`summary()`](https://rdrr.io/r/base/summary.html) tests
 whether a given projection of the ADRF is sufficient to characterize it.
 This projection is determined by the argument to `hypothesis`. By
-default, this is `"flat"`, which tests that null hypothesis that the
-ADRF is flat. If this hypothesis is rejected, this implies there is some
+default, this is `"flat"`, which tests the null hypothesis that the ADRF
+is flat. If this hypothesis is rejected, this implies there is some
 effect of the treatment.
 
 ``` r
+
 summary(adrf_bll)
 ##                   Omnibus Curve Test
 ## ───────────────────────────────────────────────────────
@@ -346,7 +358,8 @@ summary(adrf_bll)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 ```
 
 This test works in two steps: first, the projection \\\hat{P}(a)\\ is
@@ -375,28 +388,28 @@ controlled by the `method` argument to
 2.  Analytic approximation using functionality in the
     [*CompQuadForm*](https://cran.r-project.org/package=CompQuadForm)
     package (`method = "imhof"`, `"davies"`, or `"liu"`)
-3.  Satterthwaite’s approximation based on moment matching to a
-    \\\chi^2\\ distribution (`method = "satterthwaite"`)
-4.  Kuonen’s saddlepoint approximation using functionality in the
-    [*survey*](https://cran.r-project.org/package=survey) package
-    (`method = "saddlepoint"`)
+3.  Satterthwaite’s approximation based on moment matching to a scaled
+    \\\chi^2\\ distribution, or to a scaled \\F\\ distribution when `df`
+    is finite (`method = "satterthwaite"`)
+4.  Kuonen’s saddlepoint approximation (`method = "saddlepoint"`)
 
 `method = "imhof"` and `method = "sim"` are the most reliable. The
 former is fast and deterministic, and so is used by default when the
 *CompQuadForm* package is installed. The latter is slower and subject to
 Monte Carlo error, but does not require any additional packages.
-`method = "saddlepoint"` performs well, too, and is used by default if
-the *CompQuadForm* package is not installed but the *survey* package is.
+`method = "saddlepoint"` performs well, too, is very fast, does not
+require any additional packages, and is used by default if the
+*CompQuadForm* package is not installed.
 
 `hypothesis` can also be `"linear"`, `"quadratic"`, `"cubic"`, or a
 formula representing the projection to test. Rejecting the null
 hypothesis indicates that the ADRF is more complicated than the supplied
 model; for example, rejecting the null hypothesis for
 `hypothesis = "linear"` means the ADRF is nonlinear, and failing to
-reject the null hypothesis for for `hypothesis = "quadratic"` means
-there is not enough evidence to claim the ADRF is more complicated than
-a quadratic model. Rejecting any of these hypotheses also rejects the
-null hypothesis for a lower-order model, including `"flat"`.
+reject the null hypothesis for `hypothesis = "quadratic"` means there is
+not enough evidence to claim the ADRF is more complicated than a
+quadratic model. Rejecting any of these hypotheses also rejects the null
+hypothesis for a lower-order model, including `"flat"`.
 
 Finally, `hypothesis` can be a single number, indicating the null
 hypothesis that the ADRF is flat and equal to that value. Typically,
@@ -410,6 +423,7 @@ effect of `logBLL` on `Math`. We can also test whether the ADRF is
 approximately linear:
 
 ``` r
+
 summary(adrf_bll, hypothesis = "linear")
 ##                   Omnibus Curve Test
 ## ───────────────────────────────────────────────────────
@@ -417,9 +431,10 @@ summary(adrf_bll, hypothesis = "linear")
 ##     -0.3567 and 2.4248
 ## 
 ##  P-value
-##   0.4782
+##   0.5278
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 ```
 
 In this case, the high p-value indicates that we cannot reject the null
@@ -478,14 +493,15 @@ Below, we fit the linear projection using
 [`curve_projection()`](https://ngreifer.github.io/adrftools/reference/curve_projection.md):
 
 ``` r
+
 proj <- curve_projection(adrf_bll, "linear")
 
 summary(proj)
 ##                  ADRF Projection Coefficients
 ## ──────────────────────────────────────────────────────────────
 ##         Term Estimate Std. Error     t  P-value CI Low CI High
-##  (Intercept)    8.485     0.1322 64.19 < 0.0001  8.226   8.745
-##       logBLL   -0.612     0.1267 -4.83 < 0.0001 -0.861  -0.364
+##  (Intercept)    8.485     0.1381 61.46 < 0.0001  8.215   8.756
+##       logBLL   -0.612     0.1343 -4.56 < 0.0001 -0.876  -0.349
 ## ──────────────────────────────────────────────────────────────
 ## Inference: unconditional
 ## Confidence level: 95% (t* = 1.961, df = 2401)
@@ -506,6 +522,7 @@ plot it alone, we can simply use
 output:
 
 ``` r
+
 plot(proj)
 ```
 
@@ -521,12 +538,13 @@ output to the `proj` argument of
 original `<effect_curve>` object:
 
 ``` r
+
 plot(adrf_bll, proj = proj)
 ```
 
 ![](adrftools_files/figure-html/unnamed-chunk-15-1.png)
 
-The dotted line is the projection, and the solid line and shaded region
+The dashed line is the projection, and the solid line and shaded region
 correspond to the original ADRF estimate and the original ADRF
 estimate’s confidence bands.
 
@@ -560,6 +578,7 @@ treatment to use as the reference. Below, we set the reference to 0
 scale).
 
 ``` r
+
 adrf_bll_ref <- reference_curve(adrf_bll, reference = 0)
 ```
 
@@ -567,6 +586,7 @@ This produces a `<reference_curve>` object, which, when printed,
 displays the reference level.
 
 ``` r
+
 adrf_bll_ref
 ## An <effect_curve> object
 ## 
@@ -583,20 +603,22 @@ ADRF shifted so that the curve height at the reference level is equal to
 0.
 
 ``` r
+
 plot(adrf_bll_ref)
 ```
 
 ![](adrftools_files/figure-html/unnamed-chunk-18-1.png)
 
-Notice that the confidence bands narrow close for treatment levels close
-to the reference level; we have greater certainty about ADRF deviations
-from the its value at the reference level in that region.
+Notice that the confidence bands narrow for treatment levels close to
+the reference level; we have greater certainty about ADRF deviations
+from its value at the reference level in that region.
 
 We can use [`summary()`](https://rdrr.io/r/base/summary.html) to test
 whether the reference curve is equal to 0 everywhere, which tests
 whether the ADRF differs from its value at the reference level:
 
 ``` r
+
 summary(adrf_bll_ref)
 ##                   Omnibus Curve Test
 ## ───────────────────────────────────────────────────────
@@ -606,7 +628,8 @@ summary(adrf_bll_ref)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 ```
 
 Theoretically, this is equivalent to testing whether the ADRF is flat
@@ -620,17 +643,18 @@ of the ADRF at the reference level by calling
 `<reference_curve>` object applied to the desired treatment levels:
 
 ``` r
+
 adrf_bll_ref(logBLL = c(.5, 1, 1.5)) |>
   summary()
 ##                  ADRF Reference Estimates
 ## ───────────────────────────────────────────────────────────
 ##  logBLL Estimate Std. Error      t  P-value  CI Low CI High
-##     0.5  -0.1113     0.1466 -0.760   0.7642 -0.4528  0.2301
-##     1.0  -0.3964     0.2127 -1.863   0.1452 -0.8918  0.0990
-##     1.5  -0.9598     0.2205 -4.354 < 0.0001 -1.4732 -0.4464
+##     0.5  -0.1113     0.1529 -0.728   0.7839 -0.4673  0.2446
+##     1.0  -0.3964     0.2193 -1.807   0.1623 -0.9070  0.1142
+##     1.5  -0.9598     0.2294 -4.184 < 0.0001 -1.4938 -0.4258
 ## ───────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
-## Confidence level: 95% (t* = 2.329, df = 2401)
+## Confidence level: 95% (t* = 2.328, df = 2401)
 ## Reference: logBLL = 0 | Null value: 0
 ```
 
@@ -651,6 +675,7 @@ be used to compute the AMEF by supplying to it an `<effect_curve>`
 object.
 
 ``` r
+
 amef_bll <- amef(adrf_bll)
 
 amef_bll
@@ -668,6 +693,7 @@ objects, is a function. We can plot the AMEF with
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html).
 
 ``` r
+
 plot(amef_bll)
 ```
 
@@ -684,14 +710,15 @@ those values to the `<amef_curve>` object and using
 output:
 
 ``` r
+
 amef_bll(c(0, 1, 2)) |>
   summary()
 ##                       AMEF Estimates
 ## ───────────────────────────────────────────────────────────
 ##  logBLL Estimate Std. Error       t P-value  CI Low CI High
-##       0  -0.0982     0.5166 -0.1902  0.9965 -1.3313  1.1348
-##       1  -0.8166     0.6599 -1.2375  0.5136 -2.3914  0.7583
-##       2  -0.1605     0.6479 -0.2478  0.9923 -1.7068  1.3858
+##       0  -0.0982     0.5427 -0.1810  0.9970 -1.3935  1.1970
+##       1  -0.8166     0.6745 -1.2107  0.5317 -2.4262  0.7931
+##       2  -0.1605     0.7058 -0.2275  0.9940 -1.8450  1.5239
 ## ───────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.387, df = 2401)
@@ -704,12 +731,13 @@ can be controlled with the `null` argument to
 [`summary()`](https://rdrr.io/r/base/summary.html).
 
 Testing whether the AMEF is uniformly equal to 0 is theoretically
-equivalent testing whether the ADRF is flat. We can perform this test
+equivalent to testing whether the ADRF is flat. We can perform this test
 using [`summary()`](https://rdrr.io/r/base/summary.html) on the
 `<amef_curve>` object itself. The default value for `hypothesis` is 0 to
 test whether the AMEF is 0 everywhere.
 
 ``` r
+
 summary(amef_bll)
 ##                   Omnibus Curve Test
 ## ───────────────────────────────────────────────────────
@@ -717,9 +745,10 @@ summary(amef_bll)
 ##     2.4248
 ## 
 ##  P-value
-##   0.3529
+##    0.403
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 ```
 
 Conclusions from the test that the ADRF is flat and that the AMEF is 0
@@ -741,6 +770,7 @@ the data fit to the original model.
 Below, we compute the ADRF of `logBLL` for the group `Male == 0`.
 
 ``` r
+
 adrf_bll_male_0 <- adrf(fit, treat = "logBLL",
                         subset = Male == 0)
 ```
@@ -749,6 +779,7 @@ All functionality for full-sample ADRFs can be used with a subgroup
 ADRF.
 
 ``` r
+
 plot(adrf_bll_male_0)
 ```
 
@@ -761,6 +792,7 @@ which accepts a one-sided formula with the subgrouping variables on the
 right side.
 
 ``` r
+
 adrf_bll_by_male <- adrf(fit, treat = "logBLL",
                          by = ~Male)
 ```
@@ -769,6 +801,7 @@ Printing the stratified `<effect_curve>` object displays which variables
 were supplied to `by`:
 
 ``` r
+
 adrf_bll_by_male
 ## An <effect_curve> object
 ## 
@@ -783,6 +816,7 @@ adrf_bll_by_male
 When we plot the ADRF, we can see curves for both groups:
 
 ``` r
+
 plot(adrf_bll_by_male)
 ```
 
@@ -793,6 +827,7 @@ results for all subgroups. Below, we test the null hypotheses that the
 ADRF for each subgroup is flat:
 
 ``` r
+
 summary(adrf_bll_by_male)
 ##                   Omnibus Curve Test
 ## ───────────────────────────────────────────────────────
@@ -800,10 +835,11 @@ summary(adrf_bll_by_male)
 ##     and 2.4248
 ## 
 ##  Male  P-value
-##     0   0.0670
+##     0   0.1030
 ##     1 < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 ```
 
 We can reject the null hypothesis for the `Male = 1` group, but not for
@@ -814,17 +850,18 @@ the treatment to the `<effect_curve>` object and calling
 [`summary()`](https://rdrr.io/r/base/summary.html) on its output:
 
 ``` r
+
 adrf_bll_by_male(logBLL = c(0, 1, 2)) |>
   summary()
 ##                 ADRF Estimates
 ## ───────────────────────────────────────────────
 ##  Male logBLL Estimate Std. Error CI Low CI High
-##     0      0    8.469     0.2351  7.850   9.088
-##     0      1    8.460     0.1523  8.059   8.861
-##     0      2    7.619     0.3274  6.757   8.480
-##     1      0    8.375     0.2392  7.746   9.005
-##     1      1    7.605     0.1641  7.173   8.036
-##     1      2    6.689     0.2833  5.943   7.434
+##     0      0    8.469     0.2449  7.825   9.113
+##     0      1    8.460     0.1556  8.050   8.869
+##     0      2    7.619     0.3473  6.705   8.533
+##     1      0    8.375     0.2477  7.723   9.027
+##     1      1    7.605     0.1670  7.165   8.044
+##     1      2    6.689     0.2932  5.917   7.460
 ## ───────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.631, df = 2401)
@@ -836,6 +873,7 @@ When we project the ADRFs onto a linear model, we also get separate
 projection coefficients for each subgroup:
 
 ``` r
+
 proj_by_male <- curve_projection(adrf_bll_by_male, "linear")
 
 # Coefficient estimates
@@ -843,10 +881,10 @@ summary(proj_by_male)
 ##                    ADRF Projection Coefficients
 ## ───────────────────────────────────────────────────────────────────
 ##  Male        Term Estimate Std. Error     t  P-value CI Low CI High
-##     0 (Intercept)    8.623     0.1867 46.18 < 0.0001  8.257   8.989
-##     0      logBLL   -0.441     0.1863 -2.37   0.0180 -0.806  -0.076
-##     1 (Intercept)    8.353     0.1871 44.65 < 0.0001  7.986   8.720
-##     1      logBLL   -0.778     0.1720 -4.52 < 0.0001 -1.115  -0.441
+##     0 (Intercept)    8.623     0.1962 43.94 < 0.0001  8.238   9.008
+##     0      logBLL   -0.441     0.2003 -2.20   0.0277 -0.834  -0.048
+##     1 (Intercept)    8.353     0.1942 43.02 < 0.0001  7.972   8.734
+##     1      logBLL   -0.778     0.1796 -4.33 < 0.0001 -1.130  -0.426
 ## ───────────────────────────────────────────────────────────────────
 ## Inference: unconditional
 ## Confidence level: 95% (t* = 1.961, df = 2401)
@@ -854,6 +892,7 @@ summary(proj_by_male)
 ```
 
 ``` r
+
 # Projection plot
 plot(proj_by_male)
 ```
@@ -861,6 +900,7 @@ plot(proj_by_male)
 ![](adrftools_files/figure-html/unnamed-chunk-33-1.png)
 
 ``` r
+
 # ADRF plot with projection
 plot(adrf_bll_by_male, proj = proj_by_male)
 ```
@@ -890,12 +930,14 @@ of the subgroups separately, we can use the following:
 - `Male = 1`
 
 ``` r
+
 plot(adrf_bll_by_male, subset = Male == 0)
 ```
 
 ![](adrftools_files/figure-html/unnamed-chunk-36-1.png)
 
 ``` r
+
 plot(adrf_bll_by_male, subset = Male == 1)
 ```
 
@@ -914,6 +956,7 @@ the same arguments. We can do the same with other functions as well:
 - `Male = 1`
 
 ``` r
+
 # Testing whether the ADRF is flat
 summary(adrf_bll_by_male, subset = Male == 0)
 ##                   Omnibus Curve Test
@@ -922,9 +965,10 @@ summary(adrf_bll_by_male, subset = Male == 0)
 ##     and 2.4248
 ## 
 ##  Male P-value
-##     0   0.067
+##     0   0.103
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 
 # Estimates along the ADRF
 adrf_bll_by_male(logBLL = c(0, 1, 2), subset = Male == 0) |>
@@ -932,15 +976,16 @@ adrf_bll_by_male(logBLL = c(0, 1, 2), subset = Male == 0) |>
 ##                 ADRF Estimates
 ## ───────────────────────────────────────────────
 ##  Male logBLL Estimate Std. Error CI Low CI High
-##     0      0    8.469     0.2351  7.908   9.030
-##     0      1    8.460     0.1523  8.096   8.823
-##     0      2    7.619     0.3274  6.837   8.400
+##     0      0    8.469     0.2449  7.885   9.053
+##     0      1    8.460     0.1556  8.088   8.831
+##     0      2    7.619     0.3473  6.790   8.447
 ## ───────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.386, df = 2401)
 ```
 
 ``` r
+
 # Testing whether the ADRF is flat
 summary(adrf_bll_by_male, subset = Male == 1)
 ##                   Omnibus Curve Test
@@ -951,7 +996,8 @@ summary(adrf_bll_by_male, subset = Male == 1)
 ##  Male  P-value
 ##     1 < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 
 # Estimates along the ADRF
 adrf_bll_by_male(logBLL = c(0, 1, 2), subset = Male == 1) |>
@@ -959,9 +1005,9 @@ adrf_bll_by_male(logBLL = c(0, 1, 2), subset = Male == 1) |>
 ##                 ADRF Estimates
 ## ───────────────────────────────────────────────
 ##  Male logBLL Estimate Std. Error CI Low CI High
-##     1      0    8.375     0.2392  7.804   8.946
-##     1      1    7.605     0.1640  7.213   7.996
-##     1      2    6.689     0.2833  6.013   7.365
+##     1      0    8.375     0.2477  7.784   8.966
+##     1      1    7.605     0.1670  7.206   8.003
+##     1      2    6.689     0.2932  5.989   7.388
 ## ───────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.386, df = 2401)
@@ -983,6 +1029,7 @@ produces a `<contrast_curve>` object, which is an `<effect_curve>`
 object.
 
 ``` r
+
 adrf_bll_male_contrast <- curve_contrast(adrf_bll_by_male)
 ```
 
@@ -990,6 +1037,7 @@ Printing the object displays the contrast(s) computed. With more than
 two subgroups, all pairs of subgroups are compared.
 
 ``` r
+
 adrf_bll_male_contrast
 ## An <effect_curve> object
 ## 
@@ -1005,6 +1053,7 @@ We can plot the difference between the two ADRFs using
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html):
 
 ``` r
+
 plot(adrf_bll_male_contrast)
 ```
 
@@ -1017,6 +1066,7 @@ ADRF contrast curve is equal to 0 everywhere, which would indicate that
 the ADRF does not differ across subgroups:
 
 ``` r
+
 summary(adrf_bll_male_contrast)
 ##                   Omnibus Curve Test
 ## ───────────────────────────────────────────────────────
@@ -1024,9 +1074,10 @@ summary(adrf_bll_male_contrast)
 ##     -0.3567 and 2.4248
 ## 
 ##                 Contrast P-value
-##  [Male = 1] - [Male = 0]    0.01
+##  [Male = 1] - [Male = 0]  0.0183
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 ```
 
 Given the small p-value, we can reject the null hypothesis that the ADRF
@@ -1037,14 +1088,15 @@ output of the `<contrast_curve>` object to test for differences between
 the subgroup ADRFs at specific points:
 
 ``` r
+
 adrf_bll_male_contrast(logBLL = c(0, 1, 2)) |>
   summary()
 ##                              ADRF Contrast Estimates
 ## ──────────────────────────────────────────────────────────────────────────────────
 ##                 Contrast logBLL Estimate Std. Error      t P-value  CI Low CI High
-##  [Male = 1] - [Male = 0]      0  -0.0938     0.3354 -0.280  0.9890 -0.8942  0.7066
-##  [Male = 1] - [Male = 0]      1  -0.8551     0.2239 -3.820  0.0004 -1.3892 -0.3209
-##  [Male = 1] - [Male = 0]      2  -0.9300     0.4329 -2.148  0.0914 -1.9631  0.1030
+##  [Male = 1] - [Male = 0]      0  -0.0938     0.3483 -0.269  0.9901 -0.9250  0.7374
+##  [Male = 1] - [Male = 0]      1  -0.8551     0.2283 -3.746  0.0006 -1.3998 -0.3103
+##  [Male = 1] - [Male = 0]      2  -0.9300     0.4545 -2.046  0.1164 -2.0147  0.1546
 ## ──────────────────────────────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.386, df = 2401)
@@ -1078,6 +1130,7 @@ We’ll create that variable below and use it as the outcome of our
 outcome model:
 
 ``` r
+
 nhanes3lead$Block_bin <- as.integer(nhanes3lead$Block >= 12)
 
 table(nhanes3lead$Block_bin)
@@ -1099,6 +1152,7 @@ to use. The default, `type = "response"`, computes the ADRF on the
 probability scale, which is the most natural for a binary outcome.
 
 ``` r
+
 adrf_bll_bin <- adrf(fit_bin, treat = "logBLL")
 
 adrf_bll_bin
@@ -1115,6 +1169,7 @@ We can plot the ADRF with
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html):
 
 ``` r
+
 plot(adrf_bll_bin)
 ```
 
@@ -1127,13 +1182,12 @@ being back-transformed to be on the original scale. This isn’t the same
 as computing the ADRF on the linear predictor of the outcome model
 (i.e., by specifying `type = "link"` in the call to
 [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md));
-this involves computing the ADRF as usual on the original (probability
-scale), transforming the ADRF estimates, using the delta method to
+this involves computing the ADRF as usual on the original (probability)
+scale, transforming the ADRF estimates, using the delta method to
 compute the variance of the transformed estimates, and then computing
 Wald confidence bands using the variance of the transformed estimates
-before back-transforming[¹](#fn1). This ensures the confidence bands
-respect the bounds implied by the link function used in the outcome
-model.
+before back-transforming[^1]. This ensures the confidence bands respect
+the bounds implied by the link function used in the outcome model.
 
 To instead compute symmetric confidence bands around the original ADRF
 estimates, one can specify `transform = FALSE` to
@@ -1148,12 +1202,14 @@ it, which means it is possible for the confidence bands to fall outside
 - Untransformed
 
 ``` r
+
 plot(adrf_bll_bin)
 ```
 
 ![](adrftools_files/figure-html/unnamed-chunk-50-1.png)
 
 ``` r
+
 plot(adrf_bll_bin, transform = FALSE)
 ```
 
@@ -1161,7 +1217,7 @@ plot(adrf_bll_bin, transform = FALSE)
 
 #### 
 
-Bootstrapping and using a percentile confidence bands avoids this issue
+Bootstrapping and using percentile confidence bands avoids this issue
 because such bands are invariant to transformation and respect the
 bounds of the outcome.
 
@@ -1175,28 +1231,30 @@ default, it computes transformed confidence intervals.
 - Untransformed
 
 ``` r
+
 adrf_bll_bin(logBLL = c(0, 1, 2)) |>
   summary()
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0   0.2420 0.1930  0.2988
-##       1   0.1926 0.1602  0.2296
-##       2   0.0752 0.0396  0.1383
+##       0   0.2420 0.1921  0.2999
+##       1   0.1926 0.1599  0.2301
+##       2   0.0752 0.0387  0.1412
 ## ───────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (z* = 2.386)
 ```
 
 ``` r
+
 adrf_bll_bin(logBLL = c(0, 1, 2)) |>
   summary(transform = FALSE)
 ##               ADRF Estimates
 ## ──────────────────────────────────────────
 ##  logBLL Estimate Std. Error CI Low CI High
-##       0   0.2420     0.0222 0.1890  0.2949
-##       1   0.1926     0.0145 0.1579  0.2272
-##       2   0.0752     0.0198 0.0279  0.1225
+##       0   0.2420     0.0226 0.1880  0.2959
+##       1   0.1926     0.0147 0.1574  0.2276
+##       2   0.0752     0.0205 0.0262  0.1241
 ## ──────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (z* = 2.386)
@@ -1211,14 +1269,18 @@ confidence intervals are reported on the scale of the original
 prediction type (in this case, probabilities). `transform` only changes
 how the confidence intervals are computed.
 
-`transform` can be `TRUE`, `FALSE`, a `<family>` object, or a function.
-When `TRUE` (the default for all *adrftools* functions that use it), the
-link function of the outcome model will be used. When a `<family>`
-object is supplied, its link function will be used. When a function is
-supplied, it will be used as the transformation. Typically a
-transformation function takes in as input the estimate on the outcome
-scale (e.g., probabilities for binary outcomes) and returns a quantity
-on an unbounded scale; examples include
+`transform` can be `TRUE`, `FALSE`, a `<family>` object, a link object
+(e.g., from [`make.link()`](https://rdrr.io/r/stats/make.link.html)), or
+one of the functions [`log()`](https://rdrr.io/r/base/Log.html),
+[`sqrt()`](https://rdrr.io/r/base/MathFun.html),
+[`exp()`](https://rdrr.io/r/base/Log.html),
+[`qlogis()`](https://rdrr.io/r/stats/Logistic.html), or
+[`qnorm()`](https://rdrr.io/r/stats/Normal.html). When `TRUE` (the
+default for all *adrftools* functions that use it), the link function of
+the outcome model will be used. When a `<family>` or link object is
+supplied, its link function will be used. A transformation takes in as
+input the estimate on the outcome scale (e.g., probabilities for binary
+outcomes) and returns a quantity on an unbounded scale; examples include
 [`qlogis()`](https://rdrr.io/r/stats/Logistic.html) and
 [`qnorm()`](https://rdrr.io/r/stats/Normal.html) for binary outcomes
 (corresponding to logistic and probit links) and
@@ -1254,7 +1316,7 @@ both of which involve a projection of the ADRF. When transformation is
 requested with [`summary()`](https://rdrr.io/r/base/summary.html) (the
 default), the null hypothesis tested is whether the ADRF is sufficiently
 described by the transformed linear predictor. For example, consider a
-scenario in which the true ADRF is S-shaped. Testing whether ADRF is
+scenario in which the true ADRF is S-shaped. Testing whether the ADRF is
 linear **without** transformation corresponds to testing whether the
 ADRF is more complicated than a straight line, and therefore will likely
 yield rejection of the null hypothesis (i.e., because a straight line is
@@ -1269,8 +1331,8 @@ When testing whether the ADRF is flat, the test using the transformed
 linear predictor is typically equivalent to that using the linear
 predictor itself; ideally these tests should yield the same conclusion.
 When testing whether the ADRF is equal to a given value, the test
-back-transforms the ADRF estimate and the given value before computing
-the test statistic.
+transforms the ADRF estimate and the given value before computing the
+test statistic.
 
 In the tabbed output below, we run
 [`summary()`](https://rdrr.io/r/base/summary.html) and
@@ -1283,6 +1345,7 @@ with and without transformation:
 - Untransformed
 
 ``` r
+
 # Test for flatness
 summary(adrf_bll_bin)
 ##                   Omnibus Curve Test
@@ -1293,7 +1356,8 @@ summary(adrf_bll_bin)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 
 # Test for linearity
 summary(adrf_bll_bin, "linear")
@@ -1303,9 +1367,10 @@ summary(adrf_bll_bin, "linear")
 ##     between -0.3567 and 2.4248
 ## 
 ##  P-value
-##   0.1447
+##   0.1662
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 
 # Estimate projection on transformed ADRF
 proj_t <- curve_projection(adrf_bll_bin, "linear")
@@ -1314,8 +1379,8 @@ summary(proj_t)
 ##                   ADRF Projection Coefficients
 ## ─────────────────────────────────────────────────────────────────
 ##         Term Estimate Std. Error       z  P-value  CI Low CI High
-##  (Intercept)  -1.0964     0.0941 -11.657 < 0.0001 -1.2808 -0.9121
-##       logBLL  -0.5372     0.0996  -5.392 < 0.0001 -0.7324 -0.3419
+##  (Intercept)  -1.0964     0.0935 -11.726 < 0.0001 -1.2797 -0.9132
+##       logBLL  -0.5372     0.0941  -5.708 < 0.0001 -0.7216 -0.3527
 ## ─────────────────────────────────────────────────────────────────
 ## Inference: unconditional
 ## Confidence level: 95% (z* = 1.96)
@@ -1323,6 +1388,7 @@ summary(proj_t)
 ```
 
 ``` r
+
 # Test for flatness
 summary(adrf_bll_bin, transform = FALSE)
 ##                   Omnibus Curve Test
@@ -1333,7 +1399,8 @@ summary(adrf_bll_bin, transform = FALSE)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 
 # Test for linearity
 summary(adrf_bll_bin, "linear", transform = FALSE)
@@ -1343,9 +1410,10 @@ summary(adrf_bll_bin, "linear", transform = FALSE)
 ##     -0.3567 and 2.4248
 ## 
 ##  P-value
-##   0.5202
+##   0.5455
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation
+## Computed using the Imhof approximation (the
+##   saddlepoint approximation for p-values below .0001)
 
 # Estimate projection on untransformed ADRF
 proj_u <- curve_projection(adrf_bll_bin, "linear", transform = FALSE)
@@ -1354,8 +1422,8 @@ summary(proj_u)
 ##                   ADRF Projection Coefficients
 ## ────────────────────────────────────────────────────────────────
 ##         Term Estimate Std. Error      z  P-value  CI Low CI High
-##  (Intercept)   0.2497     0.0162 15.399 < 0.0001  0.2179  0.2815
-##       logBLL  -0.0788     0.0133 -5.936 < 0.0001 -0.1048 -0.0528
+##  (Intercept)   0.2497     0.0165 15.090 < 0.0001  0.2172  0.2821
+##       logBLL  -0.0788     0.0137 -5.766 < 0.0001 -0.1056 -0.0520
 ## ────────────────────────────────────────────────────────────────
 ## Inference: unconditional
 ## Confidence level: 95% (z* = 1.96)
@@ -1370,6 +1438,7 @@ summary(proj_u)
 - Untransformed
 
 ``` r
+
 # Plot transformed projection
 plot(proj_t)
 
@@ -1379,6 +1448,7 @@ plot(adrf_bll_bin, proj = proj_t)
 ![](adrftools_files/figure-html/unnamed-chunk-58-1.png)![](adrftools_files/figure-html/unnamed-chunk-58-2.png)
 
 ``` r
+
 # Plot untransformed projection
 plot(proj_u)
 
@@ -1389,7 +1459,7 @@ plot(adrf_bll_bin, proj = proj_u)
 
 #### 
 
-Notice that the projections appear someone different depending on
+Notice that the projections appear somewhat different depending on
 whether transformation is requested. If so (the default), the projection
 coefficients are interpreted like those from a generalized linear model
 of the outcome on the treatment with the transformation as the given
@@ -1428,6 +1498,7 @@ to fit the outcome model. See an example below, in which we first
 estimate balancing weights using generalized propensity score weighting.
 
 ``` r
+
 library(WeightIt)
 
 w_fit <- weightit(logBLL ~ Male + Age + Race + PIR + Enough_Food +
@@ -1453,6 +1524,7 @@ to fit a linear model for `Math`, incorporating the estimation of the
 weights into the variance of the outcome model parameters.
 
 ``` r
+
 fit <- glm_weightit(Math ~ splines::ns(logBLL, df = 5) *
                       (Age + Male + Race + PIR + Enough_Food +
                          Smoke_in_Home + Smoke_Pregnant + NICU),
@@ -1466,6 +1538,7 @@ compute the ADRF, just as we did with the output of
 [`lm()`](https://rdrr.io/r/stats/lm.html).
 
 ``` r
+
 adrf_bll_w <- adrf(fit, treat = "logBLL")
 
 plot(adrf_bll_w)
@@ -1504,13 +1577,14 @@ incorporating sampling weights:
 3.  Using the `weights` argument in
     [`glm()`](https://rdrr.io/r/stats/glm.html)
 
-Only the last of these three requires using the the `wts` argument.
+Only the last of these three requires using the `wts` argument.
 
 #### Using *survey*
 
 First, we’ll use *survey* functionality to incorporate sampling weights.
 
 ``` r
+
 library(survey)
 
 # Incorporate weights into surveydesign object
@@ -1529,6 +1603,7 @@ Simply calling
 automatically incorporates sampling weights.
 
 ``` r
+
 adrf_sv <- adrf(fit_sv, treat = "logBLL")
 
 plot(adrf_sv)
@@ -1550,6 +1625,7 @@ calculates that standard error automatically when
 `vcov = "unconditional"` (the default).
 
 ``` r
+
 # Fit weighted outcome model
 fit_gs <- glm(Math ~ splines::ns(logBLL, df = 5) *
                 (Age + Male + Race + PIR + Enough_Food +
@@ -1562,12 +1638,13 @@ With [`glm()`](https://rdrr.io/r/stats/glm.html), we need to set
 `wts = TRUE` in the call to
 [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) to
 ensure the weights are properly included in the ADRF estimation. If not,
-the weights will be used only in fitting the outcome mode, but the ADRF
+the weights will be used only in fitting the outcome model, but the ADRF
 will generalize to the unweighted population. This is okay if the
 weights are balancing weights, but if they are sampling weights, it is
 critical for them to be incorporated into the ADRF as well.
 
 ``` r
+
 adrf_gs <- adrf(fit_gs, treat = "logBLL",
                 wts = TRUE)
 
@@ -1576,10 +1653,10 @@ plot(adrf_gs)
 
 ![](adrftools_files/figure-html/unnamed-chunk-67-1.png)
 
-Using `wts = "MEC_wts"` would yield the same results and can be used if
+Using `wts = "MEC_wt"` would yield the same results and can be used if
 the weights used to fit the outcome model are different from those used
-to generalized the ADRF (as we will see below when combining sampling
-and balancing weights).
+to generalize the ADRF (as we will see below when combining sampling and
+balancing weights).
 
 #### Sampling weights and balancing weights together
 
@@ -1592,9 +1669,10 @@ this with *WeightIt* is the most straightforward; simply supplying the
 [`weightit()`](https://ngreifer.github.io/WeightIt/reference/weightit.html)
 makes everything work as expected. They are automatically included in
 the outcome model when fit with
-[`glm_weightit()`](https://ngreifer.github.io/WeightIt/reference/glm_weightit.html)[²](#fn2).
+[`glm_weightit()`](https://ngreifer.github.io/WeightIt/reference/glm_weightit.html)[^2].
 
 ``` r
+
 library(WeightIt)
 
 # Estimate balancing weights incorporating
@@ -1617,9 +1695,10 @@ By default,
 [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) uses
 the sampling weights, but not the balancing weights, in standardizing
 the ADRF estimate. This ensures the estimates generalize to the
-sampling-weighted sample[³](#fn3).
+sampling-weighted sample[^3].
 
 ``` r
+
 adrf_sw <- adrf(fit_sw, treat = "logBLL")
 
 plot(adrf_sw)
@@ -1672,6 +1751,7 @@ with *adrftools*. First, we’ll generate some missing data artificially
 using [`mice::ampute()`](https://amices.org/mice/reference/ampute.html).
 
 ``` r
+
 library(mice)
 set.seed(1234)
 
@@ -1705,6 +1785,7 @@ convergence and imputation quality should be implemented; we skip those
 here.
 
 ``` r
+
 # Multiple imputation
 imp <- mice(nhanes3lead_mis, m = 5, print = FALSE)
 ```
@@ -1714,6 +1795,7 @@ Next, we can fit an outcome model using
 containing a list of the model fits.
 
 ``` r
+
 fit_mi <- with(
   imp,
   lm(Math ~ splines::ns(logBLL, df = 5) *
@@ -1728,6 +1810,7 @@ which automatically estimates the ADRF in each imputed dataset and pools
 the results.
 
 ``` r
+
 adrf_mi <- adrf(fit_mi, treat = "logBLL")
 
 plot(adrf_mi)
@@ -1747,6 +1830,7 @@ To estimate balancing weights in multiply imputed data, we can use
 All analyses work similarly to when using *mice* alone.
 
 ``` r
+
 library(MatchThem)
 
 # Estimate balancing weights
@@ -1772,12 +1856,13 @@ plot(adrf_w_mi)
 ### Bayesian models
 
 All of the described functionality works similarly for Bayesian models
-(e.g., those fit with `brms::brm()`,
+(e.g., those fit with
+[`brms::brm()`](https://paulbuerkner.com/brms/reference/brm.html),
 [`dbarts::bart2()`](https://rdrr.io/pkg/dbarts/man/bart.html), or
-`rstanarm::stan_glm()`) as it does for frequentist models. *adrftools*
-is a primarily frequentist ecosystem, but special procedures exist for
-Bayesian models as well. After fitting a Bayesian outcome model, it can
-be supplied to
+[`rstanarm::stan_glm()`](https://mc-stan.org/rstanarm/reference/stan_glm.html))
+as it does for frequentist models. *adrftools* is a primarily
+frequentist ecosystem, but special procedures exist for Bayesian models
+as well. After fitting a Bayesian outcome model, it can be supplied to
 [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) as
 usual to compute the ADRF. Unlike with frequentist models, the ADRF
 posterior is also computed and forms the basis for inference on the
@@ -1793,6 +1878,7 @@ the posterior for inference. Leaving `vcov` unspecified uses
 model using [*dbarts*](https://cran.r-project.org/package=dbarts).
 
 ``` r
+
 library(dbarts)
 
 bfit <- bart2(Math ~ logBLL + Male + Age + Race +
@@ -1824,12 +1910,14 @@ normal distribution to compute Wald-based credible intervals by setting
 intervals with `ci.type = "perc"`. Simultaneous inference for
 equi-tailed percentile intervals, if requested, uses the Bayesian
 algorithm described by Montiel Olea and Plagborg-Møller
-([2019](#ref-montielolea2019)), which guarantees uniform credibility
-across the whole effect curve. P-values for estimates along the effect
-curve are computed as the complement of the smallest credibility level
-that excludes the null value.
+([2019](#ref-montielolea2019)), which ensures the band has the requested
+credibility simultaneously across the whole effect curve, up to Monte
+Carlo error from the finite number of posterior draws. P-values for
+estimates along the effect curve are computed as the complement of the
+smallest credibility level that excludes the null value.
 
 ``` r
+
 plot(adrf_bll_bayes)
 ```
 
@@ -1837,14 +1925,15 @@ plot(adrf_bll_bayes)
 
 ``` r
 
+
 adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
   summary()
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.410  8.030   9.135
-##       1    7.936  7.592   8.329
-##       2    7.206  6.597   8.048
+##       0    8.491  8.013   9.567
+##       1    7.973  7.570   8.352
+##       2    7.233  6.573   7.941
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%
@@ -1865,7 +1954,7 @@ posterior as described by Zhou and Reiter
 
 Hansen, Stefan Nygaard, and Morten Overgaard. 2024. “Variance Estimation
 for Average Treatment Effects Estimated by g-Computation.” *Metrika*,
-April. <https://doi.org/10.1007/s00184-024-00962-4>.
+ahead of print, April 6. <https://doi.org/10.1007/s00184-024-00962-4>.
 
 Montiel Olea, José Luis, and Mikkel Plagborg-Møller. 2019. “Simultaneous
 Confidence Bands: Theory, Implementation, and an Application to SVARs.”
@@ -1890,18 +1979,17 @@ Zhou, Xiang, and Jerome P. Reiter. 2010. “A Note on Bayesian Inference
 After Multiple Imputation.” *The American Statistician* 64 (2): 159–63.
 <https://doi.org/10.1198/tast.2010.09109>.
 
-------------------------------------------------------------------------
-
-1.  Note that the confidence bands are symmetrical when a scaling
+[^1]: Note that the confidence bands are symmetrical when a scaling
     corresponding to the transformation is applied to the y-axis; to see
     this, run
     `plot(adrf_bll_bin) + ggplot2::scale_y_continuous(transform = "logit")`
 
-2.  Note that this same procedure be used without actually estimating
-    balancing weights by setting `method = NULL` in the call to
+[^2]: Note that this same procedure can be used without actually
+    estimating balancing weights by setting `method = NULL` in the call
+    to
     [`weightit()`](https://ngreifer.github.io/WeightIt/reference/weightit.html).
     This yields the same results as the previous two methods.
 
-3.  If, for some reason, you want to include the product of the sampling
-    weights and balancing weights in the estimation of the ADRF, set
-    `wts = TRUE` instead of leaving it unspecified.
+[^3]: If, for some reason, you want to include the product of the
+    sampling weights and balancing weights in the estimation of the
+    ADRF, set `wts = TRUE` instead of leaving it unspecified.

@@ -23,6 +23,10 @@ reference_curve(x, reference)
 - reference:
 
   numeric; the value of the treatment to use as the reference value.
+  This must be within the range of treatment values at which the effect
+  curve was computed (see
+  [`effect_curve`](https://ngreifer.github.io/adrftools/reference/effect_curve.md)
+  for how values just outside it are handled).
 
 ## Value
 
@@ -54,8 +58,8 @@ between each point along the effect curve and the reference point.
   including a reference effect curve
 
 - [`point_contrast()`](https://ngreifer.github.io/adrftools/reference/point_contrast.md)
-  for effect curve estimates to each other (rather than to a single
-  point)
+  for comparing effect curve estimates to each other (rather than to a
+  single point)
 
 ## Examples
 
@@ -97,8 +101,8 @@ ref1(logBLL = c(0, 1, 2)) |>
 #> ───────────────────────────────────────────────────────────
 #>  logBLL Estimate Std. Error      t  P-value  CI Low CI High
 #>       0   0.0000     0.0000      .        .  0.0000  0.0000
-#>       1  -0.4579     0.2662 -1.720   0.1461 -1.0437  0.1279
-#>       2  -1.4403     0.3074 -4.685 < 0.0001 -2.1170 -0.7637
+#>       1  -0.4579     0.2702 -1.694   0.1538 -1.0526  0.1369
+#>       2  -1.4403     0.3161 -4.557 < 0.0001 -2.1359 -0.7447
 #> ───────────────────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
 #> Confidence level: 95% (t* = 2.201, df = 2473)
@@ -112,8 +116,9 @@ summary(ref1)
 #> H₀: ADRF difference from reference (logBLL = 0) is 0
 #>     for values of logBLL between -0.3567 and 2.4248
 #> 
-#>   P-value
-#>  < 0.0001
+#>  P-value
+#>   0.0001
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation
+#> Computed using the Imhof approximation (the
+#>   saddlepoint approximation for p-values below .0001)
 ```

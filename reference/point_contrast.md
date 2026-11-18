@@ -26,7 +26,7 @@ summary(
 
   for `point_contrast()`, a
   [`curve_est`](https://ngreifer.github.io/adrftools/reference/effect_curve.md)
-  object; the output of a an `effect_curve` object. For
+  object; the output of a call to an `effect_curve` object. For
   [`summary()`](https://rdrr.io/r/base/summary.html), a
   `curve_est_contrast` object; the output of a call to
   `point_contrast()`.
@@ -70,7 +70,10 @@ summary(
   the "denominator" degrees of freedom to use for the tests and critical
   test statistics for confidence intervals. Default is to use the
   residual degrees of freedom from the original model if it is a linear
-  model and `Inf` otherwise.
+  model and `Inf` otherwise, or, for models fit to multiply imputed
+  data, degrees of freedom that account for the number of imputations
+  (see
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md)).
 
 - ...:
 
@@ -132,11 +135,11 @@ adrf1(logBLL = c(0, 1, 2)) |>
 #>                           ADRF Point Contrasts
 #> ────────────────────────────────────────────────────────────────────────
 #>                         Term Estimate Std. Error      t  P-value  CI Low
-#>  [logBLL = 1] - [logBLL = 0]  -0.4579     0.2662 -1.720   0.1962 -1.0810
-#>  [logBLL = 2] - [logBLL = 0]  -1.4403     0.3074 -4.685 < 0.0001 -2.1601
-#>  [logBLL = 2] - [logBLL = 1]  -0.9824     0.2610 -3.764   0.0005 -1.5935
+#>  [logBLL = 1] - [logBLL = 0]  -0.4579     0.2702 -1.694   0.2056 -1.0903
+#>  [logBLL = 2] - [logBLL = 0]  -1.4403     0.3161 -4.557 < 0.0001 -2.1800
+#>  [logBLL = 2] - [logBLL = 1]  -0.9824     0.2668 -3.683   0.0005 -1.6067
 #> ────────────────────────────────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
-#> Confidence level: 95% (t* = 2.341, df = 2473)
+#> Confidence level: 95% (t* = 2.34, df = 2473)
 #> Null value: 0
 ```

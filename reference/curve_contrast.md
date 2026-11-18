@@ -104,15 +104,15 @@ adrf_contrast(logBLL = c(0, 2)) |>
 #>                          ADRF Contrast Estimates
 #> ─────────────────────────────────────────────────────────────────────────
 #>                                Contrast logBLL Estimate Std. Error      t
-#>  [Race = "Hispanic"] - [Race = "Black"]      0  -0.3926     0.4885 -0.804
-#>  [Race = "Hispanic"] - [Race = "Black"]      2   0.2837     0.3625  0.783
-#>     [Race = "White"] - [Race = "Black"]      0   1.7703     0.5265  3.362
-#>     [Race = "White"] - [Race = "Black"]      2  -0.3083     0.6162 -0.500
-#>  [Race = "White"] - [Race = "Hispanic"]      0   2.1629     0.5120  4.225
-#>  [Race = "White"] - [Race = "Hispanic"]      2  -0.5921     0.6297 -0.940
+#>  [Race = "Hispanic"] - [Race = "Black"]      0  -0.3926     0.5210 -0.754
+#>  [Race = "Hispanic"] - [Race = "Black"]      2   0.2837     0.3862  0.735
+#>     [Race = "White"] - [Race = "Black"]      0   1.7703     0.5556  3.186
+#>     [Race = "White"] - [Race = "Black"]      2  -0.3083     0.6811 -0.453
+#>  [Race = "White"] - [Race = "Hispanic"]      0   2.1629     0.5409  3.999
+#>  [Race = "White"] - [Race = "Hispanic"]      2  -0.5921     0.7006 -0.845
 #> ─────────────────────────────────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
-#> Confidence level: 95% (t* = 2.59, df = 2377)
+#> Confidence level: 95% (t* = 2.592, df = 2377)
 #> Null value: 0
 
 # Test if ADRF differences are present
@@ -123,9 +123,10 @@ summary(adrf_contrast)
 #>     -0.3567 and 2.4248
 #> 
 #>                                Contrast P-value
-#>  [Race = "Hispanic"] - [Race = "Black"]  0.8620
-#>     [Race = "White"] - [Race = "Black"]  0.0006
-#>  [Race = "White"] - [Race = "Hispanic"]  0.0002
+#>  [Race = "Hispanic"] - [Race = "Black"]  0.8987
+#>     [Race = "White"] - [Race = "Black"]  0.0058
+#>  [Race = "White"] - [Race = "Hispanic"]  0.0025
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation
+#> Computed using the Imhof approximation (the
+#>   saddlepoint approximation for p-values below .0001)
 ```

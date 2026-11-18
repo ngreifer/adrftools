@@ -2,9 +2,11 @@
 <url><loc>https://ngreifer.github.io/adrftools/404.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/articles/adrftools.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/articles/index.html</loc></url>
+<url><loc>https://ngreifer.github.io/adrftools/articles/shift-effects.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/authors.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/index.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/news/index.html</loc></url>
+<url><loc>https://ngreifer.github.io/adrftools/reference/ade.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/reference/adrf.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/reference/adrftools-package.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/reference/amef.html</loc></url>
@@ -16,6 +18,7 @@
 <url><loc>https://ngreifer.github.io/adrftools/reference/plot.effect_curve.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/reference/point_contrast.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/reference/reference_curve.html</loc></url>
+<url><loc>https://ngreifer.github.io/adrftools/reference/shift_curve.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/reference/summary.curve_est.html</loc></url>
 <url><loc>https://ngreifer.github.io/adrftools/reference/summary.effect_curve.html</loc></url>
 </urlset>

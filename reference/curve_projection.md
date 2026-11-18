@@ -7,7 +7,7 @@ to act as a more interpretable summary of the original effect curve.
 ## Usage
 
 ``` r
-curve_projection(x, model, transform = TRUE)
+curve_projection(x, model, transform = TRUE, integrate = "uniform")
 
 # S3 method for class 'curve_projection'
 summary(
@@ -48,10 +48,25 @@ anova(object, object2, df = NULL, ...)
 - transform:
 
   whether to compute the projection using a transformation of the linear
-  predictor. Allowable options include `TRUE`, `FALSE`, or a function
-  specifying a transformation (of which the inverse is used as the
-  inverse link of the projection model). Ignored unless `object` is an
-  ADRF. See Details.
+  predictor. Allowable options include `TRUE`, `FALSE`, a family object
+  (e.g., [`binomial()`](https://rdrr.io/r/stats/family.html)), a link
+  object (e.g., the output of
+  [`make.link()`](https://rdrr.io/r/stats/make.link.html)), or one of
+  the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`; the inverse
+  of the transformation is used as the inverse link of the projection
+  model. Ignored unless `x` is an ADRF. See Details.
+
+- integrate:
+
+  string; how treatment values are weighted in fitting the projection.
+  Allowable options include `"uniform"` (the default), which weights all
+  treatment values in the range of the effect curve equally, and
+  `"empirical"`, which weights them by an estimate of the density of the
+  treatment. The weighting defines the projection, so the coefficients
+  differ between the two options. Only `"uniform"` can be used with a
+  shift curve (see
+  [`shift_curve()`](https://ngreifer.github.io/adrftools/reference/shift_curve.md)).
+  See Details.
 
 - object, object2:
 
@@ -73,7 +88,10 @@ anova(object, object2, df = NULL, ...)
   the "denominator" degrees of freedom to use for the test. Default is
   to use the residual degrees of freedom from the original model if it
   is a linear model (in which case an F-test is used) and `Inf`
-  otherwise (in which case a \\\chi^2\\ test is used).
+  otherwise (in which case a \\\chi^2\\ test is used), or, for models
+  fit to multiply imputed data, degrees of freedom that account for the
+  number of imputations (see
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md)).
 
 - ci.type:
 
@@ -103,8 +121,8 @@ anova(object, object2, df = NULL, ...)
 
 ## Value
 
-`curve_projection()` returns an `curve_projection` object, which
-inherits from
+`curve_projection()` returns a `curve_projection` object, which inherits
+from
 [`effect_curve`](https://ngreifer.github.io/adrftools/reference/effect_curve.md).
 This object is a function that produces estimates of the effect curve
 projection when called with values of the treatment as inputs. See
@@ -169,7 +187,7 @@ B(a) \hat{\mathbf{\beta}} \right) \right)^2 da}\$\$
 where \\f^{-1}(y)\\ is the inverse of the transformation supplied to
 `transform` (i.e., corresponding to the inverse link function of a
 generalized linear model), essentially using nonlinear least squares
-(NLS) to estimate the effect curve projection. This make the
+(NLS) to estimate the effect curve projection. This makes the
 coefficients in the projection model correspond to the coefficients on
 the linear predictor \\B(a)\hat{\mathbf{\beta}}\\. In this case, the
 projection is not simply a linear projection, but it may still be more
@@ -187,6 +205,19 @@ nonlinear function of the linear predictor. Set `transform` to `FALSE`
 to require that the projection curve be simply the linear predictor with
 no transformation. Note this can lead to invalid estimates when the
 outcome is bounded.
+
+### Weighting treatment values
+
+With `integrate = "empirical"`, the integrals above are weighted by the
+density of the treatment, so the projection is the best approximation to
+the effect curve over the distribution of the treatment rather than over
+its range, and parts of the curve where the treatment is common count
+more than parts where it is sparse. The density is estimated as
+described in
+[`summary.effect_curve()`](https://ngreifer.github.io/adrftools/reference/summary.effect_curve.md).
+Because the weighting changes the projection itself,
+[`anova()`](https://rdrr.io/r/stats/anova.html) requires both
+projections to use the same `integrate`.
 
 ### Comparing projection models
 
@@ -242,9 +273,10 @@ summary(adrf1, hypothesis = "linear")
 #>     -0.3567 and 2.4248
 #> 
 #>  P-value
-#>   0.3764
+#>   0.3975
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation
+#> Computed using the Imhof approximation (the
+#>   saddlepoint approximation for p-values below .0001)
 
 # Compute the linear projection
 proj1 <- curve_projection(adrf1, "linear")
@@ -269,8 +301,8 @@ summary(proj1)
 #>                  ADRF Projection Coefficients
 #> ──────────────────────────────────────────────────────────────
 #>         Term Estimate Std. Error     t  P-value CI Low CI High
-#>  (Intercept)     8.57     0.1493 57.42 < 0.0001  8.278   8.863
-#>       logBLL    -0.72     0.1423 -5.06 < 0.0001 -0.999  -0.441
+#>  (Intercept)     8.57     0.1523 56.26 < 0.0001  8.272   8.869
+#>       logBLL    -0.72     0.1459 -4.93 < 0.0001 -1.006  -0.434
 #> ──────────────────────────────────────────────────────────────
 #> Inference: unconditional
 #> Confidence level: 95% (t* = 1.961, df = 2473)
@@ -299,7 +331,7 @@ anova(proj2, proj1)
 #>     0 (i.e., Model 2 is sufficient)
 #> 
 #>  df      F P-value
-#>   2 1.3605  0.2567
+#>   2 1.3077  0.2706
 #> ───────────────────────────────────────────────────────
 #> Inference: unconditional (df = 2473)
 ```

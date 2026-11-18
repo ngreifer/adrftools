@@ -1,9 +1,10 @@
-pandoc: 3.1.11
-pkgdown: 2.2.0
+pandoc: 3.8.3
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   adrftools: adrftools.html
-last_built: 2026-04-28T20:03Z
+  shift-effects: shift-effects.html
+last_built: 2026-11-18T16:43Z
 urls:
   reference: https://ngreifer.github.io/adrftools/reference
   article: https://ngreifer.github.io/adrftools/articles

@@ -11,7 +11,7 @@
   : Plot an effect curve
 - [`summary(`*`<effect_curve>`*`)`](https://ngreifer.github.io/adrftools/reference/summary.effect_curve.md)
   [`print(`*`<summary.effect_curve>`*`)`](https://ngreifer.github.io/adrftools/reference/summary.effect_curve.md)
-  : Test omnibus hypotheses about an effect curves
+  : Test omnibus hypotheses about an effect curve
 - [`curve_projection()`](https://ngreifer.github.io/adrftools/reference/curve_projection.md)
   [`summary(`*`<curve_projection>`*`)`](https://ngreifer.github.io/adrftools/reference/curve_projection.md)
   [`coef(`*`<curve_projection>`*`)`](https://ngreifer.github.io/adrftools/reference/curve_projection.md)
@@ -42,6 +42,13 @@
   : Contrast an effect curve with a reference point
 - [`curve_contrast()`](https://ngreifer.github.io/adrftools/reference/curve_contrast.md)
   : Contrast multiple subgroup effect curves
+
+## Compute shift curves and the average derivative effect
+
+- [`shift_curve()`](https://ngreifer.github.io/adrftools/reference/shift_curve.md)
+  : Estimate a shift curve
+- [`ade()`](https://ngreifer.github.io/adrftools/reference/ade.md) :
+  Compute the average derivative effect
 
 ## Example data
 

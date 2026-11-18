@@ -64,25 +64,37 @@ plot(
 - transform:
 
   whether to compute intervals on the transformed estimates. Allowable
-  options include `TRUE`, `FALSE`, or a function specifying a
-  transformation. Ignored unless `x` is an ADRF. See Details.
+  options include `TRUE`, `FALSE`, a family object (e.g.,
+  [`binomial()`](https://rdrr.io/r/stats/family.html)), a link object
+  (e.g., the output of
+  [`make.link()`](https://rdrr.io/r/stats/make.link.html)), or one of
+  the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored
+  unless `x` is an ADRF and Wald inference is used (i.e., ignored with
+  percentile intervals, the default with bootstrapping and Bayesian
+  models). See Details.
 
 - ci.type:
 
-  string; when bootstrapping is used in the original effect curve, what
-  type of confidence interval is to be computed. Allowable options
-  include `"perc"` for percentile intervals, `"wald"` for Wald
-  intervals, and other options allowed by
+  string; when bootstrapping or Bayesian inference is used in the
+  original effect curve, which type of confidence interval is to be
+  computed. For bootstrapping, allowable options include `"perc"` for
+  percentile intervals, `"wald"` for Wald intervals, and other options
+  allowed by
   [`fwb::summary.fwb()`](https://ngreifer.github.io/fwb/reference/summary.fwb.html)
   . When `simultaneous = TRUE`, only `"perc"` and `"wald"` are allowed.
-  Default is `"perc"`. Ignored when bootstrapping is not used.
+  For Bayesian models, allowable options include `"perc"` for
+  equi-tailed intervals and `"wald"` for Wald intervals. Default is
+  `"perc"`. Ignored when bootstrapping is not used and the model is not
+  Bayesian.
 
 - df:
 
   the "denominator" degrees of freedom to use for the critical test
   statistics for confidence bands. Default is to use the residual
   degrees of freedom from the original model if it is a linear model and
-  `Inf` otherwise.
+  `Inf` otherwise, or, for models fit to multiply imputed data, degrees
+  of freedom that account for the number of imputations (see
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md)).
 
 - ...:
 
@@ -90,7 +102,7 @@ plot(
 
 ## Value
 
-A `ggplot` object that can modified using functions in ggplot2. Below
+A `ggplot` object that can be modified using functions in ggplot2. Below
 are some common tasks and instructions to perform them. Note all should
 be run after running
 [`library("ggplot2")`](https://ggplot2.tidyverse.org).
@@ -154,7 +166,7 @@ estimates using the delta method. By default, if a generalized linear
 model is used for the outcome with a non-identity link function, the
 estimates are transformed by the link function to be on an unbounded
 scale. Note this is not the same as using the linear predictor for the
-effect curve; this is simple a transformation of the estimated points
+effect curve; this is simply a transformation of the estimated points
 along the curve already computed. Confidence bands are computed using
 the transformed estimates before being back-transformed to ensure they
 are within the bounds of the outcome.
@@ -169,7 +181,24 @@ true coverage rate from that specified.
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) uses the
 "sup-t" simultaneous confidence band, which is the smallest
 one-parameter band that covers the whole effect curve at the desired
-rate.
+rate. With Wald inference, the critical value is computed using
+[`mvtnorm::qmvt()`](https://rdrr.io/pkg/mvtnorm/man/qmvt.html) with the
+same settings as
+[`summary.curve_est()`](https://ngreifer.github.io/adrftools/reference/summary.curve_est.md),
+which uses a randomized algorithm; use
+[`set.seed()`](https://rdrr.io/r/base/Random.html) for reproducible
+results. With bootstrapping or Bayesian models and `ci.type = "perc"`,
+the simultaneous band is the product of the equal-tailed percentile
+intervals with the tail probability calibrated so that it contains the
+desired proportion of the bootstrap or posterior draws, as described by
+Montiel Olea and Plagborg-Møller (2019).
+
+## References
+
+Montiel Olea, J. L., & Plagborg-Møller, M. (2019). Simultaneous
+confidence bands: Theory, implementation, and an application to SVARs.
+*Journal of Applied Econometrics*, 34(1), 1–17.
+[doi:10.1002/jae.2656](https://doi.org/10.1002/jae.2656)
 
 ## See also
 

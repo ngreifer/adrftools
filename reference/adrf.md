@@ -47,9 +47,10 @@ adrf(
 
   how the covariance matrix of the estimates should be computed. If
   `"unconditional"` (the default for frequentist models), use the
-  sandwich estimator including sampling uncertainty. If `"boot"` or
-  `"fwb"`, use the traditional or fractional weighted bootstrap,
-  respectively (both of which require the
+  sandwich estimator including sampling uncertainty, with the HC2
+  small-sample adjustment when it is available (see Details). If
+  `"boot"` or `"fwb"`, use the traditional or fractional weighted
+  bootstrap, respectively (both of which require the
   [fwb](https://CRAN.R-project.org/package=fwb) package to be
   installed). Otherwise, may be a covariance matrix or other allowed
   input to the `vcov` argument of
@@ -62,7 +63,18 @@ adrf(
 - cluster:
 
   an optional data frame or one-sided formula with the clustering terms
-  for cluster-robust inference.
+  for cluster-robust inference. When `vcov` is `"unconditional"`, the
+  CR2 small-sample adjustment is used when it is available (see
+  Details). When `vcov` is `"conditional"`, the covariance matrix of the
+  model coefficients is computed using
+  [`sandwich::vcovCL()`](https://zeileis.codeberg.page/sandwich/reference/vcovCL.html)
+  with its default type; `vcov` can also be `"HC0"`, `"HC1"`, `"HC2"`,
+  or `"HC3"` to request that type from
+  [`sandwich::vcovCL()`](https://zeileis.codeberg.page/sandwich/reference/vcovCL.html)
+  (`"HC2"` and `"HC3"` are available only for
+  [`lm()`](https://rdrr.io/r/stats/lm.html) and
+  [`glm()`](https://rdrr.io/r/stats/glm.html) models). Other strings and
+  functions supplied to `vcov` cannot be used with `cluster`.
 
 - type:
 
@@ -75,15 +87,21 @@ adrf(
 - data:
 
   an optional data frame containing the observations originally used to
-  fit the outcome model supplied to `x`. This should only be used if the
-  supplied model is not supported by insight. In most cases, this should
-  not need to be supplied.
+  fit the outcome model supplied to `x`. This is needed when the dataset
+  cannot be recovered from the model (e.g., when the model was fit
+  inside a function or is not supported by insight), and it is used to
+  find variables named in `subset`, `by`, `wts`, and `cluster` that are
+  not in the dataset used to fit the model. In most cases, this does not
+  need to be supplied.
 
 - subset:
 
   an optional logical expression indicating the subset of data to use
   for estimation. Will be evaluated in the environment of the original
-  dataset supplied to the model fitting function.
+  dataset supplied to the model fitting function. Can also be a vector
+  of row numbers or row names; logical vectors and row numbers refer to
+  the units used to fit the model (i.e., excluding any dropped because
+  of missing values), and row names refer to the original dataset.
 
 - by:
 
@@ -92,13 +110,15 @@ adrf(
 
 - wts:
 
-  optional numeric vector of weights to generalize the effect curve to a
-  weighted population.
+  optional weights used to generalize the effect curve to a weighted
+  population. Can be a numeric vector, the name of a variable in the
+  original dataset, `TRUE` to use the weights used to fit the model, or
+  `FALSE` for no weights. The default depends on the model; see Details.
 
 - range:
 
   numeric; a numeric vector corresponding either to the lower and upper
-  bounds of the treatment values for which to compute the affect curve
+  bounds of the treatment values for which to compute the effect curve
   or a single number corresponding to the middle quantile of the
   treatment. Default is .95 to use the .025 and .975 quantiles of the
   treatment. See Details.
@@ -106,9 +126,9 @@ adrf(
 - n:
 
   integer specifying the number of equally spaced grid points on which
-  to compute the effect curve anchor points. Default is 51; higher
-  numbers increase computation time and size of the resulting object but
-  improve accuracy.
+  to compute the effect curve anchor points. Must be between 2 and 1000.
+  Default is 51; higher numbers increase computation time and size of
+  the resulting object but improve accuracy.
 
 - fwb.args:
 
@@ -118,7 +138,7 @@ adrf(
 
 ## Value
 
-An object of class `effect_curve`. This object is a function with
+An object of class `<effect_curve>`. This object is a function with
 attributes. See
 [`effect_curve`](https://ngreifer.github.io/adrftools/reference/effect_curve.md)
 for details on this function and its outputs.
@@ -134,21 +154,62 @@ random. When `vcov = "unconditional"`, the variance is computed using
 the formulas in Hansen et al. (2024), which involves augmenting the
 influence function with a term to account for sampling from the
 superpopulation. Unconditional variance estimation requires
-[`sandwich::estfun()`](https://sandwich.R-Forge.R-project.org/reference/estfun.html)
+[`sandwich::estfun()`](https://zeileis.codeberg.page/sandwich/reference/estfun.html)
 and
-[`sandwich::bread()`](https://sandwich.R-Forge.R-project.org/reference/bread.html)
+[`sandwich::bread()`](https://zeileis.codeberg.page/sandwich/reference/bread.html)
 methods for the supplied object to be available.
 
-When a `mira` object from mice or a `mimira` object from MatchThem is
-supplied, analyses are applied to each imputed dataset and pooled using
-Rubin's rules. Bootstrapping is not allowed with such objects.
+In the unconditional variance, each unit's contribution to the influence
+function of the model coefficients is divided by \\\sqrt{1 - h_i}\\,
+where \\h_i\\ is the unit's leverage (i.e., hat value), as in the HC2
+estimator of MacKinnon and White (1985). Without this adjustment, the
+variance would share the downward bias of the HC0 sandwich estimator,
+which is largest for estimates that depend on units with high leverage,
+such as the ADRF at the extremes of the treatment, and which can make
+the omnibus tests in
+[`summary.effect_curve()`](https://ngreifer.github.io/adrftools/reference/summary.effect_curve.md)
+reject a true null hypothesis too often in small samples. The leverages
+are computed from the fitted model for
+[`lm()`](https://rdrr.io/r/stats/lm.html) and
+[`glm()`](https://rdrr.io/r/stats/glm.html) models and extracted using
+[`hatvalues()`](https://rdrr.io/r/stats/influence.measures.html) for
+other models; when they cannot be found, the HC1 adjustment is used
+instead with a message, which multiplies the variance contributed by the
+model coefficients by \\n/(n-p)\\, where \\n\\ is the number of units
+and \\p\\ the number of estimated parameters, and corrects the bias only
+for the average leverage. The adjustment is not used with `svyglm`
+models, whose variance is computed from the survey design.
 
-When a `svyglm` object from survey is supplied, `adrf()` automatically
-incorporates the survey weights extracted from the object. The same is
-true for `glm_weightit` objects, etc., from WeightIt when `s.weights`
-are supplied in the original call to `weightit()`. See
-[`vignette("adrftools")`](https://ngreifer.github.io/adrftools/articles/adrftools.md)
-for more details on using the `wts` argument.
+When `cluster` is supplied, the unconditional variance uses the CR2
+adjustment described by Pustejovsky and Tipton (2018), the cluster-level
+analog of HC2: within each cluster, the vector of residuals is
+multiplied by \\(I - H\_{gg})^{-1/2}\\, where \\H\_{gg}\\ is the block
+of the hat matrix for the units in the cluster, in place of the usual
+\\G/(G-1)\\ adjustment, where \\G\\ is the number of clusters. With
+clusters of one unit, it is the HC2 adjustment. CR2 is available only
+for [`lm()`](https://rdrr.io/r/stats/lm.html) and
+[`glm()`](https://rdrr.io/r/stats/glm.html) models (including those
+whose influence function is that of an ordinary
+[`glm()`](https://rdrr.io/r/stats/glm.html) fit, such as
+`glm_weightit()` models with fixed weights); for other models, the CR1
+adjustment, \\\frac{G}{G-1}\frac{n-1}{n-p}\\ (the default of
+[`sandwich::vcovCL()`](https://zeileis.codeberg.page/sandwich/reference/vcovCL.html)),
+is used with a message. For generalized linear models, the residuals and
+hat matrix are those of the final iteratively reweighted least squares
+fit, so the adjusted variance can differ from that of
+`sandwich::vcovCL(type = "HC2")` when the working weights vary within
+clusters.
+
+When a `<mira>` object from mice or a `<mimira>` object from MatchThem
+is supplied, analyses are applied to each imputed dataset and pooled
+using Rubin's rules. The degrees of freedom used for tests and
+confidence intervals are those of Reiter (2007), or of Li, Raghunathan,
+and Rubin (1991) when the complete-data degrees of freedom are infinite
+(e.g., for generalized linear models). These account for the number of
+imputations and the fraction of missing information, which is assumed to
+be the same for all points on the curve, so a single value is used for
+every point and for joint inference. Bootstrapping is not allowed with
+such objects.
 
 ### `range`
 
@@ -170,6 +231,54 @@ inferences about the effect curve are less generalizable to more extreme
 values of the treatment. Note that this does not change the data used to
 fit the effect curve, just the points along the effect curve for which
 inference and estimation are to take place.
+
+### `wts`
+
+The `wts` argument supplies weights that define the population over
+which the predicted outcomes are averaged, such as sampling weights.
+When supplied as a numeric vector, it must have one value for each unit
+used to fit the model (or, with multiply imputed data, either one value
+for each unit in each imputed dataset or one value for each row of the
+imputed datasets stacked together). When supplied as a string, it is the
+name of a variable in the original dataset. `wts = TRUE` uses the
+weights used to fit the model, as extracted by
+[`insight::get_weights()`](https://easystats.github.io/insight/reference/get_weights.html),
+and `wts = FALSE` weights all units equally.
+
+When `wts` is not supplied, the default depends on the model. When a
+`<svyglm>` object from survey is supplied, the survey weights are used.
+When a `<glm_weightit>` object, etc., from WeightIt is supplied, the
+sampling weights are used if `s.weights` were supplied in the original
+call to `weightit()`; the balancing weights are not, because they are
+used to fit the outcome model rather than to define the target
+population. For other models, all units are weighted equally, even when
+the model was fit with weights. See
+[`vignette("adrftools")`](https://ngreifer.github.io/adrftools/articles/adrftools.md)
+for more details on using the `wts` argument.
+
+## References
+
+Li, K. H., Raghunathan, T. E., & Rubin, D. B. (1991). Large-sample
+significance levels from multiply imputed data using moment-based
+statistics and an *F* reference distribution. *Journal of the American
+Statistical Association*, 86(416), 1065–1073.
+[doi:10.1080/01621459.1991.10475152](https://doi.org/10.1080/01621459.1991.10475152)
+
+MacKinnon, J. G., & White, H. (1985). Some heteroskedasticity-consistent
+covariance matrix estimators with improved finite sample properties.
+*Journal of Econometrics*, 29(3), 305–325.
+[doi:10.1016/0304-4076(85)90158-7](https://doi.org/10.1016/0304-4076%2885%2990158-7)
+
+Pustejovsky, J. E., & Tipton, E. (2018). Small-sample methods for
+cluster-robust variance estimation and hypothesis testing in fixed
+effects models. *Journal of Business & Economic Statistics*, 36(4),
+672–683.
+[doi:10.1080/07350015.2016.1247004](https://doi.org/10.1080/07350015.2016.1247004)
+
+Reiter, J. P. (2007). Small-sample degrees of freedom for
+multi-component significance tests with multiple imputation for missing
+data. *Biometrika*, 94(2), 502–508.
+[doi:10.1093/biomet/asm028](https://doi.org/10.1093/biomet/asm028)
 
 ## See also
 
@@ -195,6 +304,10 @@ inference and estimation are to take place.
 - [`amef()`](https://ngreifer.github.io/adrftools/reference/amef.md) for
   computing the average marginal effect function (AMEF), the derivative
   of the ADRF
+
+- [`shift_curve()`](https://ngreifer.github.io/adrftools/reference/shift_curve.md)
+  for estimating the mean outcome when every unit's treatment is shifted
+  from its observed value
 
 - [`marginaleffects::avg_predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html)
   for computing average adjusted predictions for fitted models (similar
@@ -234,9 +347,9 @@ adrf1(logBLL = c(0, 1, 2)) |>
 #>               ADRF Estimates
 #> ──────────────────────────────────────────
 #>  logBLL Estimate Std. Error CI Low CI High
-#>       0    8.413     0.2206  7.887   8.939
-#>       1    8.005     0.0993  7.768   8.241
-#>       2    7.103     0.2390  6.533   7.673
+#>       0    8.413     0.2312  7.861   8.964
+#>       1    8.005     0.1005  7.765   8.245
+#>       2    7.103     0.2495  6.508   7.698
 #> ──────────────────────────────────────────
 #> Inference: unconditional, simultaneous
 #> Confidence level: 95% (t* = 2.385, df = 2437)
@@ -262,7 +375,108 @@ plot(adrf2)
 # inference
 adrf_b <- adrf(fit, treat = "logBLL",
                vcov = "fwb")
-#>   |                                                  | 0 % ~calculating    |+                                                 | 1 % ~23s            |+                                                 | 2 % ~21s            |++                                                | 3 % ~21s            |++                                                | 4 % ~20s            |+++                                               | 5 % ~20s            |+++                                               | 6 % ~20s            |++++                                              | 7 % ~19s            |++++                                              | 8 % ~19s            |+++++                                             | 9 % ~19s            |+++++                                             | 10% ~19s            |++++++                                            | 11% ~18s            |++++++                                            | 12% ~18s            |+++++++                                           | 13% ~19s            |+++++++                                           | 14% ~19s            |++++++++                                          | 15% ~18s            |++++++++                                          | 16% ~18s            |+++++++++                                         | 17% ~18s            |+++++++++                                         | 18% ~18s            |++++++++++                                        | 19% ~17s            |++++++++++                                        | 20% ~17s            |+++++++++++                                       | 21% ~17s            |+++++++++++                                       | 22% ~17s            |++++++++++++                                      | 23% ~16s            |++++++++++++                                      | 24% ~16s            |+++++++++++++                                     | 25% ~16s            |+++++++++++++                                     | 26% ~16s            |++++++++++++++                                    | 27% ~15s            |++++++++++++++                                    | 28% ~16s            |+++++++++++++++                                   | 29% ~15s            |+++++++++++++++                                   | 30% ~15s            |++++++++++++++++                                  | 31% ~15s            |++++++++++++++++                                  | 32% ~15s            |+++++++++++++++++                                 | 33% ~15s            |+++++++++++++++++                                 | 34% ~14s            |++++++++++++++++++                                | 35% ~14s            |++++++++++++++++++                                | 36% ~14s            |+++++++++++++++++++                               | 37% ~14s            |+++++++++++++++++++                               | 38% ~14s            |++++++++++++++++++++                              | 39% ~13s            |++++++++++++++++++++                              | 40% ~13s            |+++++++++++++++++++++                             | 41% ~13s            |+++++++++++++++++++++                             | 42% ~13s            |++++++++++++++++++++++                            | 43% ~13s            |++++++++++++++++++++++                            | 44% ~12s            |+++++++++++++++++++++++                           | 45% ~12s            |+++++++++++++++++++++++                           | 46% ~12s            |++++++++++++++++++++++++                          | 47% ~12s            |++++++++++++++++++++++++                          | 48% ~11s            |+++++++++++++++++++++++++                         | 49% ~11s            |+++++++++++++++++++++++++                         | 50% ~11s            |++++++++++++++++++++++++++                        | 51% ~11s            |++++++++++++++++++++++++++                        | 52% ~11s            |+++++++++++++++++++++++++++                       | 53% ~10s            |+++++++++++++++++++++++++++                       | 54% ~10s            |++++++++++++++++++++++++++++                      | 55% ~10s            |++++++++++++++++++++++++++++                      | 56% ~10s            |+++++++++++++++++++++++++++++                     | 57% ~09s            |+++++++++++++++++++++++++++++                     | 58% ~09s            |++++++++++++++++++++++++++++++                    | 59% ~09s            |++++++++++++++++++++++++++++++                    | 60% ~09s            |+++++++++++++++++++++++++++++++                   | 61% ~09s            |+++++++++++++++++++++++++++++++                   | 62% ~08s            |++++++++++++++++++++++++++++++++                  | 63% ~08s            |++++++++++++++++++++++++++++++++                  | 64% ~08s            |+++++++++++++++++++++++++++++++++                 | 65% ~08s            |+++++++++++++++++++++++++++++++++                 | 66% ~08s            |++++++++++++++++++++++++++++++++++                | 67% ~07s            |++++++++++++++++++++++++++++++++++                | 68% ~07s            |+++++++++++++++++++++++++++++++++++               | 69% ~07s            |+++++++++++++++++++++++++++++++++++               | 70% ~07s            |++++++++++++++++++++++++++++++++++++              | 71% ~06s            |++++++++++++++++++++++++++++++++++++              | 72% ~06s            |+++++++++++++++++++++++++++++++++++++             | 73% ~06s            |+++++++++++++++++++++++++++++++++++++             | 74% ~06s            |++++++++++++++++++++++++++++++++++++++            | 75% ~06s            |++++++++++++++++++++++++++++++++++++++            | 76% ~05s            |+++++++++++++++++++++++++++++++++++++++           | 77% ~05s            |+++++++++++++++++++++++++++++++++++++++           | 78% ~05s            |++++++++++++++++++++++++++++++++++++++++          | 79% ~05s            |++++++++++++++++++++++++++++++++++++++++          | 80% ~04s            |+++++++++++++++++++++++++++++++++++++++++         | 81% ~04s            |+++++++++++++++++++++++++++++++++++++++++         | 82% ~04s            |++++++++++++++++++++++++++++++++++++++++++        | 83% ~04s            |++++++++++++++++++++++++++++++++++++++++++        | 84% ~04s            |+++++++++++++++++++++++++++++++++++++++++++       | 85% ~03s            |+++++++++++++++++++++++++++++++++++++++++++       | 86% ~03s            |++++++++++++++++++++++++++++++++++++++++++++      | 87% ~03s            |++++++++++++++++++++++++++++++++++++++++++++      | 88% ~03s            |+++++++++++++++++++++++++++++++++++++++++++++     | 89% ~02s            |+++++++++++++++++++++++++++++++++++++++++++++     | 90% ~02s            |++++++++++++++++++++++++++++++++++++++++++++++    | 91% ~02s            |++++++++++++++++++++++++++++++++++++++++++++++    | 92% ~02s            |+++++++++++++++++++++++++++++++++++++++++++++++   | 93% ~02s            |+++++++++++++++++++++++++++++++++++++++++++++++   | 94% ~01s            |++++++++++++++++++++++++++++++++++++++++++++++++  | 95% ~01s            |++++++++++++++++++++++++++++++++++++++++++++++++  | 96% ~01s            |+++++++++++++++++++++++++++++++++++++++++++++++++ | 97% ~01s            |+++++++++++++++++++++++++++++++++++++++++++++++++ | 98% ~00s            |++++++++++++++++++++++++++++++++++++++++++++++++++| 99% ~00s            |++++++++++++++++++++++++++++++++++++++++++++++++++| 100% elapsed=22s  
+#> 
+  |                                                  | 0 % ~calculating  
+  |+                                                 | 1 % ~32s          
+  |+                                                 | 2 % ~24s          
+  |++                                                | 3 % ~21s          
+  |++                                                | 4 % ~20s          
+  |+++                                               | 5 % ~19s          
+  |+++                                               | 6 % ~18s          
+  |++++                                              | 7 % ~17s          
+  |++++                                              | 8 % ~17s          
+  |+++++                                             | 9 % ~16s          
+  |+++++                                             | 10% ~16s          
+  |++++++                                            | 11% ~16s          
+  |++++++                                            | 12% ~16s          
+  |+++++++                                           | 13% ~15s          
+  |+++++++                                           | 14% ~15s          
+  |++++++++                                          | 15% ~15s          
+  |++++++++                                          | 16% ~15s          
+  |+++++++++                                         | 17% ~15s          
+  |+++++++++                                         | 18% ~15s          
+  |++++++++++                                        | 19% ~15s          
+  |++++++++++                                        | 20% ~15s          
+  |+++++++++++                                       | 21% ~15s          
+  |+++++++++++                                       | 22% ~14s          
+  |++++++++++++                                      | 23% ~14s          
+  |++++++++++++                                      | 24% ~14s          
+  |+++++++++++++                                     | 25% ~14s          
+  |+++++++++++++                                     | 26% ~14s          
+  |++++++++++++++                                    | 27% ~14s          
+  |++++++++++++++                                    | 28% ~14s          
+  |+++++++++++++++                                   | 29% ~13s          
+  |+++++++++++++++                                   | 30% ~13s          
+  |++++++++++++++++                                  | 31% ~13s          
+  |++++++++++++++++                                  | 32% ~13s          
+  |+++++++++++++++++                                 | 33% ~12s          
+  |+++++++++++++++++                                 | 34% ~12s          
+  |++++++++++++++++++                                | 35% ~12s          
+  |++++++++++++++++++                                | 36% ~12s          
+  |+++++++++++++++++++                               | 37% ~12s          
+  |+++++++++++++++++++                               | 38% ~11s          
+  |++++++++++++++++++++                              | 39% ~11s          
+  |++++++++++++++++++++                              | 40% ~11s          
+  |+++++++++++++++++++++                             | 41% ~11s          
+  |+++++++++++++++++++++                             | 42% ~10s          
+  |++++++++++++++++++++++                            | 43% ~10s          
+  |++++++++++++++++++++++                            | 44% ~10s          
+  |+++++++++++++++++++++++                           | 45% ~10s          
+  |+++++++++++++++++++++++                           | 46% ~10s          
+  |++++++++++++++++++++++++                          | 47% ~09s          
+  |++++++++++++++++++++++++                          | 48% ~09s          
+  |+++++++++++++++++++++++++                         | 49% ~09s          
+  |+++++++++++++++++++++++++                         | 50% ~09s          
+  |++++++++++++++++++++++++++                        | 51% ~09s          
+  |++++++++++++++++++++++++++                        | 52% ~09s          
+  |+++++++++++++++++++++++++++                       | 53% ~08s          
+  |+++++++++++++++++++++++++++                       | 54% ~08s          
+  |++++++++++++++++++++++++++++                      | 55% ~08s          
+  |++++++++++++++++++++++++++++                      | 56% ~08s          
+  |+++++++++++++++++++++++++++++                     | 57% ~08s          
+  |+++++++++++++++++++++++++++++                     | 58% ~07s          
+  |++++++++++++++++++++++++++++++                    | 59% ~07s          
+  |++++++++++++++++++++++++++++++                    | 60% ~07s          
+  |+++++++++++++++++++++++++++++++                   | 61% ~07s          
+  |+++++++++++++++++++++++++++++++                   | 62% ~07s          
+  |++++++++++++++++++++++++++++++++                  | 63% ~07s          
+  |++++++++++++++++++++++++++++++++                  | 64% ~06s          
+  |+++++++++++++++++++++++++++++++++                 | 65% ~06s          
+  |+++++++++++++++++++++++++++++++++                 | 66% ~06s          
+  |++++++++++++++++++++++++++++++++++                | 67% ~06s          
+  |++++++++++++++++++++++++++++++++++                | 68% ~06s          
+  |+++++++++++++++++++++++++++++++++++               | 69% ~05s          
+  |+++++++++++++++++++++++++++++++++++               | 70% ~05s          
+  |++++++++++++++++++++++++++++++++++++              | 71% ~05s          
+  |++++++++++++++++++++++++++++++++++++              | 72% ~05s          
+  |+++++++++++++++++++++++++++++++++++++             | 73% ~05s          
+  |+++++++++++++++++++++++++++++++++++++             | 74% ~05s          
+  |++++++++++++++++++++++++++++++++++++++            | 75% ~04s          
+  |++++++++++++++++++++++++++++++++++++++            | 76% ~04s          
+  |+++++++++++++++++++++++++++++++++++++++           | 77% ~04s          
+  |+++++++++++++++++++++++++++++++++++++++           | 78% ~04s          
+  |++++++++++++++++++++++++++++++++++++++++          | 79% ~04s          
+  |++++++++++++++++++++++++++++++++++++++++          | 80% ~04s          
+  |+++++++++++++++++++++++++++++++++++++++++         | 81% ~03s          
+  |+++++++++++++++++++++++++++++++++++++++++         | 82% ~03s          
+  |++++++++++++++++++++++++++++++++++++++++++        | 83% ~03s          
+  |++++++++++++++++++++++++++++++++++++++++++        | 84% ~03s          
+  |+++++++++++++++++++++++++++++++++++++++++++       | 85% ~03s          
+  |+++++++++++++++++++++++++++++++++++++++++++       | 86% ~02s          
+  |++++++++++++++++++++++++++++++++++++++++++++      | 87% ~02s          
+  |++++++++++++++++++++++++++++++++++++++++++++      | 88% ~02s          
+  |+++++++++++++++++++++++++++++++++++++++++++++     | 89% ~02s          
+  |+++++++++++++++++++++++++++++++++++++++++++++     | 90% ~02s          
+  |++++++++++++++++++++++++++++++++++++++++++++++    | 91% ~02s          
+  |++++++++++++++++++++++++++++++++++++++++++++++    | 92% ~01s          
+  |+++++++++++++++++++++++++++++++++++++++++++++++   | 93% ~01s          
+  |+++++++++++++++++++++++++++++++++++++++++++++++   | 94% ~01s          
+  |++++++++++++++++++++++++++++++++++++++++++++++++  | 95% ~01s          
+  |++++++++++++++++++++++++++++++++++++++++++++++++  | 96% ~01s          
+  |+++++++++++++++++++++++++++++++++++++++++++++++++ | 97% ~01s          
+  |+++++++++++++++++++++++++++++++++++++++++++++++++ | 98% ~00s          
+  |++++++++++++++++++++++++++++++++++++++++++++++++++| 99% ~00s          
+  |++++++++++++++++++++++++++++++++++++++++++++++++++| 100% elapsed=17s  
 
 adrf_b
 #> An <effect_curve> object

@@ -1,8 +1,8 @@
 # Estimate the average marginal effect function (AMEF)
 
 `amef()` computes the average marginal effect function (AMEF), the
-derivative of the average dose-response function (ADRF). This computed
-from an `adrf_curve` object or from a fitting outcome model directly.
+derivative of the average dose-response function (ADRF), from an
+`adrf_curve` object.
 
 ## Usage
 
@@ -19,8 +19,10 @@ amef(x, eps = 1e-05)
 
 - eps:
 
-  numeric; the step size to use when calculating numerical derivatives.
-  Default is `1e-5` (.00001). See Details.
+  numeric; the step size to use when calculating numerical derivatives,
+  relative to the range of treatment values at which the ADRF was
+  computed: the step is `eps` times a quarter of that range. Default is
+  `1e-5` (.00001). See Details.
 
 ## Value
 
@@ -29,7 +31,7 @@ An object of class `amef_curve`, which inherits from
 
 ## Details
 
-The AMEF is calculated numerically using the central finite derivative
+The AMEF is calculated numerically using the central finite difference
 formula:
 
 \$\$\frac{df(x)}{dx} \approx \frac{f(x + e) - f(x - e)}{2e}\$\$
@@ -38,6 +40,14 @@ The values of the ADRF at the evaluation points are computed using a
 local polynomial regression as described at
 [`effect_curve`](https://ngreifer.github.io/adrftools/reference/effect_curve.md).
 At the boundaries of the ADRF, one-sided derivatives are used.
+
+Because subtracting a reference value does not change the derivative,
+`amef()` applied to the output of
+[`reference_curve()`](https://ngreifer.github.io/adrftools/reference/reference_curve.md)
+returns the AMEF of the original ADRF. To compute the difference between
+each point on the AMEF and the AMEF at a reference point, apply
+[`reference_curve()`](https://ngreifer.github.io/adrftools/reference/reference_curve.md)
+to the output of `amef()`.
 
 ## See also
 
@@ -63,9 +73,10 @@ At the boundaries of the ADRF, one-sided derivatives are used.
 - [`curve_contrast()`](https://ngreifer.github.io/adrftools/reference/curve_contrast.md)
   for contrasting AMEFs computed within subgroups
 
-- [`marginaleffects::avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
-  for computing average adjusted slopes for fitted models (similar to
-  the AMEF)
+- [`ade()`](https://ngreifer.github.io/adrftools/reference/ade.md) for
+  computing the average derivative effect, the average of each unit's
+  slope at the treatment it received, also computed by
+  [`marginaleffects::avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
 
 ## Examples
 
@@ -103,11 +114,11 @@ amef1(logBLL = c(0, 1, 2)) |>
 #>                       AMEF Estimates
 #> ───────────────────────────────────────────────────────────
 #>  logBLL Estimate Std. Error       t P-value  CI Low CI High
-#>       0  -0.1768     0.4286 -0.4125  0.9549 -1.1854  0.8318
-#>       1  -0.8144     0.2780 -2.9297  0.0097 -1.4687 -0.1601
-#>       2  -0.7111     0.7004 -1.0152  0.6160 -2.3597  0.9374
+#>       0  -0.1768     0.4531 -0.3902  0.9624 -1.2451  0.8915
+#>       1  -0.8144     0.2857 -2.8505  0.0124 -1.4881 -0.1407
+#>       2  -0.7111     0.7808 -0.9108  0.6939 -2.5521  1.1299
 #> ───────────────────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
-#> Confidence level: 95% (t* = 2.354, df = 2437)
+#> Confidence level: 95% (t* = 2.358, df = 2437)
 #> Null value: 0
 ```
