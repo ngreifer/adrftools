@@ -1629,7 +1629,10 @@ fit_sv <- svyglm(Math ~ splines::ns(logBLL, df = 5) *
 
 Simply calling
 [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md)
-automatically incorporates sampling weights.
+automatically incorporates sampling weights. With
+[`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) models, the
+ADRF always generalizes to the population represented by the survey
+design, so `wts` cannot be supplied.
 
 ``` r
 
@@ -1960,9 +1963,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.445  8.042   9.236
-##       1    7.997  7.590   8.391
-##       2    7.195  6.564   7.978
+##       0    8.429  7.983   9.175
+##       1    7.925  7.566   8.386
+##       2    7.243  6.552   8.108
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%

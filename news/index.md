@@ -36,9 +36,11 @@
 
 - With `svyglm` models, unconditional standard errors now account for
   the survey design, including clusters, strata, finite population
-  corrections, calibration, and replicate weights. Previously, only the
-  survey weights were used. `cluster` is now ignored with a warning for
-  these models.
+  corrections, calibration, two-phase sampling, and replicate weights.
+  Previously, only the survey weights were used. `cluster` is now
+  ignored with a warning for these models, and `wts` can no longer be
+  supplied, because the design-based variance is valid only when the
+  survey weights are the target weights.
 
 - `subset`, `by`, `cluster`, and `wts` supplied as a variable name can
   now refer to variables in the original dataset that are not in the

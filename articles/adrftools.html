@@ -1513,7 +1513,9 @@ sampling weights.</p>
 <span>                      <span class="va">Smoke_in_Home</span> <span class="op">+</span> <span class="va">Smoke_Pregnant</span> <span class="op">+</span> <span class="va">NICU</span><span class="op">)</span>,</span>
 <span>                 design <span class="op">=</span> <span class="va">des</span><span class="op">)</span></span></code></pre></div>
 <p>Simply calling <code><a href="../reference/adrf.html">adrf()</a></code> automatically incorporates
-sampling weights.</p>
+sampling weights. With <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm()</a></code> models, the ADRF always
+generalizes to the population represented by the survey design, so
+<code>wts</code> cannot be supplied.</p>
 <div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">adrf_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">fit_sv</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
 <span></span>
@@ -1779,9 +1781,9 @@ value.</p>
 <span><span class="co">##         ADRF Estimates</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">##  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">##       0    8.445  8.042   9.236</span></span>
-<span><span class="co">##       1    7.997  7.590   8.391</span></span>
-<span><span class="co">##       2    7.195  6.564   7.978</span></span>
+<span><span class="co">##       0    8.429  7.983   9.175</span></span>
+<span><span class="co">##       1    7.925  7.566   8.386</span></span>
+<span><span class="co">##       2    7.243  6.552   8.108</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>
