@@ -15,11 +15,82 @@ test_that("svyglm ADRFs use the survey weights as target weights", {
                manual_adrf(fit, d, "logBLL", get_values(a), w = d$sw),
                tolerance = 1e-8)
 
-  # Unweighted target population when wts = FALSE
-  a_f <- adrf(fit, treat = "logBLL", n = 5, range = c(0, 2), wts = FALSE)
-  expect_equal(get_est(a_f),
-               manual_adrf(fit, d, "logBLL", get_values(a)),
-               tolerance = 1e-8)
+  # The design-based variance assumes the target population is the one the
+  # design represents, so other target weights cannot be supplied
+  expect_identical(get_est(adrf(fit, treat = "logBLL", n = 5, range = c(0, 2), wts = TRUE)),
+                   get_est(a))
+  expect_error(adrf(fit, treat = "logBLL", n = 5, wts = FALSE),
+               "cannot be supplied with <svyglm> models")
+  expect_error(adrf(fit, treat = "logBLL", n = 5, wts = rep(1, nrow(d))),
+               "cannot be supplied with <svyglm> models")
+  expect_error(shift_curve(fit, treat = "logBLL", n = 3, wts = "PIR"),
+               "cannot be supplied with <svyglm> models")
+})
+
+# For a model with only the treatment, every unit has the same prediction, so
+# the variance of the ADRF is that of the coefficients, which survey computes
+# from the design
+svy_treat_only_se <- function(fit, a) {
+  G <- cbind(1, get_values(a))
+  sqrt(diag(G %*% stats::vcov(fit) %*% t(G)))
+}
+
+test_that("svyglm unconditional variance handles missing values", {
+  d <- svy_data()
+  d$logBLL[c(3, 50, 120)] <- NA
+
+  des <- survey::svydesign(ids = ~1, weights = ~sw, data = d)
+
+  # Calibrated designs cannot drop rows, so the units with missing values stay
+  # in the design with weights of 0
+  cal <- survey::calibrate(des, ~Male, c(`(Intercept)` = 2600, Male = 1300))
+
+  for (design in list(des, cal)) {
+    for (influence in c(FALSE, TRUE)) {
+      fit <- survey::svyglm(Math ~ logBLL, design = design, influence = influence)
+      a <- adrf(fit, treat = "logBLL", n = 3, range = c(0, 2))
+
+      expect_equal(get_se(a), svy_treat_only_se(fit, a), tolerance = 1e-8)
+    }
+  }
+
+  # With covariates, the calibrated design gives the same variance as the
+  # design restricted to the complete cases, which keeps the other units with
+  # weights of 0
+  f <- Math ~ logBLL * Male + PIR
+  a_na <- adrf(survey::svyglm(f, design = cal), treat = "logBLL", n = 3, range = c(0, 2))
+  a_cc <- adrf(survey::svyglm(f, design = subset(cal, !is.na(logBLL))),
+               treat = "logBLL", n = 3, range = c(0, 2))
+
+  expect_equal(get_est(a_na), get_est(a_cc), tolerance = 1e-8)
+  expect_equal(get_vcov(a_na), get_vcov(a_cc), tolerance = 1e-8)
+})
+
+test_that("svyglm unconditional variance works with two-phase designs", {
+  d <- svy_data()
+  d$id <- seq_len(nrow(d))
+  d$phase2 <- d$Male == 1 | d$id %% 3L == 0L
+
+  des2 <- survey::twophase(id = list(~id, ~id), strata = list(NULL, ~Male),
+                           subset = ~phase2, data = d)
+  fit <- survey::svyglm(Math ~ logBLL, design = des2)
+  a <- adrf(fit, treat = "logBLL", n = 3, range = c(0, 2))
+
+  expect_equal(get_se(a), svy_treat_only_se(fit, a), tolerance = 1e-8)
+})
+
+test_that("svyglm unconditional variance does not use variables in the design", {
+  d <- svy_data()
+  f <- Math ~ logBLL * Male + PIR
+
+  a <- adrf(survey::svyglm(f, design = survey::svydesign(ids = ~1, weights = ~sw, data = d)),
+            treat = "logBLL", n = 3, range = c(0, 2))
+
+  d$.adrftools_z1 <- 0
+  a_z <- adrf(survey::svyglm(f, design = survey::svydesign(ids = ~1, weights = ~sw, data = d)),
+              treat = "logBLL", n = 3, range = c(0, 2))
+
+  expect_identical(get_vcov(a_z), get_vcov(a))
 })
 
 test_that("svyglm unconditional variance matches the equivalent weighted lm", {

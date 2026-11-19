@@ -772,7 +772,7 @@ fit_sv <- svyglm(Math ~ splines::ns(logBLL, df = 5) *
                  design = des)
 ```
 
-Simply calling `adrf()` automatically incorporates sampling weights.
+Simply calling `adrf()` automatically incorporates sampling weights. With `svyglm()` models, the ADRF always generalizes to the population represented by the survey design, so `wts` cannot be supplied.
 
 ```{r, eval = survey_ok}
 adrf_sv <- adrf(fit_sv, treat = "logBLL")

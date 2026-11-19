@@ -435,6 +435,15 @@ process_model_data <- function(model, data = NULL) {
     dat <- insight::get_data(model, verbose = FALSE,
                              source = "mf")
 
+    # For designs that cannot drop rows (e.g., calibrated and PPS designs),
+    # this includes the units the fit dropped for missing values
+    na_act <- model[["na.action"]]
+
+    if (!is_null(na_act) &&
+        fnrow(dat) == nrow(stats::model.matrix(model)) + length(na_act)) {
+      dat <- ss(dat, -na_act)
+    }
+
     return(ss(dat, j = intersect(vars, colnames(dat))))
   }
 
@@ -873,6 +882,13 @@ process_wts <- function(wts, model, data = NULL) {
 process_wts_list <- function(wts, models, eval_data.list) {
   m <- length(models)
 
+  # The design-based variance of svyglm models linearizes the estimates over
+  # the population the design represents, so the target weights must be the
+  # design weights
+  if (!is_null(wts) && !isTRUE(wts) && inherits(models[[1L]], "svyglm")) {
+    arg::err("{.arg wts} cannot be supplied with {.cls svyglm} models, for which the survey weights are always used")
+  }
+
   if (m == 1L) {
     return(list(process_wts(wts, models[[1L]], eval_data.list[[1L]])))
   }
@@ -1093,9 +1109,19 @@ process_response <- function(model) {
 # and scaled by the full sample size.
 .coef_influence <- function(model, hc2 = TRUE, cluster = NULL) {
   if (inherits(model, "svyglm")) {
-    infl <- .attr(model, "influence") %or%
-      tcrossprod(stats::model.matrix(model) * stats::resid(model, "working") * model$weights,
-                 model$naive.cov)
+    X <- stats::model.matrix(model)
+    infl <- .attr(model, "influence")
+
+    if (is_null(infl)) {
+      infl <- tcrossprod(X * stats::resid(model, "working") * model$weights,
+                         model$naive.cov)
+    }
+    else if (!is_null(model[["na.action"]]) &&
+             fnrow(infl) == nrow(X) + length(model[["na.action"]])) {
+      # svyglm(influence = TRUE) pads the units dropped for missing values with
+      # rows of 0
+      infl <- infl[-model[["na.action"]], , drop = FALSE]
+    }
 
     return(fnrow(infl) * infl)
   }
@@ -2069,9 +2095,12 @@ get_n_by <- function(.contrast = NULL, .by_grid = NULL) {
 # of their influence values (one row per unit, scaled so that
 # crossprod(S / nrow(S)) is the i.i.d. variance). Following Binder (1983), the
 # estimates are linearized as totals of the influence values; dividing by the
-# sampling weights and totaling them as design variables with svytotal() lets
-# survey apply the variance estimator appropriate to the design (clusters,
-# strata, finite-population corrections, calibration, or replicate weights).
+# sampling weights and totaling them with svytotal() lets survey apply the
+# variance estimator appropriate to the design (clusters, strata,
+# finite-population corrections, calibration, two-phase sampling, or replicate
+# weights). The target weights are always the design weights (see
+# process_wts_list()), which is what makes the calibration adjustment
+# svytotal() applies to the whole influence value correct.
 .svyglm_vcov <- function(x, S) {
   des <- x[["survey.design"]]
 
@@ -2080,20 +2109,32 @@ get_n_by <- function(.contrast = NULL, .by_grid = NULL) {
     else stats::weights(des)
   }
 
-  if (length(w_d) != fnrow(S)) {
+  n <- fnrow(S)
+  na_act <- x[["na.action"]]
+
+  # Designs that cannot drop rows (e.g., calibrated and PPS designs) keep the
+  # units the fit dropped for missing values, with weights of 0
+  keep <- {
+    if (length(w_d) == n) seq_len(n)
+    else if (!is_null(na_act) && length(w_d) == n + length(na_act) &&
+             all(w_d[na_act] == 0)) -na_act
+  }
+
+  if (is_null(keep)) {
     arg::err("the survey design and the fitted model have different numbers of observations")
   }
 
-  z <- S / fnrow(S) / w_d
+  z <- matrix(0, nrow = length(w_d), ncol = fncol(S))
+  z[keep, ] <- S / n / w_d[keep]
+
+  # Units with weights of 0 (e.g., outside a subset() of the design) have
+  # influence values of 0
   z[w_d == 0, ] <- 0
 
-  z_names <- sprintf(".adrftools_z%s", seq_len(fncol(z)))
-  colnames(z) <- z_names
-
-  des$variables <- cbind(des$variables, z)
-
-  v <- reformulate(z_names) |>
-    survey::svytotal(design = des) |>
+  # The matrix is passed directly rather than added to the design's variables,
+  # which two-phase designs do not read and which may already have a column of
+  # the same name
+  v <- survey::svytotal(z, design = des) |>
     stats::vcov()
 
   matrix(v, nrow = fncol(z), ncol = fncol(z))

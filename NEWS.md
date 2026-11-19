@@ -7,7 +7,7 @@ adrftools News and Updates
 
 * `summary.effect_curve()` and `curve_projection()` have a new argument, `integrate`, which controls how treatment values are weighted in the omnibus test statistic and in the projection. The default, `"uniform"`, weights all treatment values in the range of the effect curve equally, as before; `"empirical"` weights them by a kernel density estimate of the treatment, computed by `adrf()` from all units used (within each subgroup, and weighted by `wts`). Empirical weighting gives less weight to sparse regions of the treatment, where the effect curve is estimated least precisely, and had higher power in simulations with an unevenly distributed treatment.
 
-* With `svyglm` models, unconditional standard errors now account for the survey design, including clusters, strata, finite population corrections, calibration, and replicate weights. Previously, only the survey weights were used. `cluster` is now ignored with a warning for these models.
+* With `svyglm` models, unconditional standard errors now account for the survey design, including clusters, strata, finite population corrections, calibration, two-phase sampling, and replicate weights. Previously, only the survey weights were used. `cluster` is now ignored with a warning for these models, and `wts` can no longer be supplied, because the design-based variance is valid only when the survey weights are the target weights.
 
 * `subset`, `by`, `cluster`, and `wts` supplied as a variable name can now refer to variables in the original dataset that are not in the model. Previously, only variables in the model could be used.
 
