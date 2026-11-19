@@ -1931,9 +1931,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.420  8.012   9.078
-##       1    7.934  7.588   8.330
-##       2    7.146  6.469   7.739
+##       0    8.455  8.045   9.302
+##       1    7.975  7.607   8.367
+##       2    7.165  6.530   7.864
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%
