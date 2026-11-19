@@ -1890,7 +1890,8 @@ plot(adrf_w_mi)
 All of the described functionality works similarly for Bayesian models
 (e.g., those fit with
 [`brms::brm()`](https://paulbuerkner.com/brms/reference/brm.html),
-[`dbarts::bart2()`](https://rdrr.io/pkg/dbarts/man/bart.html), or
+[`bartisan::bartisan()`](https://ngreifer.github.io/bartisan/reference/bartisan.html),
+or
 [`rstanarm::stan_glm()`](https://mc-stan.org/rstanarm/reference/stan_glm.html))
 as it does for frequentist models. *adrftools* is a primarily
 frequentist ecosystem, but special procedures exist for Bayesian models
@@ -1907,20 +1908,24 @@ Bayesian model, `vcov` can be set either to `"none"` to omit the
 posterior and just use the EAP estimates or to `"posterior"` to retain
 the posterior for inference. Leaving `vcov` unspecified uses
 `"posterior"`. Below, we fit a Bayesian additive regression trees (BART)
-model using [*dbarts*](https://cran.r-project.org/package=dbarts).
+model using [*bartisan*](https://ngreifer.github.io/bartisan), whose
+interface follows that of [`glm()`](https://rdrr.io/r/stats/glm.html).
+By default, *bartisan* uses the soft decision rules of Linero and Yang
+([2018](#ref-linero2018)), so the fitted model, and therefore the ADRF,
+is smooth in the treatment rather than a step function as it would be
+with standard BART[^4].
 
 ``` r
 
-library(dbarts)
+library(bartisan)
 
-bfit <- bart2(Math ~ logBLL + Male + Age + Race +
-                PIR + Enough_Food + Smoke_in_Home +
-                Smoke_Pregnant + NICU,
-              data = nhanes3lead,
-              keepTrees = TRUE, #needed for adrf()
-              verbose = FALSE)
+bfit <- bartisan(Math ~ logBLL + Male + Age + Race +
+                   PIR + Enough_Food + Smoke_in_Home +
+                   Smoke_Pregnant + NICU,
+                 data = nhanes3lead,
+                 family = "dpm")
 
-adrf_bll_bayes <- adrf(bfit, treat = "logBLL")
+adrf_bll_bayes <- adrf(bfit, treat = "logBLL", n = 21)
 
 adrf_bll_bayes
 ## An <effect_curve> object
@@ -1944,9 +1949,7 @@ equi-tailed percentile intervals, if requested, uses the Bayesian
 algorithm described by Montiel Olea and Plagborg-Møller
 ([2019](#ref-montielolea2019)), which ensures the band has the requested
 credibility simultaneously across the whole effect curve, up to Monte
-Carlo error from the finite number of posterior draws. P-values for
-estimates along the effect curve are computed as the complement of the
-smallest credibility level that excludes the null value.
+Carlo error from the finite number of posterior draws.
 
 ``` r
 
@@ -1963,9 +1966,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.429  7.983   9.175
-##       1    7.925  7.566   8.386
-##       2    7.243  6.552   8.108
+##       0    8.384  8.091   8.698
+##       1    8.004  7.744   8.253
+##       2    7.116  6.723   7.529
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%
@@ -1987,6 +1990,11 @@ posterior as described by Zhou and Reiter
 Hansen, Stefan Nygaard, and Morten Overgaard. 2024. “Variance Estimation
 for Average Treatment Effects Estimated by g-Computation.” *Metrika*,
 ahead of print, April 6. <https://doi.org/10.1007/s00184-024-00962-4>.
+
+Linero, Antonio R., and Yun Yang. 2018. “Bayesian Regression Tree
+Ensembles That Adapt to Smoothness and Sparsity.” *Journal of the Royal
+Statistical Society Series B: Statistical Methodology* 80 (5): 1087–110.
+<https://doi.org/10.1111/rssb.12293>.
 
 Montiel Olea, José Luis, and Mikkel Plagborg-Møller. 2019. “Simultaneous
 Confidence Bands: Theory, Implementation, and an Application to SVARs.”
@@ -2025,3 +2033,10 @@ After Multiple Imputation.” *The American Statistician* 64 (2): 159–63.
 [^3]: If, for some reason, you want to include the product of the
     sampling weights and balancing weights in the estimation of the
     ADRF, set `wts = TRUE` instead of leaving it unspecified.
+
+[^4]: Predictions from a model with soft rules take longer to compute,
+    and
+    [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md)
+    computes a prediction for every unit and posterior draw at each
+    point on the grid of treatment values, so we set `n = 21` to request
+    a coarser grid than the default of 51 points.

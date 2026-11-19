@@ -71,7 +71,7 @@
 <div class="section level3">
 <h3 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h3>
-<p><em>adrftools</em> is an R package for estimating the average dose-response function (ADRF), which characterizes the effect of a continuous treatment on an outcome. Functionality is included for performing g-computation on a regression model to estimate the ADRF, plot the ADRF, and test hypotheses about the ADRF. See <code><a href="articles/adrftools.html">vignette("adrftools")</a></code> for a full tutorial on using <em>adrftools</em>.</p>
+<p><em>adrftools</em> is an R package for estimating the average dose-response function (ADRF), which characterizes the effect of a continuous treatment on an outcome. Functionality is included for performing g-computation on a regression model to estimate the ADRF, plot the ADRF, and test hypotheses about the ADRF, as well as for estimating shift curves and the average derivative effect (ADE), which describe the effects of changing the treatment each unit actually received. See <code><a href="articles/adrftools.html">vignette("adrftools")</a></code> for a full tutorial on using <em>adrftools</em>.</p>
 </div>
 <div class="section level3">
 <h3 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -192,6 +192,26 @@
 <blockquote>
 <p>There is some relationship between <code>logBLL</code> and <code>Math</code> adjusting for the included potential confounders, based on rejection of the hypothesis that the ADRF is flat for <code>logBLL</code> values between -0.3567 and 2.4248 (p &lt; .0001). There isn’t evidence that the ADRF is nonlinear within this range (p = .3415). The linear projection has a coefficient of -.642 (p &lt; .0001), indicating that the expected potential outcome of <code>Math</code> decreases by this amount for each unit increase in <code>logBLL</code>.</p>
 </blockquote>
+<p>The ADRF describes the expected outcome if every unit received the same value of the treatment, which requires that every unit could have received every value in the range of the ADRF. An alternative is the shift curve, which describes the expected outcome if each unit’s treatment were shifted from the value it actually received, and its derivative at a shift of 0, the ADE. These require only that units could have received treatment values near those they actually received. We can compute the shift curve using <code><a href="reference/shift_curve.html">shift_curve()</a></code>, which works like <code><a href="reference/adrf.html">adrf()</a></code> but takes the size of the shift as its argument:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sc_bll</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/shift_curve.html">shift_curve</a></span><span class="op">(</span><span class="va">fit</span>, treat <span class="op">=</span> <span class="st">"logBLL"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sc_bll</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-unnamed-chunk-13-1.png" alt="" style="display: block; margin: auto;"></p>
+<p>By default, the shifts range from half a standard deviation of the treatment below to half a standard deviation above the value each unit received. We can compute the ADE from the shift curve using <code><a href="reference/ade.html">ade()</a></code> and perform inference on it using <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ade_bll</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ade.html">ade</a></span><span class="op">(</span><span class="va">sc_bll</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ade_bll</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="co">#&gt;         Average Derivative Effect Estimates</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="co">#&gt; ───────────────────────────────────────────────────</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="co">#&gt;  Estimate Std. Error     t  P-value  CI Low CI High</span></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="co">#&gt;   -0.5528     0.1073 -5.15 &lt; 0.0001 -0.7633 -0.3423</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="co">#&gt; ───────────────────────────────────────────────────</span></span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="co">#&gt; Inference: unconditional, pointwise</span></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="co">#&gt; Confidence level: 95% (t* = 1.961, df = 2455)</span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a><span class="co">#&gt; Null value: 0</span></span></code></pre></div>
+<p>The ADE of -.553 indicates that increasing every child’s <code>logBLL</code> by a small amount would change the expected value of <code>Math</code> by approximately -.553 times the size of that increase. See <code><a href="articles/shift-effects.html">vignette("shift-effects")</a></code> for more information on shift curves and the ADE, including the effects of specific shifts, other kinds of shifts, and how the ADE relates to the ADRF.</p>
 <p>See <code><a href="articles/adrftools.html">vignette("adrftools")</a></code> for more information on how to use <em>adrftools</em> and the other features available.</p>
 </div>
 </div>
