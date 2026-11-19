@@ -29,6 +29,8 @@ adrftools News and Updates
 
 * *fwb* (>= 1.0.0) is now required for bootstrapping.
 
+* `adrf()` now gives an informative error for models that give a separate prediction for each category of the outcome, such as multinomial models and ordinal models with `type = "probs"`, which are not supported.
+
 * `wts` in `adrf()` is now checked for missing, non-finite, and negative values and for a positive sum in each subgroup.
 
 * Multiway cluster-robust covariance matrices now have negative eigenvalues set to 0, as with `sandwich::vcovCL(fix = TRUE)`. Clustering levels with no units are now dropped, and a clustering variable with a single cluster gives an error. Previously, these gave missing or infinite variances.

@@ -219,6 +219,13 @@
                                       type = type, ...)
   })
 
+  # Models of multi-category outcomes (e.g., multinomial and ordinal models on
+  # the probability scale) give one prediction per category, labeled by
+  # `group`, which cannot be averaged into a single curve
+  if (!is_null(p[["group"]]) && length(funique(p[["group"]])) > 1L) {
+    arg::err("the model gives a separate prediction for each category of the outcome, which {.fun adrf} does not support; supply a {.arg type} that gives a single prediction for each unit, if the model has one (e.g., {.code type = \"link\"} for {.fun WeightIt::ordinal_weightit} models)")
+  }
+
   out <- p[["estimate"]]
   attr(out, "posterior_draws") <- .attr(p, "posterior_draws")
 

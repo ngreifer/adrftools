@@ -465,6 +465,19 @@ test_that("negative binomial models are supported", {
   expect_true(all(is.finite(get_se(a))))
 })
 
+test_that("models with one prediction per outcome category give an error", {
+  skip_if_not_installed("MASS")
+
+  fit <- MASS::polr(ordered(cut(Math, 4)) ~ logBLL + Male + PIR, data = nhanes3lead,
+                    Hess = TRUE)
+
+  for (vcov in c("unconditional", "none")) {
+    expect_error(suppressMessages(adrf(fit, treat = "logBLL", n = 3, type = "probs",
+                                       vcov = vcov)),
+                 "each category of the outcome")
+  }
+})
+
 test_that("models without a dedicated estimator use marginaleffects predictions", {
   skip_if_not_installed("betareg")
 
