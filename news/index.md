@@ -122,6 +122,11 @@
 
 - *fwb* (\>= 1.0.0) is now required for bootstrapping.
 
+- [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) now
+  gives an informative error for models that give a separate prediction
+  for each category of the outcome, such as multinomial models and
+  ordinal models with `type = "probs"`, which are not supported.
+
 - `wts` in
   [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) is
   now checked for missing, non-finite, and negative values and for a
