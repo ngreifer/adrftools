@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
 
 ### Overview
 
-*adrftools* is an R package for estimating the average dose-response function (ADRF), which characterizes the effect of a continuous treatment on an outcome. Functionality is included for performing g-computation on a regression model to estimate the ADRF, plot the ADRF, and test hypotheses about the ADRF. See `vignette("adrftools")` for a full tutorial on using *adrftools*.
+*adrftools* is an R package for estimating the average dose-response function (ADRF), which characterizes the effect of a continuous treatment on an outcome. Functionality is included for performing g-computation on a regression model to estimate the ADRF, plot the ADRF, and test hypotheses about the ADRF, as well as for estimating shift curves and the average derivative effect (ADE), which describe the effects of changing the treatment each unit actually received. See `vignette("adrftools")` for a full tutorial on using *adrftools*.
 
 ### Installation
 
@@ -133,5 +133,27 @@ b_linear <- coef(proj)[["logBLL"]]
 Based on the above, we might conclude the following:
 
 > There is some relationship between `logBLL` and `Math` adjusting for the included potential confounders, based on rejection of the hypothesis that the ADRF is flat for `logBLL` values between `r range_bll[1]` and `r range_bll[2]` (p < .0001). There isn't evidence that the ADRF is nonlinear within this range (p = `r fmt(p_linear, 4)`). The linear projection has a coefficient of `r fmt(b_linear, 3)` (p < .0001), indicating that the expected potential outcome of `Math` decreases by this amount for each unit increase in `logBLL`.
+
+The ADRF describes the expected outcome if every unit received the same value of the treatment, which requires that every unit could have received every value in the range of the ADRF. An alternative is the shift curve, which describes the expected outcome if each unit's treatment were shifted from the value it actually received, and its derivative at a shift of 0, the ADE. These require only that units could have received treatment values near those they actually received. We can compute the shift curve using `shift_curve()`, which works like `adrf()` but takes the size of the shift as its argument:
+
+```{r}
+sc_bll <- shift_curve(fit, treat = "logBLL")
+
+plot(sc_bll)
+```
+
+By default, the shifts range from half a standard deviation of the treatment below to half a standard deviation above the value each unit received. We can compute the ADE from the shift curve using `ade()` and perform inference on it using `summary()`:
+
+```{r}
+ade_bll <- ade(sc_bll)
+
+summary(ade_bll)
+```
+
+```{r, include = FALSE}
+b_ade <- coef(ade_bll)
+```
+
+The ADE of `r fmt(b_ade, 3)` indicates that increasing every child's `logBLL` by a small amount would change the expected value of `Math` by approximately `r fmt(b_ade, 3)` times the size of that increase. See `vignette("shift-effects")` for more information on shift curves and the ADE, including the effects of specific shifts, other kinds of shifts, and how the ADE relates to the ADRF.
 
 See `vignette("adrftools")` for more information on how to use *adrftools* and the other features available.

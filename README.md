@@ -15,8 +15,10 @@
 function (ADRF), which characterizes the effect of a continuous
 treatment on an outcome. Functionality is included for performing
 g-computation on a regression model to estimate the ADRF, plot the ADRF,
-and test hypotheses about the ADRF. See `vignette("adrftools")` for a
-full tutorial on using *adrftools*.
+and test hypotheses about the ADRF, as well as for estimating shift
+curves and the average derivative effect (ADE), which describe the
+effects of changing the treatment each unit actually received. See
+`vignette("adrftools")` for a full tutorial on using *adrftools*.
 
 ### Installation
 
@@ -202,6 +204,51 @@ Based on the above, we might conclude the following:
 > coefficient of -.642 (p \< .0001), indicating that the expected
 > potential outcome of `Math` decreases by this amount for each unit
 > increase in `logBLL`.
+
+The ADRF describes the expected outcome if every unit received the same
+value of the treatment, which requires that every unit could have
+received every value in the range of the ADRF. An alternative is the
+shift curve, which describes the expected outcome if each unit’s
+treatment were shifted from the value it actually received, and its
+derivative at a shift of 0, the ADE. These require only that units could
+have received treatment values near those they actually received. We can
+compute the shift curve using `shift_curve()`, which works like `adrf()`
+but takes the size of the shift as its argument:
+
+``` r
+sc_bll <- shift_curve(fit, treat = "logBLL")
+
+plot(sc_bll)
+```
+
+<img src="man/figures/README-unnamed-chunk-13-1.png" alt="" style="display: block; margin: auto;" />
+
+By default, the shifts range from half a standard deviation of the
+treatment below to half a standard deviation above the value each unit
+received. We can compute the ADE from the shift curve using `ade()` and
+perform inference on it using `summary()`:
+
+``` r
+ade_bll <- ade(sc_bll)
+
+summary(ade_bll)
+```
+
+    #>         Average Derivative Effect Estimates
+    #> ───────────────────────────────────────────────────
+    #>  Estimate Std. Error     t  P-value  CI Low CI High
+    #>   -0.5528     0.1073 -5.15 < 0.0001 -0.7633 -0.3423
+    #> ───────────────────────────────────────────────────
+    #> Inference: unconditional, pointwise
+    #> Confidence level: 95% (t* = 1.961, df = 2455)
+    #> Null value: 0
+
+The ADE of -.553 indicates that increasing every child’s `logBLL` by a
+small amount would change the expected value of `Math` by approximately
+-.553 times the size of that increase. See `vignette("shift-effects")`
+for more information on shift curves and the ADE, including the effects
+of specific shifts, other kinds of shifts, and how the ADE relates to
+the ADRF.
 
 See `vignette("adrftools")` for more information on how to use
 *adrftools* and the other features available.

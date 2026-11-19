@@ -50,7 +50,7 @@ quadform_ok <- rlang::is_installed("CompQuadForm") && splines_ok
 weightit_ok <- rlang::is_installed("WeightIt") && splines_ok && !test
 mice_ok <- rlang::is_installed("mice") && splines_ok && !test
 matchthem_ok <- rlang::is_installed("MatchThem") && weightit_ok && mice_ok && !test
-bart_ok <- rlang::is_installed("dbarts") && splines_ok && !test
+bart_ok <- rlang::is_installed("bartisan") && splines_ok && !test
 
 set.seed(123456)
 ```
@@ -914,26 +914,25 @@ plot(adrf_w_mi)
 
 ### Bayesian models
 
-All of the described functionality works similarly for Bayesian models (e.g., those fit with `brms::brm()`, `dbarts::bart2()`, or `rstanarm::stan_glm()`) as it does for frequentist models. *adrftools* is a primarily frequentist ecosystem, but special procedures exist for Bayesian models as well. After fitting a Bayesian outcome model, it can be supplied to `adrf()` as usual to compute the ADRF. Unlike with frequentist models, the ADRF posterior is also computed and forms the basis for inference on the ADRF. All reported estimates are expected *a posteriori* (EAP) estimates.
+All of the described functionality works similarly for Bayesian models (e.g., those fit with `brms::brm()`, `bartisan::bartisan()`, or `rstanarm::stan_glm()`) as it does for frequentist models. *adrftools* is a primarily frequentist ecosystem, but special procedures exist for Bayesian models as well. After fitting a Bayesian outcome model, it can be supplied to `adrf()` as usual to compute the ADRF. Unlike with frequentist models, the ADRF posterior is also computed and forms the basis for inference on the ADRF. All reported estimates are expected *a posteriori* (EAP) estimates.
 
-When calling `adrf()` on a Bayesian model, `vcov` can be set either to `"none"` to omit the posterior and just use the EAP estimates or to `"posterior"` to retain the posterior for inference. Leaving `vcov` unspecified uses `"posterior"`. Below, we fit a Bayesian additive regression trees (BART) model using [*dbarts*](https://cran.r-project.org/package=dbarts).
+When calling `adrf()` on a Bayesian model, `vcov` can be set either to `"none"` to omit the posterior and just use the EAP estimates or to `"posterior"` to retain the posterior for inference. Leaving `vcov` unspecified uses `"posterior"`. Below, we fit a Bayesian additive regression trees (BART) model using [*bartisan*](https://ngreifer.github.io/bartisan), whose interface follows that of `glm()`. By default, *bartisan* uses the soft decision rules of @linero2018, so the fitted model, and therefore the ADRF, is smooth in the treatment rather than a step function as it would be with standard BART^[Predictions from a model with soft rules take longer to compute, and `adrf()` computes a prediction for every unit and posterior draw at each point on the grid of treatment values, so we set `n = 21` to request a coarser grid than the default of 51 points.].
 
 ```{r, eval = bart_ok}
-library(dbarts)
+library(bartisan)
 
-bfit <- bart2(Math ~ logBLL + Male + Age + Race +
-                PIR + Enough_Food + Smoke_in_Home +
-                Smoke_Pregnant + NICU,
-              data = nhanes3lead,
-              keepTrees = TRUE, #needed for adrf()
-              verbose = FALSE)
+bfit <- bartisan(Math ~ logBLL + Male + Age + Race +
+                   PIR + Enough_Food + Smoke_in_Home +
+                   Smoke_Pregnant + NICU,
+                 data = nhanes3lead,
+                 family = "dpm")
 
-adrf_bll_bayes <- adrf(bfit, treat = "logBLL")
+adrf_bll_bayes <- adrf(bfit, treat = "logBLL", n = 21)
 
 adrf_bll_bayes
 ```
 
-All credible intervals and bands use the confidence interval interface (e.g., using `conf_level` in `summary()` and `plot()` to request the credibility level). The posterior can be treated as a multivariate normal distribution to compute Wald-based credible intervals by setting `ci.type = "wald"`, though the default is to use equi-tailed percentile intervals with `ci.type = "perc"`. Simultaneous inference for equi-tailed percentile intervals, if requested, uses the Bayesian algorithm described by @montielolea2019, which ensures the band has the requested credibility simultaneously across the whole effect curve, up to Monte Carlo error from the finite number of posterior draws. P-values for estimates along the effect curve are computed as the complement of the smallest credibility level that excludes the null value.
+All credible intervals and bands use the confidence interval interface (e.g., using `conf_level` in `summary()` and `plot()` to request the credibility level). The posterior can be treated as a multivariate normal distribution to compute Wald-based credible intervals by setting `ci.type = "wald"`, though the default is to use equi-tailed percentile intervals with `ci.type = "perc"`. Simultaneous inference for equi-tailed percentile intervals, if requested, uses the Bayesian algorithm described by @montielolea2019, which ensures the band has the requested credibility simultaneously across the whole effect curve, up to Monte Carlo error from the finite number of posterior draws.
 
 ```{r, eval = bart_ok}
 plot(adrf_bll_bayes)
