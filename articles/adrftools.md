@@ -78,6 +78,22 @@ All of these are linear functions of the ADRF, which means if we can
 account for uncertainty in the ADRF, we can account for uncertainty in
 the effect curves derived from it using the delta method.
 
+*adrftools* can also estimate shift curves, which describe the expected
+outcome if each unit’s treatment were changed from the value it actually
+received (e.g., increased by a fixed amount) rather than set to the same
+value for everyone, and the average derivative effect (ADE), the
+derivative of the shift curve at a shift of 0. Because these involve
+only treatment values near those each unit actually received, they rely
+on weaker assumptions than the ADRF when the treatment is strongly
+related to the covariates, and the ADE provides a single-number summary
+of the effect of the treatment. Shift curves and the ADE are computed
+using
+[`shift_curve()`](https://ngreifer.github.io/adrftools/reference/shift_curve.md)
+and [`ade()`](https://ngreifer.github.io/adrftools/reference/ade.md);
+see
+[`vignette("shift-effects")`](https://ngreifer.github.io/adrftools/articles/shift-effects.md)
+for details.
+
 ### This Guide
 
 In this guide, we will walk through a standard analysis, demonstrating
@@ -756,6 +772,19 @@ may differ due to differing sensitivities to local alternatives between
 the tests. More research is needed to understand these differences. For
 now, we recommend not using the test for the AMEF and instead testing
 the flatness of the ADRF directly.
+
+The AMEF gives the slope of the ADRF at each treatment value, with the
+slope at each value averaged over all units. A related single-number
+summary is the ADE, computed using
+[`ade()`](https://ngreifer.github.io/adrftools/reference/ade.md), which
+instead averages each unit’s slope at the treatment value it actually
+received. When the treatment is related to the covariates, the ADE is
+not simply an average of the AMEF across treatment values, because it
+gives more weight to the slopes of the units most likely to receive each
+treatment value. See
+[`vignette("shift-effects")`](https://ngreifer.github.io/adrftools/articles/shift-effects.md)
+for how to compute the ADE and how it relates to the AMEF and to the
+slope of a linear projection of the ADRF.
 
 #### Subgroup ADRFs
 
@@ -1931,9 +1960,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.428  8.035   9.075
-##       1    7.965  7.562   8.364
-##       2    7.216  6.616   7.885
+##       0    8.445  8.042   9.236
+##       1    7.997  7.590   8.391
+##       2    7.195  6.564   7.978
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%

@@ -168,6 +168,17 @@ computed within subgroups <span class="math inline">\(G=g_1\)</span> and
 <p>All of these are linear functions of the ADRF, which means if we can
 account for uncertainty in the ADRF, we can account for uncertainty in
 the effect curves derived from it using the delta method.</p>
+<p><em>adrftools</em> can also estimate shift curves, which describe the
+expected outcome if each unit’s treatment were changed from the value it
+actually received (e.g., increased by a fixed amount) rather than set to
+the same value for everyone, and the average derivative effect (ADE),
+the derivative of the shift curve at a shift of 0. Because these involve
+only treatment values near those each unit actually received, they rely
+on weaker assumptions than the ADRF when the treatment is strongly
+related to the covariates, and the ADE provides a single-number summary
+of the effect of the treatment. Shift curves and the ADE are computed
+using <code><a href="../reference/shift_curve.html">shift_curve()</a></code> and <code><a href="../reference/ade.html">ade()</a></code>; see
+<code><a href="../articles/shift-effects.html">vignette("shift-effects")</a></code> for details.</p>
 </div>
 <div class="section level3">
 <h3 id="this-guide">This Guide<a class="anchor" aria-label="anchor" href="#this-guide"></a>
@@ -726,6 +737,16 @@ test whether the AMEF is 0 everywhere.</p>
 between the tests. More research is needed to understand these
 differences. For now, we recommend not using the test for the AMEF and
 instead testing the flatness of the ADRF directly.</p>
+<p>The AMEF gives the slope of the ADRF at each treatment value, with
+the slope at each value averaged over all units. A related single-number
+summary is the ADE, computed using <code><a href="../reference/ade.html">ade()</a></code>, which instead
+averages each unit’s slope at the treatment value it actually received.
+When the treatment is related to the covariates, the ADE is not simply
+an average of the AMEF across treatment values, because it gives more
+weight to the slopes of the units most likely to receive each treatment
+value. See <code><a href="../articles/shift-effects.html">vignette("shift-effects")</a></code> for how to compute the
+ADE and how it relates to the AMEF and to the slope of a linear
+projection of the ADRF.</p>
 </div>
 <div class="section level4">
 <h4 id="subgroup-adrfs">Subgroup ADRFs<a class="anchor" aria-label="anchor" href="#subgroup-adrfs"></a>
@@ -1758,9 +1779,9 @@ value.</p>
 <span><span class="co">##         ADRF Estimates</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">##  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">##       0    8.428  8.035   9.075</span></span>
-<span><span class="co">##       1    7.965  7.562   8.364</span></span>
-<span><span class="co">##       2    7.216  6.616   7.885</span></span>
+<span><span class="co">##       0    8.445  8.042   9.236</span></span>
+<span><span class="co">##       1    7.997  7.590   8.391</span></span>
+<span><span class="co">##       2    7.195  6.564   7.978</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>
