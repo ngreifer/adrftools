@@ -15,7 +15,7 @@
 #' @param subset an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function. Can also be a vector of row numbers or row names; logical vectors and row numbers refer to the units used to fit the model (i.e., excluding any dropped because of missing values), and row names refer to the original dataset.
 #' @param by optional variable(s) over which to group the estimation. Can be a character vector or one-sided formula.
 #' @param wts optional weights used to generalize the effect curve to a weighted population. Can be a numeric vector, the name of a variable in the original dataset, `TRUE` to use the weights used to fit the model, or `FALSE` for no weights. The default depends on the model; see Details.
-#' @param fwb.args an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when `vcov` is `"boot"` or `"fwb"`.
+#' @param fwb.args an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when `vcov` is `"boot"` or `"fwb"`. When `cl` is not included and a \pkg{future} plan with more than one worker is set, `cl = "future"` is used; see the section *Parallelization with \pkg{future}* in Details.
 #' @param ... further arguments passed to [marginaleffects::get_predict()].
 #'
 #' @returns
@@ -47,6 +47,20 @@
 #' The `wts` argument supplies weights that define the population over which the predicted outcomes are averaged, such as sampling weights. When supplied as a numeric vector, it must have one value for each unit used to fit the model (or, with multiply imputed data, either one value for each unit in each imputed dataset or one value for each row of the imputed datasets stacked together). When supplied as a string, it is the name of a variable in the original dataset. `wts = TRUE` uses the weights used to fit the model, as extracted by [insight::get_weights()], and `wts = FALSE` weights all units equally.
 #'
 #' When `wts` is not supplied, the default depends on the model. When a `<svyglm>` object from \pkg{survey} is supplied, the survey weights are always used, and `wts` cannot be supplied (other than as `TRUE`), because the design-based variance treats the estimates as describing the population the survey design represents. When a `<glm_weightit>` object, etc., from \pkg{WeightIt} is supplied, the sampling weights are used if `s.weights` were supplied in the original call to `weightit()`; the balancing weights are not, because they are used to fit the outcome model rather than to define the target population. For other models, all units are weighted equally, even when the model was fit with weights. See `vignette("adrftools")` for more details on using the `wts` argument.
+#'
+#' ## Parallelization with \pkg{future}
+#'
+#' `adrf()` can run its slowest computations in parallel using the \CRANpkg{future} framework, which requires the \CRANpkg{future.apply} package to be installed. These are the bootstrap replicates, the predictions at each treatment value for Bayesian models, the numerical derivatives of the estimates with respect to the model coefficients (used in the delta method for models whose predictions are not computed from the model matrix), and the analyses of the imputed datasets for models fit to multiply imputed data. To request parallel processing, specify a future plan before calling `adrf()`, e.g., using
+#'
+#' ```r
+#' future::plan("multisession", workers = 4)
+#' ```
+#'
+#' after which these computations are distributed across the workers in pieces (a treatment value, a model coefficient, or an imputed dataset), each worker starting a new piece as soon as it finishes one. No argument to `adrf()` is involved, and without a plan, or with a plan of a single worker, they run sequentially. Parallelization helps most with large datasets, slow predictions (e.g., from Bayesian models), and bootstrapping; for small problems, starting the work on the workers can take longer than it saves.
+#'
+#' The results are the same whether or not parallel processing is used and do not depend on the number of workers. None of these computations draws random numbers other than the bootstrap, but each runs on its own random number stream generated from the current seed, and the bootstrap weights are drawn by \pkgfun{fwb}{fwb} from the current seed before the replicates are computed, so calling [set.seed()] before `adrf()` is all that is needed to make the results reproducible. The random number stream after the call is also the same either way; generating the streams moves it on by one draw.
+#'
+#' Each worker receives its own copy of the model and the data it needs. \pkg{future} refuses to send more than `getOption("future.globals.maxSize")` (500 MB by default) to a worker at once; with large models or datasets, raise it, e.g., with `options(future.globals.maxSize = 2e9)`. Packages attached in the current session are attached on the workers, but objects in the global environment that the model formula refers to (e.g., a function defined by the user) are not, so with such a model, a plan whose workers are separate \R sessions gives an error. `stan4bart::stan4bart()` models cannot be copied to another \R session, so their predictions are always computed in the current session. On Linux and macOS outside RStudio, `future::plan("multicore")` instead forks the current session, so the workers share its memory and nothing is copied.
 #'
 #' @references
 #' Li, K. H., Raghunathan, T. E., & Rubin, D. B. (1991). Large-sample significance levels from multiply imputed data using moment-based statistics and an *F* reference distribution. *Journal of the American Statistical Association*, 86(416), 1065–1073. \doi{10.1080/01621459.1991.10475152}
@@ -342,15 +356,32 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
   # response
   .response <- process_response(models[[1L]])
 
-  fits <- lapply(seq_len(m), function(.i) {
-    .adrf_fit_one(x = models[[.i]], treat = treat, grid_values = values,
-                  model_data = model_data.list[[.i]], s = s.list[[.i]],
-                  wts = wts.list[[.i]], by_id = by_codes[[.i]], n_by = n_by,
-                  cl_list = cl_list.list[[.i]], vcov_type = vcov_type,
-                  is_bayes = is_bayes, type = type, data = data,
-                  fwb.args = fwb.args, shift_fun = .shift[["fun"]],
-                  outcome = outcome, ...)
+  # Everything each imputation is fit with, as one list per imputation, so that
+  # a worker is sent only the imputations it fits
+  fit_args <- lapply(seq_len(m), function(.i) {
+    list(x = models[[.i]], treat = treat, grid_values = values,
+         model_data = model_data.list[[.i]], s = s.list[[.i]],
+         wts = wts.list[[.i]], by_id = by_codes[[.i]], n_by = n_by,
+         cl_list = cl_list.list[[.i]], vcov_type = vcov_type,
+         is_bayes = is_bayes, type = type,
+         data = if (vcov_type == "bootstrap") data,
+         fwb.args = fwb.args, shift_fun = .shift[["fun"]],
+         outcome = outcome)
   })
+
+  # With a future plan, the imputations (if there are several) are fit on the
+  # workers, except with bootstrapping, where the replicates within each
+  # imputation are (which balances the work better), and with models that
+  # cannot be sent to them. Within an imputation fit on a worker, nothing is
+  # split further, because the plan is sequential there. The bootstrap draws
+  # its weights from the session's stream in turn, as it always has, so it is
+  # given no streams.
+  apart <- m > 1L && vcov_type != "bootstrap"
+
+  fits <- par_lapply(fit_args, .adrf_fit_args, ...,
+                     seeds = if (apart) parallel_streams(m),
+                     packages = .worker_packages(models[[1L]]),
+                     local = !apart || !all_apply(models, .prepare_for_workers))
 
   # Categories of the outcome, for models that give one prediction per
   # category. Each category gets a curve in each subgroup, stored as a column
@@ -474,6 +505,57 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
             .treat_density = .treat_density)
 }
 
+# The weighted mean predictions from `model` with its coefficients set to `b`
+# in each group of `g` (the estimates), for the numerical gradient of the
+# estimates. At the top level, rather than written in .adrf_fit_one(), so that
+# the workers computing the columns of the gradient are sent the model and the
+# grid and not everything else in that frame.
+.mean_prediction <- function(b, model, data_grid, type, outcome, g, w,
+                             mean_fun, ...) {
+  marginaleffects::set_coef(model, b) |>
+    .get_predict(newdata = data_grid, type = type, outcome = outcome, ...) |>
+    as.vector() |>
+    mean_fun(g = g, w = w) |>
+    drop()
+}
+
+# The weighted means in each group of `g` (subgroups within categories of the
+# outcome) of the posterior draws of the predictions from a Bayesian `model`
+# with the treatment of every unit set to `a`
+.posterior_means_at <- function(a, model, model_data, treat, type, outcome,
+                                g, w, mean_fun, ...) {
+  model_data[[treat]] <- a
+
+  draws <- {
+    if (inherits(model, "stan4bartFit"))
+      predict(object = model, newdata = model_data, type = "ev", ...)
+    else
+      .get_predict(model, newdata = model_data, type = type,
+                   outcome = outcome, ...) |>
+      .attr("posterior_draws")
+  }
+
+  mean_fun(draws, g = g, w = w)
+}
+
+# The mean of the predictions for a single unit, which are their own means
+.no_mean <- function(x, ...) {
+  x
+}
+
+# .adrf_fit_one() with its arguments (other than `...`) in a list
+.adrf_fit_args <- function(args, ...) {
+  .adrf_fit_one(x = args[["x"]], treat = args[["treat"]],
+                grid_values = args[["grid_values"]],
+                model_data = args[["model_data"]], s = args[["s"]],
+                wts = args[["wts"]], by_id = args[["by_id"]],
+                n_by = args[["n_by"]], cl_list = args[["cl_list"]],
+                vcov_type = args[["vcov_type"]], is_bayes = args[["is_bayes"]],
+                type = args[["type"]], data = args[["data"]],
+                fwb.args = args[["fwb.args"]], shift_fun = args[["shift_fun"]],
+                outcome = args[["outcome"]], ...)
+}
+
 # Computes the ADRF estimates for one fitted model: the point estimates and,
 # depending on `vcov_type`, their covariance matrix, bootstrap replicates, or
 # posterior draws. `by_id` contains integer subgroup codes for the units in
@@ -529,7 +611,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
     s <- 1L
     by_id <- by_id[1L]
 
-    .fmean <- function(x, ...) {x}
+    .fmean <- .no_mean
   }
   else {
     .fmean <- collapse::fmean
@@ -543,15 +625,8 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
 
   w_unit <- ss(wts, s)
 
-  # The data with the treatment set to values[k] for every unit, and the grid
-  # of every unit at every treatment value, with the rows ordered by treatment
-  # value, then unit
-  .data_at <- function(k) {
-    d <- model_data
-    d[[treat]] <- .cf_at(k)
-    d
-  }
-
+  # The grid of every unit at every treatment value, with the rows ordered by
+  # treatment value, then unit
   .data_grid <- function() {
     data_grid <- ss(model_data, rep.int(ii, n))
     data_grid[[treat]] <- {
@@ -741,8 +816,8 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
     }
   }
   else {
-    # The Bayesian branch predicts one treatment value at a time with
-    # .data_at(), as before
+    # The Bayesian branch predicts one treatment value at a time (see
+    # .posterior_means_at())
     data_grid <- if (!is_bayes) .data_grid()
 
     # Attributes of the predictions (e.g., the categories of the outcome) are
@@ -765,11 +840,21 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
 
     w_out <- rep.int(w_unit, n_out)
 
-    out[["draws"]] <- lapply(vi, function(k) {
-      pred_fun(data_grid = .data_at(k), model = x, ...) |>
-        .attr("posterior_draws") |>
-        .fmean(g = out_by_id, w = w_out)
-    }) |>
+    # Each treatment value is predicted on its own, so the treatment values
+    # run on the workers of a future plan when there is one. Each worker is
+    # sent the counterfactual treatments of its unit; the model and the data
+    # are shared by every unit.
+    cf <- lapply(vi, .cf_at)
+
+    draws <- par_lapply(cf, .posterior_means_at,
+                        model = x, model_data = model_data, treat = treat,
+                        type = type, outcome = outcome, g = out_by_id,
+                        w = w_out, mean_fun = .fmean, ...,
+                        seeds = parallel_streams(n),
+                        packages = .worker_packages(x),
+                        local = !.prepare_for_workers(x))
+
+    out[["draws"]] <- draws |>
       do.call(what = "rbind") |>
       t() |>
       ss(j = .value_major_to_by_major(n, n_by * n_out))
@@ -864,10 +949,19 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
       fwb.args[["cluster"]] <- cl_list[["cluster"]][[1L]]
     }
 
-    out[["boot"]] <- do.call(fwb::fwb, c(list(data = process_model_data(x, data),
-                                              statistic = bootfun,
-                                              drop0 = FALSE),
-                                         fwb.args))
+    # fwb() draws the bootstrap weights before the replicates are computed
+    # (all at once, or for each replicate from its own random number stream),
+    # so the replicates are the same however many workers compute them;
+    # `cl = "future"` has fwb() use the workers of the plan
+    if (!utils::hasName(fwb.args, "cl") && use_future()) {
+      fwb.args[["cl"]] <- "future"
+    }
+
+    out[["boot"]] <- c(list(data = process_model_data(x, data),
+                            statistic = bootfun,
+                            drop0 = FALSE),
+                       fwb.args) |>
+      .fwb()
 
     out[["est"]] <- stats::coef(out[["boot"]])
     out[["vcov"]] <- stats::vcov(out[["boot"]])
@@ -881,11 +975,10 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
     else {
       phat <- est_fun(x)
 
-      gr <- .gradient(function(b) {
-        est_fun(x, b) |>
-          .fmean(g = cross_id, w = wi) |>
-          drop()
-      }, .x = beta0)
+      gr <- .gradient(.mean_prediction, .x = beta0, model = x,
+                      data_grid = data_grid, type = type, outcome = outcome,
+                      g = cross_id, w = wi, mean_fun = .fmean, ...,
+                      .packages = .worker_packages(x))
     }
 
     out[["est"]] <- .fmean(phat, g = cross_id, w = wi)
@@ -966,11 +1059,10 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
     else {
       phat <- est_fun(x)
 
-      gr <- .gradient(function(b) {
-        est_fun(x, b) |>
-          .fmean(g = cross_id, w = wi) |>
-          drop()
-      }, .x = beta0)
+      gr <- .gradient(.mean_prediction, .x = beta0, model = x,
+                      data_grid = data_grid, type = type, outcome = outcome,
+                      g = cross_id, w = wi, mean_fun = .fmean, ...,
+                      .packages = .worker_packages(x))
     }
 
     out[["est"]] <- .fmean(phat, g = cross_id, w = wi)

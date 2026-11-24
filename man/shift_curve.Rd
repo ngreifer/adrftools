@@ -54,7 +54,7 @@ shift_curve(x, ...)
 
 \item{n}{integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Must be between 2 and 1000. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.}
 
-\item{fwb.args}{an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}.}
+\item{fwb.args}{an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}. When \code{cl} is not included and a \pkg{future} plan with more than one worker is set, \code{cl = "future"} is used; see the section \emph{Parallelization with \pkg{future}} in Details.}
 }
 \value{
 An object of class \code{shift_curve}, which inherits from \code{adrf_curve} and \code{\link{effect_curve}}. Its first argument is named \code{shift} rather than after the treatment, so estimates are requested as, e.g., \code{f(shift = c(-.2, 0, .2))}. See \code{\link[=effect_curve-class]{effect_curve}} for details on this function and its outputs.
@@ -78,6 +78,11 @@ A function supplied to \code{shift_fun} is called once for each grid value of th
 The options for \code{vcov} are the same as for \code{\link[=adrf]{adrf()}}. Unconditional standard errors account for the sampling of both the covariates and the treatment, since the shifted treatment of each unit depends on the treatment it received.
 
 Once computed, a shift curve can be used with the other functions that take an \code{\link{effect_curve}} object. \code{\link[=reference_curve]{reference_curve()}} with \code{reference = 0} gives the differences between the mean outcome under each shift and under the treatment actually received (i.e., the effect of each shift), \code{\link[=summary.effect_curve]{summary.effect_curve()}} tests whether the shift curve is flat (i.e., whether no shift in the range changes the mean outcome), and \code{\link[=curve_contrast]{curve_contrast()}} compares shift curves computed within subgroups.
+}
+
+\subsection{Parallelization with \pkg{future}}{
+
+The bootstrap replicates, the predictions for Bayesian models, the numerical derivatives used in the delta method, and the analyses of the imputed datasets run in parallel when a \CRANpkg{future} plan with more than one worker is set, and one \code{\link[=set.seed]{set.seed()}} reproduces the result either way. See the section \emph{Parallelization with \pkg{future}} in Details of \code{\link[=adrf]{adrf()}}.
 }
 }
 \examples{

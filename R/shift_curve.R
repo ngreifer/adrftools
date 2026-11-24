@@ -27,6 +27,10 @@
 #'
 #' Once computed, a shift curve can be used with the other functions that take an [`effect_curve`] object. [reference_curve()] with `reference = 0` gives the differences between the mean outcome under each shift and under the treatment actually received (i.e., the effect of each shift), [summary.effect_curve()] tests whether the shift curve is flat (i.e., whether no shift in the range changes the mean outcome), and [curve_contrast()] compares shift curves computed within subgroups.
 #'
+#' ## Parallelization with \pkg{future}
+#'
+#' The bootstrap replicates, the predictions for Bayesian models, the numerical derivatives used in the delta method, and the analyses of the imputed datasets run in parallel when a \CRANpkg{future} plan with more than one worker is set, and one [set.seed()] reproduces the result either way. See the section *Parallelization with \pkg{future}* in Details of [adrf()].
+#'
 #' @seealso
 #' * [ade()] for computing the average derivative effect from a shift curve
 #' * [adrf()] for estimating the average dose-response function

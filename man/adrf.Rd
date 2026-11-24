@@ -51,7 +51,7 @@ adrf(x, ...)
 
 \item{n}{integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Must be between 2 and 1000. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.}
 
-\item{fwb.args}{an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}.}
+\item{fwb.args}{an optional list of arguments to be passed to \pkgfun{fwb}{fwb} when \code{vcov} is \code{"boot"} or \code{"fwb"}. When \code{cl} is not included and a \pkg{future} plan with more than one worker is set, \code{cl = "future"} is used; see the section \emph{Parallelization with \pkg{future}} in Details.}
 }
 \value{
 An object of class \verb{<effect_curve>}. This object is a function with attributes. See \code{\link[=effect_curve-class]{effect_curve}} for details on this function and its outputs.
@@ -86,6 +86,20 @@ A reason not to use the full treatment range (e.g., by setting \code{range = 1})
 The \code{wts} argument supplies weights that define the population over which the predicted outcomes are averaged, such as sampling weights. When supplied as a numeric vector, it must have one value for each unit used to fit the model (or, with multiply imputed data, either one value for each unit in each imputed dataset or one value for each row of the imputed datasets stacked together). When supplied as a string, it is the name of a variable in the original dataset. \code{wts = TRUE} uses the weights used to fit the model, as extracted by \code{\link[insight:get_weights]{insight::get_weights()}}, and \code{wts = FALSE} weights all units equally.
 
 When \code{wts} is not supplied, the default depends on the model. When a \verb{<svyglm>} object from \pkg{survey} is supplied, the survey weights are always used, and \code{wts} cannot be supplied (other than as \code{TRUE}), because the design-based variance treats the estimates as describing the population the survey design represents. When a \verb{<glm_weightit>} object, etc., from \pkg{WeightIt} is supplied, the sampling weights are used if \code{s.weights} were supplied in the original call to \code{weightit()}; the balancing weights are not, because they are used to fit the outcome model rather than to define the target population. For other models, all units are weighted equally, even when the model was fit with weights. See \code{vignette("adrftools")} for more details on using the \code{wts} argument.
+}
+
+\subsection{Parallelization with \pkg{future}}{
+
+\code{adrf()} can run its slowest computations in parallel using the \CRANpkg{future} framework, which requires the \CRANpkg{future.apply} package to be installed. These are the bootstrap replicates, the predictions at each treatment value for Bayesian models, the numerical derivatives of the estimates with respect to the model coefficients (used in the delta method for models whose predictions are not computed from the model matrix), and the analyses of the imputed datasets for models fit to multiply imputed data. To request parallel processing, specify a future plan before calling \code{adrf()}, e.g., using
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{future::plan("multisession", workers = 4)
+}\if{html}{\out{</div>}}
+
+after which these computations are distributed across the workers in pieces (a treatment value, a model coefficient, or an imputed dataset), each worker starting a new piece as soon as it finishes one. No argument to \code{adrf()} is involved, and without a plan, or with a plan of a single worker, they run sequentially. Parallelization helps most with large datasets, slow predictions (e.g., from Bayesian models), and bootstrapping; for small problems, starting the work on the workers can take longer than it saves.
+
+The results are the same whether or not parallel processing is used and do not depend on the number of workers. None of these computations draws random numbers other than the bootstrap, but each runs on its own random number stream generated from the current seed, and the bootstrap weights are drawn by \pkgfun{fwb}{fwb} from the current seed before the replicates are computed, so calling \code{\link[=set.seed]{set.seed()}} before \code{adrf()} is all that is needed to make the results reproducible. The random number stream after the call is also the same either way; generating the streams moves it on by one draw.
+
+Each worker receives its own copy of the model and the data it needs. \pkg{future} refuses to send more than \code{getOption("future.globals.maxSize")} (500 MB by default) to a worker at once; with large models or datasets, raise it, e.g., with \code{options(future.globals.maxSize = 2e9)}. Packages attached in the current session are attached on the workers, but objects in the global environment that the model formula refers to (e.g., a function defined by the user) are not, so with such a model, a plan whose workers are separate \R sessions gives an error. \code{stan4bart::stan4bart()} models cannot be copied to another \R session, so their predictions are always computed in the current session. On Linux and macOS outside RStudio, \code{future::plan("multicore")} instead forks the current session, so the workers share its memory and nothing is copied.
 }
 }
 \examples{

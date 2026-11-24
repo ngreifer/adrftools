@@ -2125,15 +2125,23 @@ get_n_by <- function(.contrast = NULL, .by_grid = NULL) {
     model_call$weightit <- quote(.adrftools_weightit)
     model_call$vcov <- "none"
 
+    wglobals <- .call_globals(wcall, wenv)
+    mglobals <- .call_globals(model_call, genv)
+
     return(function(w) {
       wcall$s.weights <- sw * w
 
-      weightit_boot <- suppressMessages(suppressWarnings(eval(wcall, wenv)))
+      weightit_boot <- wglobals |>
+        list2env(parent = wenv) |>
+        eval(expr = wcall) |>
+        suppressWarnings() |>
+        suppressMessages()
 
-      list(.adrftools_data = fit_data,
-           .adrftools_weightit = weightit_boot) |>
+      c(mglobals,
+        list(.adrftools_data = fit_data,
+             .adrftools_weightit = weightit_boot)) |>
         list2env(parent = genv) |>
-        eval(expr = model_call)
+        .eval_with_formula_env(expr = model_call)
     })
   }
 
@@ -2151,13 +2159,94 @@ get_n_by <- function(.contrast = NULL, .by_grid = NULL) {
   # Weights are passed as a column of the data so that model.frame() finds them
   model_call$weights <- quote(.adrftools_w)
 
+  mglobals <- .call_globals(model_call, genv)
+
   function(w) {
     fit_data$.adrftools_w <- v * w
 
-    list(.adrftools_data = fit_data) |>
+    c(mglobals, list(.adrftools_data = fit_data)) |>
       list2env(parent = genv) |>
-      eval(expr = model_call)
+      .eval_with_formula_env(expr = model_call)
   }
+}
+
+# fwb::fwb() called with the arguments in `args`. With `cl = "future"`, fwb()
+# gives the same replicates as without, but future.apply moves the random
+# number stream of the session on by a step that a sequential run does not
+# (with `wtype = "multinom"`, the default for `vcov = "boot"`), so whatever is
+# drawn next, such as the replicates of the next bootstrap, would depend on the
+# plan. The stream is then put back where a sequential run leaves it by
+# running fwb() again sequentially from the same starting point with a
+# statistic that does nothing, which draws the same weights and nothing else.
+.fwb <- function(args) {
+  if (!identical(args[["cl"]], "future")) {
+    return(do.call(fwb::fwb, args))
+  }
+
+  seeded <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  restore <- restore_stream()
+
+  out <- do.call(fwb::fwb, args)
+
+  if (seeded) {
+    restore()
+
+    args[["statistic"]] <- function(data, w, ...) 0
+    args[["cl"]] <- NULL
+    args[["verbose"]] <- FALSE
+
+    do.call(fwb::fwb, args)
+  }
+
+  out
+}
+
+# The objects a call refers to that a new R session would not have: those
+# found in the global environment or in a package attached to the search path
+# rather than only loaded, such as the fitting function and a dataset named in
+# the call. The refit in a bootstrap replicate runs on the workers of a future
+# plan when there is one, and in a separate R session (e.g., with
+# `plan(multisession)`) neither the user's global objects nor their attached
+# packages are there; evaluating the call where these objects are found makes
+# the refit the same wherever it runs. Objects found in other environments
+# (e.g., the frame of the function in which the model was fit, or a package
+# namespace) travel to the workers with the environment.
+.call_globals <- function(expr, env) {
+  out <- list()
+
+  for (nm in unique(all.names(expr))) {
+    e <- env
+    global <- FALSE
+
+    while (!identical(e, emptyenv()) && !identical(e, baseenv())) {
+      global <- global || identical(e, globalenv())
+
+      if (exists(nm, envir = e, inherits = FALSE)) {
+        if (global) {
+          out[[nm]] <- get(nm, envir = e, inherits = FALSE)
+        }
+
+        break
+      }
+
+      e <- parent.env(e)
+    }
+  }
+
+  out
+}
+
+# Evaluates a model call in `env` with the formula in the call (if any) given
+# `env` as its environment, so that variables and functions in the formula
+# that are not in the data (e.g., `ns()` after `library(splines)`) are found
+# among the objects collected by .call_globals() and then where they were
+# found when the model was fit, since `env` encloses that environment.
+.eval_with_formula_env <- function(env, expr) {
+  if (inherits(expr$formula, "formula")) {
+    environment(expr$formula) <- env
+  }
+
+  eval(expr, env)
 }
 
 # Design-based variance of estimates from a svyglm model, given the matrix `S`
