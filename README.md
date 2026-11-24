@@ -61,6 +61,8 @@ fit <- lm(Math ~ splines::ns(logBLL, df = 5) *
           data = nhanes3lead)
 ```
 
+#### Computing the ADRF
+
 Next we’ll use `adrftools::adrf()` to compute the ADRF.
 
 ``` r
@@ -141,8 +143,8 @@ summary(adrf_bll, hypothesis = "flat")
     #>   P-value
     #>  < 0.0001
     #> ───────────────────────────────────────────────────────
-    #> Computed using the Imhof approximation (the
-    #>   saddlepoint approximation for p-values below .0001)
+    #> Computed using the Imhof approximation
+    #>   * Saddlepoint approximation used for p-values below .0001
 
 ``` r
 # Test for linearity
@@ -157,8 +159,7 @@ summary(adrf_bll, hypothesis = "linear")
     #>  P-value
     #>   0.3415
     #> ───────────────────────────────────────────────────────
-    #> Computed using the Imhof approximation (the
-    #>   saddlepoint approximation for p-values below .0001)
+    #> Computed using the Imhof approximation
 
 The results indicate that the ADRF is not flat, but there isn’t enough
 evidence to claim it is nonlinear in the range specified. We might
@@ -204,6 +205,8 @@ Based on the above, we might conclude the following:
 > coefficient of -.642 (p \< .0001), indicating that the expected
 > potential outcome of `Math` decreases by this amount for each unit
 > increase in `logBLL`.
+
+#### Computing the Shift Curve and ADE
 
 The ADRF describes the expected outcome if every unit received the same
 value of the treatment, which requires that every unit could have
@@ -252,3 +255,10 @@ the ADRF.
 
 See `vignette("adrftools")` for more information on how to use
 *adrftools* and the other features available.
+
+### Citing *adrftools*
+
+Please cite *adrftools* when using it for analysis presented in
+publications. A citation can be generated using `citation("adrftools")`
+in R. For reproducibility purposes, it is also important to include the
+version number for the version used.

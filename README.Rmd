@@ -62,6 +62,8 @@ fit <- lm(Math ~ splines::ns(logBLL, df = 5) *
           data = nhanes3lead)
 ```
 
+#### Computing the ADRF
+
 Next we'll use `adrftools::adrf()` to compute the ADRF.
 
 ```{r}
@@ -134,6 +136,8 @@ Based on the above, we might conclude the following:
 
 > There is some relationship between `logBLL` and `Math` adjusting for the included potential confounders, based on rejection of the hypothesis that the ADRF is flat for `logBLL` values between `r range_bll[1]` and `r range_bll[2]` (p < .0001). There isn't evidence that the ADRF is nonlinear within this range (p = `r fmt(p_linear, 4)`). The linear projection has a coefficient of `r fmt(b_linear, 3)` (p < .0001), indicating that the expected potential outcome of `Math` decreases by this amount for each unit increase in `logBLL`.
 
+#### Computing the Shift Curve and ADE
+
 The ADRF describes the expected outcome if every unit received the same value of the treatment, which requires that every unit could have received every value in the range of the ADRF. An alternative is the shift curve, which describes the expected outcome if each unit's treatment were shifted from the value it actually received, and its derivative at a shift of 0, the ADE. These require only that units could have received treatment values near those they actually received. We can compute the shift curve using `shift_curve()`, which works like `adrf()` but takes the size of the shift as its argument:
 
 ```{r}
@@ -157,3 +161,7 @@ b_ade <- coef(ade_bll)
 The ADE of `r fmt(b_ade, 3)` indicates that increasing every child's `logBLL` by a small amount would change the expected value of `Math` by approximately `r fmt(b_ade, 3)` times the size of that increase. See `vignette("shift-effects")` for more information on shift curves and the ADE, including the effects of specific shifts, other kinds of shifts, and how the ADE relates to the ADRF.
 
 See `vignette("adrftools")` for more information on how to use *adrftools* and the other features available.
+
+### Citing *adrftools*
+
+Please cite *adrftools* when using it for analysis presented in publications. A citation can be generated using `citation("adrftools")` in R. For reproducibility purposes, it is also important to include the version number for the version used.
