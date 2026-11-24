@@ -4,12 +4,14 @@
 \alias{ade}
 \title{Compute the average derivative effect}
 \usage{
-ade(x, subset = NULL, eps = 1e-05)
+ade(x, subset = NULL, outcome = NULL, eps = 1e-05)
 }
 \arguments{
 \item{x}{a \code{shift_curve} object; the output of a call to \code{\link[=shift_curve]{shift_curve()}}, or of \code{\link[=reference_curve]{reference_curve()}} or \code{\link[=curve_contrast]{curve_contrast()}} applied to one.}
 
 \item{subset}{an optional logical expression indicating the subset of the subgroups for which to compute the ADE. Can only be used when \code{by} was supplied to the original call to \code{\link[=shift_curve]{shift_curve()}}, and only to refer to variables defining subgroups.}
+
+\item{outcome}{an optional character vector naming the categories of the outcome for which to compute the ADE. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section \emph{Categorical outcomes} in Details of \code{\link[=adrf]{adrf()}}.}
 
 \item{eps}{numeric; the step size to use when calculating the numerical derivative, relative to the range of shifts at which the shift curve was computed: the step is \code{eps} times a quarter of that range. Default is \code{1e-5} (.00001).}
 }

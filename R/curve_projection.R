@@ -9,6 +9,7 @@
 #' @param transform whether to compute the projection using a transformation of the linear predictor. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`; the inverse of the transformation is used as the inverse link of the projection model. Ignored unless `x` is an ADRF. See Details.
 #' @param integrate string; how treatment values are weighted in fitting the projection. Allowable options include `"uniform"` (the default), which weights all treatment values in the range of the effect curve equally, and `"empirical"`, which weights them by an estimate of the density of the treatment. The weighting defines the projection, so the coefficients differ between the two options. Only `"uniform"` can be used with a shift curve (see [shift_curve()]). See Details.
 #' @param subset an optional logical expression indicating the subset of subgroups for which to compute the projection. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
+#' @param outcome an optional character vector naming the categories of the outcome for which to compute the projection. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section *Categorical outcomes* in Details of [adrf()].
 #' @param object,object2 a `curve_projection` object; the output of a call to `curve_projection()`.
 #' @param null the null value for hypothesis test. Default is 0. Set to `NA` to omit tests.
 #' @param df the "denominator" degrees of freedom to use for the test. Default is to use the residual degrees of freedom from the original model if it is a linear model (in which case an F-test is used) and `Inf` otherwise (in which case a \eqn{\chi^2} test is used), or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
@@ -249,7 +250,8 @@ curve_projection <- function(x, model, transform = TRUE, integrate = "uniform") 
 #' @exportS3Method summary curve_projection
 #' @rdname curve_projection
 summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
-                                     df = NULL, ci.type = "perc", subset = NULL, ...) {
+                                     df = NULL, ci.type = "perc", subset = NULL,
+                                     outcome = NULL, ...) {
   .vcov_type <- .attr(object, ".vcov_type")
   .contrast <- .attr(object, ".contrast")
   .by_grid <- .attr(object, ".by_grid")
@@ -269,19 +271,25 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
     null <- process_null(null)
   }
 
-  # subset; process_subset_by_grid() gives an error when subset is supplied
-  # without by or for a contrast
+  # subset and outcome; process_subset_by_grid() gives an error when subset is
+  # supplied without by or for a contrast
   .subset <- process_subset_by_grid(substitute(subset),
                                     .by_grid = .by_grid,
-                                    .contrast = .contrast)
+                                    .contrast = .contrast,
+                                    outcome = outcome,
+                                    .outcome = .attr(object, ".outcome"))
 
-  if (is_null(.by_grid) || !is_null(.contrast)) {
+  if (all(.subset)) {
     .s <- seq_along(.proj_coefficients)
   }
   else {
-    .s <- which(rep(.subset, each = length(.proj_coefficients) / fnrow(.by_grid)))
+    .s <- which(rep(.subset, each = length(.proj_coefficients) / length(.subset)))
 
     .by_grid <- ss(.by_grid, .subset)
+
+    if (!is_null(.contrast)) {
+      .contrast <- .contrast[.subset]
+    }
 
     .proj_coefficients <- .proj_coefficients[.s]
 
@@ -419,8 +427,9 @@ summary.curve_projection <- function(object, conf_level = 0.95, null = 0,
 
   attr(res, ".curve_type") <- get_curve_type(object)
   attr(res, ".shift") <- .attr(object, ".shift")
-  attr(res, ".contrast") <- .attr(object, ".contrast")
+  attr(res, ".contrast") <- .contrast
   attr(res, ".by_grid") <- .by_grid
+  attr(res, ".outcome") <- .attr(object, ".outcome")
   attr(res, ".vcov_type") <- .attr(object, ".vcov_type")
 
   attr(res, ".proj_coefficients") <- .proj_coefficients
@@ -522,7 +531,8 @@ anova.curve_projection <- function(object, object2, df = NULL, ...) {
   arg::arg_is(object2, "curve_projection")
 
   if (any_apply(c(".values", ".treat", ".vcov_type", ".curve_type", ".response",
-                  ".by_grid", ".contrast", ".reference", ".family", ".df", ".shift"),
+                  ".by_grid", ".contrast", ".outcome", ".reference", ".family", ".df",
+                  ".shift"),
                 function(a) !identical(.attr(object, a), .attr(object2, a)))) {
     arg::err("{.arg object} and {.arg object2} must be the outputs of {.fun curve_projection} applied to the same {.cls effect_curve} object")
   }

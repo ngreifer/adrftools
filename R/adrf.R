@@ -9,7 +9,8 @@
 #' @param cluster an optional data frame or one-sided formula with the clustering terms for cluster-robust inference. When `vcov` is `"unconditional"`, the CR2 small-sample adjustment is used when it is available (see Details). When `vcov` is `"conditional"`, the covariance matrix of the model coefficients is computed using [sandwich::vcovCL()] with its default type; `vcov` can also be `"HC0"`, `"HC1"`, `"HC2"`, or `"HC3"` to request that type from [sandwich::vcovCL()] (`"HC2"` and `"HC3"` are available only for `lm()` and `glm()` models). Other strings and functions supplied to `vcov` cannot be used with `cluster`.
 #' @param range numeric; a numeric vector corresponding either to the lower and upper bounds of the treatment values for which to compute the effect curve or a single number corresponding to the middle quantile of the treatment. Default is .95 to use the .025 and .975 quantiles of the treatment. See Details.
 #' @param n integer specifying the number of equally spaced grid points on which to compute the effect curve anchor points. Must be between 2 and 1000. Default is 51; higher numbers increase computation time and size of the resulting object but improve accuracy.
-#' @param type character string indicating the type of prediction. Passed to [marginaleffects::get_predict()]. Default is `"response"` for predictions on the scale of the outcome variable. Other options might include `"link"` for the linear predictor. This argument is ignored for `lm` objects.
+#' @param type character string indicating the type of prediction. Passed to [marginaleffects::get_predict()]. When not supplied, `"response"` is used for predictions on the scale of the outcome variable, unless the model does not allow it (e.g., `MASS::polr()` models), in which case the type [marginaleffects::predictions()] uses by default for the model is used; for multinomial and ordinal models, both give the probability of each category of the outcome. Other options might include `"link"` for the linear predictor or, for some ordinal models, `"mean"` for the expected value of the outcome. This argument is ignored for `lm` objects.
+#' @param outcome optional; for models that give a separate prediction for each category of the outcome (e.g., multinomial and ordinal models), a character vector naming the categories for which to compute the effect curve. Default is to compute the effect curve for every category. See the section *Categorical outcomes* in Details of [adrf()].
 #' @param data an optional data frame containing the observations originally used to fit the outcome model supplied to `x`. This is needed when the dataset cannot be recovered from the model (e.g., when the model was fit inside a function or is not supported by \pkg{insight}), and it is used to find variables named in `subset`, `by`, `wts`, and `cluster` that are not in the dataset used to fit the model. In most cases, this does not need to be supplied.
 #' @param subset an optional logical expression indicating the subset of data to use for estimation. Will be evaluated in the environment of the original dataset supplied to the model fitting function. Can also be a vector of row numbers or row names; logical vectors and row numbers refer to the units used to fit the model (i.e., excluding any dropped because of missing values), and row names refer to the original dataset.
 #' @param by optional variable(s) over which to group the estimation. Can be a character vector or one-sided formula.
@@ -28,6 +29,12 @@
 #' When `cluster` is supplied, the unconditional variance uses the CR2 adjustment described by Pustejovsky and Tipton (2018), the cluster-level analog of HC2: within each cluster, the vector of residuals is multiplied by \eqn{(I - H_{gg})^{-1/2}}, where \eqn{H_{gg}} is the block of the hat matrix for the units in the cluster, in place of the usual \eqn{G/(G-1)} adjustment, where \eqn{G} is the number of clusters. With clusters of one unit, it is the HC2 adjustment. CR2 is available only for `lm()` and `glm()` models (including those whose influence function is that of an ordinary `glm()` fit, such as `glm_weightit()` models with fixed weights); for other models, the CR1 adjustment, \eqn{\frac{G}{G-1}\frac{n-1}{n-p}} (the default of `sandwich::vcovCL()`), is used with a message. For generalized linear models, the residuals and hat matrix are those of the final iteratively reweighted least squares fit, so the adjusted variance can differ from that of `sandwich::vcovCL(type = "HC2")` when the working weights vary within clusters.
 #'
 #' When a `<mira>` object from \pkg{mice} or a `<mimira>` object from \pkg{MatchThem} is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. The degrees of freedom used for tests and confidence intervals are those of Reiter (2007), or of Li, Raghunathan, and Rubin (1991) when the complete-data degrees of freedom are infinite (e.g., for generalized linear models). These account for the number of imputations and the fraction of missing information, which is assumed to be the same for all points on the curve, so a single value is used for every point and for joint inference. Bootstrapping is not allowed with such objects.
+#'
+#' ## Categorical outcomes
+#'
+#' For models of categorical outcomes, such as multinomial and ordinal regression models, the predictions are by default the probabilities of each category of the outcome, and `adrf()` estimates an ADRF for each category, i.e., the average probability of that category at each treatment value. These are stored together in one `<effect_curve>` object, and at each treatment value, the estimates for all categories sum to 1. The categories are treated much like subgroups defined by `by`: the output of the effect curve and of the functions that take it contain a column named `outcome` identifying the category (or `.outcome`, if a variable named in `by` is called `outcome`), and the `outcome` argument of the effect curve, [summary.effect_curve()], [plot.effect_curve()], and the other functions that take an effect curve selects categories. [curve_contrast()] compares subgroups within each category rather than categories with each other. Supplying `outcome` to `adrf()` computes the effect curve for only those categories, which saves computation when only some categories are of interest.
+#'
+#' To estimate a single curve with such a model, supply a `type` that gives one prediction per unit, if the model has one (e.g., `type = "link"` or `type = "mean"` for `WeightIt::ordinal_weightit()` models). Further arguments needed by the model's `predict()` method (e.g., `values` for `type = "mean"` with `WeightIt::ordinal_weightit()` models whose outcome categories are not numbers) can be supplied through `...`.
 #'
 #' ## `range`
 #'
@@ -119,8 +126,8 @@ adrf <- function(x, ...) {
 
 #' @exportS3Method adrf default
 #' @rdname adrf
-adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "response",
-                         data = NULL, subset = NULL, by = NULL, wts = NULL,
+adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type = NULL,
+                         outcome = NULL, data = NULL, subset = NULL, by = NULL, wts = NULL,
                          range = .95, n = 51, fwb.args = list(), ...) {
 
   arg::arg_supplied(treat)
@@ -134,13 +141,13 @@ adrf.default <- function(x, treat, vcov = "unconditional", cluster = NULL, type 
     range = range, n = n,
     data = data, subset = subset_substitute,
     by = by, wts = wts, cluster = cluster, fwb.args = fwb.args,
-    type = type, ...
+    type = type, outcome = outcome, ...
   )
 }
 
 #' @exportS3Method adrf mira
-adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "response",
-                      data = NULL, subset = NULL, by = NULL, wts = NULL,
+adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = NULL,
+                      outcome = NULL, data = NULL, subset = NULL, by = NULL, wts = NULL,
                       range = .95, n = 51, ...) {
 
   arg::arg_supplied(treat)
@@ -154,7 +161,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     range = range, n = n,
     data = data, subset = subset_substitute,
     by = by, wts = wts, cluster = cluster,
-    type = type, ...
+    type = type, outcome = outcome, ...
   )
 }
 
@@ -172,10 +179,20 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 # the grid value itself.
 .effect_curve_internal <- function(x, treat, vcov, range, n,
                                    data, subset, by, wts, cluster = NULL, fwb.args = list(),
-                                   type, .adrf_env = parent.frame(2L),
+                                   type = NULL, outcome = NULL, .adrf_env = parent.frame(2L),
                                    shift_fun = NULL, shift = NULL, ...) {
   # type
-  arg::arg_string(type)
+  if (!is_null(type)) {
+    arg::arg_string(type)
+  }
+
+  if (!is_null(outcome)) {
+    if (is.factor(outcome)) {
+      outcome <- as.character(outcome)
+    }
+
+    arg::arg_character(outcome)
+  }
 
   is_mi <- inherits(x, "mira")
 
@@ -241,6 +258,13 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
 
   if (is_bayes && !all(are_bayes)) {
     arg::err("either all models fit to the imputed datasets must be Bayesian or no models must be")
+  }
+
+  # When `type` is not supplied, the default type of the model's predictions
+  # is used ("response" for most models and the probability of each category
+  # of the outcome for ordinal and multinomial models)
+  if (is_null(type)) {
+    type <- .default_type(models[[1L]], ss(model_data.list[[1L]], 1L))
   }
 
   # family
@@ -319,13 +343,50 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   .response <- process_response(models[[1L]])
 
   fits <- lapply(seq_len(m), function(.i) {
-    .adrf_fit_one(x = models[[.i]], treat = treat, values = values,
+    .adrf_fit_one(x = models[[.i]], treat = treat, grid_values = values,
                   model_data = model_data.list[[.i]], s = s.list[[.i]],
                   wts = wts.list[[.i]], by_id = by_codes[[.i]], n_by = n_by,
                   cl_list = cl_list.list[[.i]], vcov_type = vcov_type,
                   is_bayes = is_bayes, type = type, data = data,
-                  fwb.args = fwb.args, shift_fun = .shift[["fun"]], ...)
+                  fwb.args = fwb.args, shift_fun = .shift[["fun"]],
+                  outcome = outcome, ...)
   })
+
+  # Categories of the outcome, for models that give one prediction per
+  # category. Each category gets a curve in each subgroup, stored as a column
+  # of `by_grid` (with the categories varying slowest, as the estimates do)
+  # whose name differs from those of the variables in `by`; the `.outcome`
+  # attribute holds its name.
+  categories <- fits[[1L]][["outcome"]]
+
+  if (any_apply(fits[-1L], function(f) !identical(f[["outcome"]], categories))) {
+    arg::err("the models fit to the imputed datasets must give predictions for the same categories of the outcome")
+  }
+
+  .outcome <- NULL
+
+  if (!is_null(categories)) {
+    .outcome <- "outcome"
+
+    while (anyv(names(by_grid), .outcome)) {
+      .outcome <- paste0(".", .outcome)
+    }
+
+    outcome_col <- factor(categories, levels = categories) |>
+      list() |>
+      setNames(.outcome)
+
+    by_grid <- {
+      if (is_null(by_grid)) qDF(outcome_col)
+      else cbind(qDF(lapply(outcome_col, rep, each = n_by)),
+                 ss(by_grid, rep.int(seq_len(n_by), length(categories))))
+    }
+
+    rownames(by_grid) <- NULL
+
+    # The estimates are probabilities
+    .family <- .clean_family(stats::binomial())
+  }
 
   .boot <- .draws <- .vcov <- NULL
 
@@ -385,6 +446,15 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     )
   }
 
+  # The distribution of the treatment is the same for every category of the
+  # outcome
+  if (!is_null(.treat_density) && !is_null(categories)) {
+    rep_id <- rep.int(seq_len(n_by), length(categories))
+
+    .treat_density[["y"]] <- .treat_density[["y"]][, rep_id, drop = FALSE]
+    .treat_density[["tot"]] <- .treat_density[["tot"]][rep_id]
+  }
+
   # `.treat` names the argument of the effect curve, which for a shift curve
   # is the shift; the treatment is then stored in `.shift`
   .make_fun(.est = drop(unname(.est)),
@@ -400,16 +470,26 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
             .df = .df,
             .response = .response,
             .by_grid = by_grid,
+            .outcome = .outcome,
             .treat_density = .treat_density)
 }
 
 # Computes the ADRF estimates for one fitted model: the point estimates and,
 # depending on `vcov_type`, their covariance matrix, bootstrap replicates, or
 # posterior draws. `by_id` contains integer subgroup codes for the units in
-# `subset`, and `n_by` is the number of subgroups.
-.adrf_fit_one <- function(x, treat, values, model_data, s, wts, by_id, n_by,
+# `subset`, and `n_by` is the number of subgroups. For models that give one
+# prediction per category of the outcome, there is a curve for each category
+# (those in `outcome`, if supplied) in each subgroup, with the estimates
+# ordered by category, then subgroup, then treatment value, and the categories
+# are returned in `outcome`.
+.adrf_fit_one <- function(x, treat, grid_values, model_data, s, wts, by_id, n_by,
                           cl_list, vcov_type, is_bayes, type, data = NULL,
-                          fwb.args = list(), shift_fun = NULL, ...) {
+                          fwb.args = list(), shift_fun = NULL, outcome = NULL,
+                          ...) {
+  # The grid is not named `values`, which is an argument of some predict()
+  # methods (e.g., WeightIt's) that can be supplied through `...`
+  values <- grid_values
+
   vcov <- cl_list[["vcov"]]
   infl <- cl_list[["infl"]]
   cl_list[c("vcov", "infl")] <- NULL
@@ -461,11 +541,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
   vi <- seq_len(n)
   val_id <- rep(vi, each = ni)
 
-  cross_id <- GRP(list(by_id = rep.int(by_id, n), val_id = val_id),
-                  sort = TRUE)
-
   w_unit <- ss(wts, s)
-  wi <- rep.int(w_unit, n)
 
   # The data with the treatment set to values[k] for every unit, and the grid
   # of every unit at every treatment value, with the rows ordered by treatment
@@ -516,12 +592,52 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
            pred_fun <- .get_pred_fun.default(x, type = type)
          })
 
+  # The categories of the outcome, for models that give one prediction per
+  # category, found from the predictions for one unit; models whose
+  # predictions come from the model matrix ("lm" and "glm" model types) give
+  # one prediction per unit
+  categories <- {
+    if (is_null(pred_fun) || inherits(x, "stan4bartFit")) NULL
+    else .get_predict(x, newdata = ss(data_check, 1L), type = type, ...) |>
+      .attr("outcome")
+  }
+
+  if (!is_null(outcome)) {
+    outcome <- process_outcome(outcome, categories)
+
+    pred_fun <- .get_pred_fun.default(x, type = type, outcome = outcome)
+    categories <- outcome
+  }
+
+  n_out <- max(length(categories), 1L)
+
+  # Groups of the predictions over the grid, which are ordered by category,
+  # then treatment value, then unit; the estimates are ordered by category,
+  # then subgroup, then treatment value
+  cross_id <- GRP(list(out_id = rep(seq_len(n_out), each = ni * n),
+                       by_id = rep.int(by_id, n * n_out),
+                       val_id = rep.int(val_id, n_out)),
+                  sort = TRUE)
+
+  wi <- rep.int(w_unit, n * n_out)
+
   if (!is_bayes) {
     # Aliased coefficients are dropped once, here, for every branch;
     # marginaleffects::get_vcov() drops them from the covariance matrix too
     beta0 <- marginaleffects::get_coef(x)
     aliased <- is.na(beta0)
     beta0 <- beta0[!aliased]
+
+    # The influence of each unit on the coefficients must be in the order of
+    # the coefficients, which can differ (e.g., MASS::polr() models, whose
+    # thresholds come first in marginaleffects::get_coef() but last in
+    # sandwich::estfun())
+    infl <- .align_to_coef(infl, names(beta0))
+
+    if (!is_null(cl_list[["infl_cl"]])) {
+      cl_list[["infl_cl"]] <- lapply(cl_list[["infl_cl"]], .align_to_coef,
+                                     coef_names = names(beta0))
+    }
   }
 
   # Predictions from the model matrix and coefficients ("lm" and "glm" model
@@ -629,24 +745,34 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
     # .data_at(), as before
     data_grid <- if (!is_bayes) .data_grid()
 
+    # Attributes of the predictions (e.g., the categories of the outcome) are
+    # dropped so they do not carry over to the estimates
     est_fun <- function(model = NULL, b = NULL) {
-      pred_fun(data_grid = data_grid, beta0 = b, model = model, ...)
+      pred_fun(data_grid = data_grid, beta0 = b, model = model, ...) |>
+        as.vector()
     }
   }
 
-  out <- list(est = NULL, vcov = NULL, boot = NULL, draws = NULL)
+  out <- list(est = NULL, vcov = NULL, boot = NULL, draws = NULL,
+              outcome = categories)
 
   if (is_bayes) {
     # Predictions are computed one treatment value at a time to limit the size
     # of the posterior draws held at once
+    out_by_id <- GRP(list(out_id = rep(seq_len(n_out), each = ni),
+                          by_id = rep.int(by_id, n_out)),
+                     sort = TRUE)
+
+    w_out <- rep.int(w_unit, n_out)
+
     out[["draws"]] <- lapply(vi, function(k) {
       pred_fun(data_grid = .data_at(k), model = x, ...) |>
         .attr("posterior_draws") |>
-        .fmean(g = by_id, w = w_unit)
+        .fmean(g = out_by_id, w = w_out)
     }) |>
       do.call(what = "rbind") |>
       t() |>
-      ss(j = .value_major_to_by_major(n, n_by))
+      ss(j = .value_major_to_by_major(n, n_by * n_out))
 
     if (fnrow(out[["draws"]]) < 2L) {
       arg::err("at least two posterior draws are required")
@@ -714,8 +840,8 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       })
 
       wi_boot <- {
-        if (ni == 1L) alloc(1.0, n)
-        else rep.int(ss(wts * w, s), n)
+        if (ni == 1L) alloc(1.0, n * n_out)
+        else rep.int(ss(wts * w, s), n * n_out)
       }
 
       est_fun(x_boot) |>
@@ -790,19 +916,23 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = "
       # predictions in subgroup b, scaled like the rows of `S`
       N <- fnrow(S)
 
-      # `phat` is ordered by treatment value, then unit, so its columns as a
-      # matrix are the treatment values; the columns of `S` for subgroup g are
-      # its n treatment values (in the order of `cross_id`)
+      # `phat` is ordered by category, then treatment value, then unit, so its
+      # columns as a matrix are the treatment values within each category; the
+      # columns of `S` for subgroup g in category o are its n treatment values
+      # (in the order of `cross_id`). Every unit contributes to every category.
       P <- matrix(phat, nrow = ni)
 
       b_split <- gsplit(ii, by_id)
 
-      for (g in seq_len(n_by)) {
-        u <- b_split[[g]]
-        b <- s[u]
-        k <- (g - 1L) * n + vi
+      for (o in seq_len(n_out)) {
+        for (g in seq_len(n_by)) {
+          u <- b_split[[g]]
+          b <- s[u]
+          k <- ((o - 1L) * n_by + g - 1L) * n + vi
 
-        S[b, k] <- S[b, k] + wts[b] * TRA(ss(P, u), out[["est"]][k], "-") * N / sum(wts[b])
+          S[b, k] <- S[b, k] +
+            wts[b] * TRA(ss(P, u, (o - 1L) * n + vi), out[["est"]][k], "-") * N / sum(wts[b])
+        }
       }
     }
 

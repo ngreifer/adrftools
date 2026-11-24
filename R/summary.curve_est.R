@@ -356,7 +356,10 @@ print.summary.curve_est <- function(x, digits = max(3L, getOption("digits") - 3L
     return(.est_names)
   }
 
-  .labels <- .contrast %or% get_by_grid_labels(.by_grid)
+  .labels <- {
+    if (is_null(.contrast)) get_by_grid_labels(.by_grid)
+    else .contrast_labels(.contrast, .by_grid)
+  }
 
   sprintf("%s | %s",
           rep(.labels, each = length(.est_names)),

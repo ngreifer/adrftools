@@ -101,15 +101,7 @@ test_that("ordinal_weightit() models are supported on the link scale", {
   expect_equal(get_est(a), ref, tolerance = 1e-8)
   expect_true(all(is.finite(get_se(a))))
 
-  # On the response scale, there is one prediction per category
-  expect_error(suppressMessages(adrf(fit, treat = "logBLL", n = 3)),
-               "each category of the outcome")
-})
-
-test_that("multinom_weightit() models give an error", {
-  fit <- WeightIt::multinom_weightit(cut(Math, 3) ~ logBLL + PIR + Male,
-                                     data = nhanes3lead)
-
-  expect_error(suppressMessages(adrf(fit, treat = "logBLL", n = 3)),
-               "each category of the outcome")
+  # On the response scale, there is one curve per category
+  a_cat <- suppressMessages(adrf(fit, treat = "logBLL", n = 3))
+  expect_identical(nrow(attr(a_cat, ".by_grid")), 4L)
 })

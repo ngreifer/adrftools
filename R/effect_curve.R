@@ -8,10 +8,11 @@
 #' ## Usage
 #' \preformatted{f <- adrf(x, ...)
 #'
-#' f({treat}, subset = NULL)}
+#' f({treat}, subset = NULL, outcome = NULL)}
 #'
 #' @param \{treat\} the values of the treatment at which to evaluate the effect curve. These must be within the range of the grid points. See Details.
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to compute estimates. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
+#' @param outcome an optional character vector naming the categories of the outcome for which to compute estimates. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section *Categorical outcomes* in Details of [adrf()].
 #' @param x a `curve_est` object; the output of an `effect_curve` object call.
 #' @param digits the number of digits to display.
 #' @param \dots arguments passed to [print.data.frame()].
@@ -66,7 +67,8 @@ NULL
 .make_fun <- function(fn = NULL, .contrast_mat = NULL,
                       .est, .vcov, .values, .treat, .vcov_type, .boot, .draws,
                       .curve_type, .family, .df, .response, .call,
-                      .by_grid, .contrast, .reference, .treat_density, .shift) {
+                      .by_grid, .contrast, .reference, .treat_density, .shift,
+                      .outcome) {
 
   if (missing(.curve_type) && !is_null(fn)) {
     if (inherits(fn, "adrf_curve")) {
@@ -121,25 +123,33 @@ NULL
     }
   }
 
-  fn <- function(x, subset = NULL) {
+  fn <- function(x, subset = NULL, outcome = NULL) {
     values <- get(.treat, inherits = FALSE)
 
     arg::arg_numeric(values, .treat)
 
-    # subset
-    if (is_null(.contrast) && anyv(rlang::fn_fmls_names(), "subset")) {
-      .subset <- process_subset_by_grid(substitute(subset),
-                                        .by_grid = .by_grid,
-                                        .contrast = .contrast)
+    # subset and outcome, which are formals only when they can be used
+    fmls <- rlang::fn_fmls_names()
 
-      .s <- which(rep(.subset, each = length(.est) / fnrow(.by_grid)))
+    .subset <- process_subset_by_grid(if (anyv(fmls, "subset")) substitute(subset),
+                                      .by_grid = .by_grid,
+                                      .contrast = .contrast,
+                                      outcome = if (anyv(fmls, "outcome")) outcome,
+                                      .outcome = .outcome)
+
+    if (all(.subset)) {
+      .s <- seq_along(.est)
+    }
+    else {
+      .s <- which(rep(.subset, each = length(.est) / length(.subset)))
 
       .by_grid <- ss(.by_grid, .subset)
 
+      if (!is_null(.contrast)) {
+        .contrast <- .contrast[.subset]
+      }
+
       .est <- .est[.s]
-    }
-    else {
-      .s <- seq_along(.est)
     }
 
     n <- length(values)
@@ -210,6 +220,7 @@ NULL
     attr(res, ".curve_type") <- .curve_type
     attr(res, ".by_grid") <- .by_grid
     attr(res, ".contrast") <- .contrast
+    attr(res, ".outcome") <- .outcome
     attr(res, ".family") <- .family
     attr(res, ".df") <- .df
     attr(res, ".reference") <- .reference
@@ -222,8 +233,14 @@ NULL
 
   rlang::fn_fmls_names(fn)[1L] <- .treat
 
-  if (is_null(.by_grid) || !is_null(.contrast)) {
-    rlang::fn_fmls(fn)[-seq_along(.treat)] <- NULL
+  # `subset` refers to the variables in `by`, and `outcome` to the categories
+  # of the outcome
+  if (!is_null(.contrast) || is_null(setdiff(names(.by_grid), .outcome))) {
+    rlang::fn_fmls(fn)[["subset"]] <- NULL
+  }
+
+  if (is_null(.outcome)) {
+    rlang::fn_fmls(fn)[["outcome"]] <- NULL
   }
 
   attr(fn, ".est") <- .est
@@ -236,6 +253,7 @@ NULL
   attr(fn, ".reference") <- .reference
   attr(fn, ".by_grid") <- .by_grid
   attr(fn, ".contrast") <- .contrast
+  attr(fn, ".outcome") <- .outcome
   attr(fn, ".family") <- .family
   attr(fn, ".df") <- .df
   attr(fn, ".response") <- .response

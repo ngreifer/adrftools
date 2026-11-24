@@ -120,50 +120,99 @@ process_subset <- function(index.sub, data, env = parent.frame(2L)) {
   s
 }
 
-process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL) {
+# Which blocks of estimates (subgroups, contrasts, or categories of the
+# outcome) to keep, as a logical vector with one value per block (or TRUE when
+# there is a single block). `index.sub` is the unevaluated `subset` argument,
+# which refers to the variables in `by`, and `outcome` names categories of the
+# outcome, which are stored in the column of `.by_grid` named by `.outcome`.
+process_subset_by_grid <- function(index.sub, .by_grid = NULL, .contrast = NULL,
+                                   outcome = NULL, .outcome = NULL) {
+  n_blocks <- get_n_by(.contrast, .by_grid)
 
-  if (is_null(index.sub)) {
-    if (is_null(.by_grid)) {
-      return(TRUE)
+  subset <- alloc(TRUE, n_blocks)
+
+  if (!is_null(index.sub)) {
+    if (!is_null(.contrast)) {
+      arg::err("{.arg subset} cannot be specified with {.fun curve_contrast}")
     }
 
-    return(alloc(TRUE, fnrow(.by_grid)))
+    by_vars <- setdiff(names(.by_grid), .outcome)
+
+    if (is_null(by_vars)) {
+      arg::err("{.arg subset} cannot be specified when {.arg by} was not used in the original call to {.fun adrf} or {.fun shift_curve}")
+    }
+
+    vars_in_subset <- get_varnames(index.sub)
+
+    if (!all(vars_in_subset %in% by_vars)) {
+      arg::err("all variables named in {.arg subset} must be present in the original {.arg by} argument supplied to {.fun adrf} or {.fun shift_curve}")
+    }
+
+    subset <- eval(index.sub, ss(.by_grid, j = by_vars))
+
+    if (!is.atomic(subset) || !is.logical(subset)) {
+      arg::err("{.arg subset} must evaluate to a logical vector")
+    }
+
+    if (length(subset) == 1L) {
+      subset <- rep.int(subset, n_blocks)
+    }
+    else if (length(subset) != n_blocks) {
+      arg::err("{.arg subset} must evaluate to a single value or one value for each subgroup")
+    }
+
+    subset[is.na(subset)] <- FALSE
+
+    if (!any(subset)) {
+      arg::err("{.arg subset} must identify a real subset of units")
+    }
   }
 
-  if (!is_null(.contrast)) {
-    arg::err("{.arg subset} cannot be specified with {.fun curve_contrast}")
+  if (!is_null(outcome)) {
+    if (is_null(.outcome)) {
+      arg::err("{.arg outcome} can only be specified when the model gives a separate prediction for each category of the outcome")
+    }
+
+    outcome_col <- .by_grid[[.outcome]]
+
+    outcome <- process_outcome(outcome, levels(outcome_col))
+
+    subset <- subset & outcome_col %in% outcome
+
+    if (!any(subset)) {
+      arg::err("{.arg subset} and {.arg outcome} must together identify at least one subgroup")
+    }
   }
 
-  if (is_null(.by_grid)) {
-    arg::err("{.arg subset} cannot be specified when {.arg by} was not used in the original call to {.fun adrf} or {.fun shift_curve}")
-  }
-
-  vars_in_subset <- get_varnames(index.sub)
-
-  if (!all(vars_in_subset %in% names(.by_grid))) {
-    arg::err("all variables named in {.arg subset} must be present in the original {.arg by} argument supplied to {.fun adrf} or {.fun shift_curve}")
-  }
-
-  subset <- eval(index.sub, .by_grid)
-
-  if (!is.atomic(subset) || !is.logical(subset)) {
-    arg::err("{.arg subset} must evaluate to a logical vector")
-  }
-
-  if (length(subset) == 1L) {
-    subset <- rep.int(subset, fnrow(.by_grid))
-  }
-  else if (length(subset) != fnrow(.by_grid)) {
-    arg::err("{.arg subset} must evaluate to a single value or one value for each subgroup")
-  }
-
-  subset[is.na(subset)] <- FALSE
-
-  if (!any(subset)) {
-    arg::err("{.arg subset} must identify a real subset of units")
+  if (n_blocks == 1L) {
+    return(TRUE)
   }
 
   subset
+}
+
+# Checks that `outcome` names categories of the outcome among `categories` and
+# returns them in the order of `categories`
+process_outcome <- function(outcome, categories) {
+  if (is_null(categories)) {
+    arg::err("{.arg outcome} can only be specified when the model gives a separate prediction for each category of the outcome")
+  }
+
+  if (is.factor(outcome)) {
+    outcome <- as.character(outcome)
+  }
+
+  arg::arg_character(outcome)
+
+  bad <- setdiff(outcome, categories)
+
+  if (!is_null(bad)) {
+    arg::err(c("{.arg outcome} must contain only categories of the outcome.",
+               x = "{cli::qty(length(bad))}The value{?s} {.val {bad}} {?is/are} not {?a /}categor{?y/ies}.",
+               i = "The categories are {.val {categories}}."))
+  }
+
+  categories[categories %in% outcome]
 }
 
 process_range <- function(range = .95, n, treat_var, w = NULL, strict = FALSE) {
@@ -1079,6 +1128,12 @@ process_family <- function(model, type = "response") {
     }
   }
 
+  .clean_family(.family)
+}
+
+# Keeps only the link of a family, rebuilding the link functions from its name
+# when they are missing; the identity link is used when they cannot be found
+.clean_family <- function(.family) {
   # Some families (e.g., from bartisan) store only the name of the link;
   # rebuild the link functions from it when possible
   if (!all(c("linkfun", "linkinv", "mu.eta") %in% names(.family))) {
@@ -1101,6 +1156,20 @@ process_response <- function(model) {
   insight::find_formula(model, verbose = FALSE)$conditional |>
     rlang::f_lhs() |>
     deparse1()
+}
+
+# Reorders the columns of `infl` (the influence of each unit on the
+# coefficients) to match `coef_names` when both are named with the same set of
+# names in a different order; otherwise, `infl` is returned unchanged
+.align_to_coef <- function(infl, coef_names) {
+  cn <- colnames(infl)
+
+  if (is_null(cn) || is_null(coef_names) || identical(cn, coef_names) ||
+      anyDuplicated(cn) > 0L || !setequal(cn, coef_names)) {
+    return(infl)
+  }
+
+  infl[, coef_names, drop = FALSE]
 }
 
 # The influence of each unit on the coefficients, estfun() %*% t(bread()),
@@ -2161,13 +2230,22 @@ add_est_labels <- function(res, .contrast, .by_grid, .values = NULL, est_name = 
   # Apply by_grid and contrast labels if necessary
   if (!is_null(.contrast)) {
     contrast <- factor(rep(.contrast, each = length(.values)),
-                       levels = .contrast)
+                       levels = unique(.contrast))
 
     if (add_values) {
       res[[est_name]] <- rep.int(.values, length(.contrast))
     }
 
     res <- cbind(contrast = contrast, res)
+
+    # With a model that gives one prediction per category of the outcome,
+    # `.by_grid` contains the category of each contrast
+    if (!is_null(.by_grid)) {
+      res <- cbind(ss(.by_grid, rep(seq_row(.by_grid), each = length(.values))),
+                   res)
+
+      rownames(res) <- NULL
+    }
   }
   else if (!is_null(.by_grid)) {
     res_names <- names(res)
@@ -2621,6 +2699,17 @@ get_trapezoidal_w <- function(grid) {
   w <- (c(0, val_diff) + c(val_diff, 0)) / 2
 
   w / sum(w)
+}
+
+# Labels of the contrasts of a curve contrast; with a model that gives one
+# prediction per category of the outcome, each contrast is labeled with its
+# category, which is the only column of `.by_grid`
+.contrast_labels <- function(.contrast, .by_grid = NULL) {
+  if (is_null(.by_grid)) {
+    return(.contrast)
+  }
+
+  sprintf("%s: %s", .by_grid[[1L]], .contrast)
 }
 
 get_by_grid_labels <- function(.by_grid, sep = ", ") {

@@ -7,6 +7,8 @@ print.effect_curve <- function(x, ...) {
 
   .print_response(x)
 
+  .print_outcome(x)
+
   .print_treat(x)
 
   .print_range(x)
@@ -104,19 +106,34 @@ print.effect_curve <- function(x, ...) {
 
 .print_by <- function(x) {
   if (!inherits(x, "contrast_curve")) {
-    .by_grid <- .attr(x, ".by_grid")
+    by_vars <- setdiff(names(.attr(x, ".by_grid")), .attr(x, ".outcome"))
 
-    if (!is_null(.by_grid)) {
-      by_vec <- cli::cli_vec(names(.by_grid), style = list("vec-last" = ", "))
+    if (!is_null(by_vars)) {
+      by_vec <- cli::cli_vec(by_vars, style = list("vec-last" = ", "))
       cli::format_inline(" - by: {by_vec}") |>
         cli::cat_line()
     }
   }
 }
 
+.print_outcome <- function(x) {
+  .outcome <- .attr(x, ".outcome")
+
+  if (!is_null(.outcome)) {
+    categories <- .attr(x, ".by_grid")[[.outcome]] |>
+      as.character() |>
+      unique()
+
+    cat_vec <- cli::cli_vec(categories, style = list("vec-sep2" = ", ", "vec-last" = ", "))
+    cli::format_inline(" - outcome categor{?y/ies}: {cat_vec}") |>
+      cli::cat_line()
+  }
+}
+
 .print_contrast <- function(x) {
   if (inherits(x, "contrast_curve")) {
-    .contrast <- .attr(x, ".contrast")
+    .contrast <- .attr(x, ".contrast") |>
+      unique()
 
     if (!is_null(.contrast)) {
       contrast_vec <- cli::cli_vec(.contrast, style = list("vec-last" = ", "))

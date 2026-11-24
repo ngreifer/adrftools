@@ -6,6 +6,7 @@
 #' @param hypothesis the hypothesis to be tested. Allowable options include `"flat"`, `"linear"`, `"quadratic"`, `"cubic"`, a one-sided formula corresponding to a projection model, or a single number (e.g., 0). See Details. The default is `"flat"` for ADRFs and 0 otherwise.
 #' @param method string; the method used to compute the p-value of the test. Allowable options include `"sim"` for simulation-based, `"imhof"` for Imhof's approximation, `"davies"` for Davies's approximation, `"liu"` for Liu's approximation, `"satterthwaite"` for Satterthwaite's approximation, and `"saddlepoint"` for a saddlepoint approximation. Default is `"imhof"` when the \pkg{CompQuadForm} package is installed and `"saddlepoint"` otherwise. See Details.
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to perform tests. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
+#' @param outcome an optional character vector naming the categories of the outcome for which to perform tests. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section *Categorical outcomes* in Details of [adrf()].
 #' @param transform whether to perform the test on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `object` is an ADRF object. See Details.
 #' @param df the "denominator" degrees of freedom to use for the tests. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
 #' @param integrate string; how the deviations of the effect curve from the hypothesized curve are weighted across treatment values in the test statistic. Allowable options include `"uniform"` (the default), which weights all treatment values in the range of the effect curve equally, and `"empirical"`, which weights them by an estimate of the density of the treatment. Only `"uniform"` can be used with a shift curve (see [shift_curve()]). See Details.
@@ -105,8 +106,8 @@
 
 #' @exportS3Method summary effect_curve
 summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
-                                 transform = TRUE, df = NULL, nsim = 1e6,
-                                 integrate = "uniform", ...) {
+                                 outcome = NULL, transform = TRUE, df = NULL,
+                                 nsim = 1e6, integrate = "uniform", ...) {
 
   .vcov_type <- .attr(object, ".vcov_type")
 
@@ -182,19 +183,25 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   transformed <- !all(check_if_zero(transform_list$transform(.est0) - .est0))
 
-  # subset; process_subset_by_grid() gives an error when subset is supplied
-  # without by or for a contrast
+  # subset and outcome; process_subset_by_grid() gives an error when subset is
+  # supplied without by or for a contrast
   .subset <- process_subset_by_grid(substitute(subset),
                                     .by_grid = .by_grid,
-                                    .contrast = .contrast)
+                                    .contrast = .contrast,
+                                    outcome = outcome,
+                                    .outcome = .attr(object, ".outcome"))
 
-  if (is_null(.by_grid) || !is_null(.contrast)) {
+  if (all(.subset)) {
     .s <- seq_along(.est0)
   }
   else {
-    .s <- which(rep(.subset, each = length(.est0) / fnrow(.by_grid)))
+    .s <- which(rep(.subset, each = length(.est0) / length(.subset)))
 
     .by_grid <- ss(.by_grid, .subset)
+
+    if (!is_null(.contrast)) {
+      .contrast <- .contrast[.subset]
+    }
 
     .est0 <- .est0[.s]
     .vcov0 <- ss(.vcov0, .s, .s)
@@ -250,11 +257,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
   # Weights of the grid points for each block of estimates (the curve, each
   # subgroup in `subset`, or each contrast), which define the integral the
   # test statistic approximates
-  blocks <- {
-    if (!is_null(.contrast)) seq_along(.contrast)
-    else if (!is_null(.by_grid)) which(.subset)
-    else 1L
-  }
+  blocks <- which(.subset)
 
   w_list <- get_grid_w(.values, integrate, .attr(object, ".treat_density"), blocks)
 

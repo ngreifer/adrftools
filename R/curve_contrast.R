@@ -56,42 +56,66 @@ curve_contrast <- function(x) {
   check_effect_curve(x, contrast_ok = FALSE, projection_ok = FALSE)
 
   .by_grid <- .attr(x, ".by_grid")
+  .outcome <- .attr(x, ".outcome")
 
-  if (is_null(.by_grid)) {
+  by_vars <- setdiff(names(.by_grid), .outcome)
+
+  if (is_null(by_vars)) {
     fn_name <- rlang::current_call() |> rlang::call_name()
     arg::err("{.fun {(.curve_fun(x))}} must have been called with {.arg by} specified to use {.fun {fn_name}}")
   }
 
-  if (fnrow(.by_grid) < 2L) {
+  # The rows of `.by_grid` for each category of the outcome (or all of them);
+  # subgroups are contrasted only within a category
+  blocks <- {
+    if (is_null(.outcome)) list(seq_row(.by_grid))
+    else gsplit(seq_row(.by_grid), .by_grid[[.outcome]], use.g.names = FALSE)
+  }
+
+  n_sub <- length(blocks[[1L]])
+
+  if (n_sub < 2L) {
     fn_name <- rlang::current_call() |> rlang::call_name()
     arg::err("{.fun {fn_name}} requires at least two subgroups, but {.arg x} has only one")
   }
 
   .est <- .attr(x, ".est")
   .values <- .attr(x, ".values")
+  n <- length(.values)
 
-  # All combinations of 'by' levels
-  combos <- utils::combn(seq_row(.by_grid), 2L, simplify = FALSE)
+  # All combinations of 'by' levels, within each category of the outcome, as
+  # rows of `.by_grid`
+  combos0 <- utils::combn(seq_len(n_sub), 2L, simplify = FALSE)
 
-  comp_grid <- expand.grid(val_id = seq_along(.values),
-                           combo = seq_along(combos),
-                           KEEP.OUT.ATTRS = FALSE)
+  combos <- lapply(blocks, function(b) {
+    lapply(combos0, function(combo) b[combo])
+  }) |>
+    unlist(recursive = FALSE)
 
-  m <- matrix(0, nrow = fnrow(comp_grid), ncol = length(.est))
-
-  by_id <- rep(seq_row(.by_grid), each = length(.values))
+  m <- matrix(0, nrow = n * length(combos), ncol = length(.est))
 
   for (co in seq_along(combos)) {
-    diag(m[comp_grid$combo == co, by_id == combos[[co]][2L]]) <- 1
-    diag(m[comp_grid$combo == co, by_id == combos[[co]][1L]]) <- -1
+    rows <- (co - 1L) * n + seq_len(n)
+
+    m[cbind(rows, (combos[[co]][2L] - 1L) * n + seq_len(n))] <- 1
+    m[cbind(rows, (combos[[co]][1L] - 1L) * n + seq_len(n))] <- -1
   }
+
+  by_grid0 <- ss(.by_grid, j = by_vars)
 
   .contrast <- vapply(combos, function(combo) {
     sprintf("[%s] - [%s]",
-            get_by_grid_labels(ss(.by_grid, combo[2L])),
-            get_by_grid_labels(ss(.by_grid, combo[1L]))
+            get_by_grid_labels(ss(by_grid0, combo[2L])),
+            get_by_grid_labels(ss(by_grid0, combo[1L]))
     )
   }, character(1L))
+
+  # With a model that gives one prediction per category of the outcome, the
+  # category of each contrast is kept in `.by_grid`
+  .by_grid <- {
+    if (is_null(.outcome)) NULL
+    else ss(.by_grid, vapply(combos, `[`, integer(1L), 1L), .outcome)
+  }
 
   # Each contrast is weighted by the pooled distribution of the treatment in
   # its two subgroups
@@ -111,5 +135,6 @@ curve_contrast <- function(x) {
   .make_fun(x,
             .contrast_mat = m,
             .contrast = .contrast,
+            .by_grid = .by_grid,
             .treat_density = .treat_density)
 }

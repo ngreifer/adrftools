@@ -8,6 +8,7 @@
 #' @param simultaneous `logical`; whether the computed confidence bands should be simultaneous (`TRUE`) or pointwise (`FALSE`). Simultaneous (also known as uniform) bands cover the full line at the desired confidence level, whereas pointwise confidence bands only cover each point at the desired level. Default is `TRUE`. See Details.
 #' @param null the value at which to plot a horizontal reference line. Default is to plot a line with a y-intercept of 0 when the effect curve is an AMEF, a curve contrast, or a reference effect curve, and to omit a line otherwise. Set to `NA` to manually omit the line.
 #' @param subset an optional logical expression indicating the subset of the subgroups to plot. Can only be used when `by` was supplied to the original call to [adrf()], and only to refer to variables defining subgroups.
+#' @param outcome an optional character vector naming the categories of the outcome to plot. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section *Categorical outcomes* in Details of [adrf()].
 #' @param proj an optional `curve_projection` object, the output of a call to [curve_projection()]. Supplying this adds the projection curve to the effect curve plot.
 #' @param transform whether to compute intervals on the transformed estimates. Allowable options include `TRUE`, `FALSE`, a family object (e.g., `binomial()`), a link object (e.g., the output of [make.link()]), or one of the functions `log`, `sqrt`, `exp`, `qlogis`, or `qnorm`. Ignored unless `x` is an ADRF and Wald inference is used (i.e., ignored with percentile intervals, the default with bootstrapping and Bayesian models). See Details.
 #' @param df the "denominator" degrees of freedom to use for the critical test statistics for confidence bands. Default is to use the residual degrees of freedom from the original model if it is a linear model and `Inf` otherwise, or, for models fit to multiply imputed data, degrees of freedom that account for the number of imputations (see [adrf()]).
@@ -47,6 +48,8 @@
 #' `plot()` displays the effect curve in a plot. The solid line corresponds to the effect curve and the ribbon around it corresponds to its confidence band. When `null` is not `NA`, an additional flat line at `null` is displayed. When `proj` is supplied, a dashed line corresponding to the projection is added.
 #'
 #' When `by` is supplied to [adrf()], `plot()` produces an effect curve plot for each subgroup. When `x` is the output of a call to [curve_contrast()], `plot()` produces an effect curve plot for each treatment contrast.
+#'
+#' For models that give a separate prediction for each category of the outcome (see the section *Categorical outcomes* in [adrf()]), the effect curves for the categories are displayed in different colors. When `by` is also supplied, or when `x` is the output of a call to [curve_contrast()], each category is displayed in its own panel instead, and colors distinguish the subgroups or contrasts. The panels share the y-axis.
 #'
 #' ## Transform
 #'
@@ -107,7 +110,7 @@
 
 #' @exportS3Method plot effect_curve
 plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = NULL,
-                              subset = NULL, proj = NULL, transform = TRUE,
+                              subset = NULL, outcome = NULL, proj = NULL, transform = TRUE,
                               ci.type = "perc", df = NULL, ...) {
   check_proj(x, proj)
 
@@ -120,6 +123,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .draws <- .attr(x, ".draws")
   .by_grid <- .attr(x, ".by_grid")
   .contrast <- .attr(x, ".contrast")
+  .outcome <- .attr(x, ".outcome")
 
   if (.vcov_type == "none") {
     conf_level <- 0
@@ -134,18 +138,15 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
   .est_all <- .est0
 
-  # subset
+  # subset and outcome
   .subset <- process_subset_by_grid(substitute(subset),
                                     .by_grid = .by_grid,
-                                    .contrast = .contrast)
+                                    .contrast = .contrast,
+                                    outcome = outcome,
+                                    .outcome = .outcome)
 
-  if (is_null(.by_grid) || !is_null(.contrast)) {
-    .s <- seq_along(.est0)
-  }
-  else {
-    .s <- which(rep(.subset, each = length(.est0) / fnrow(.by_grid)))
-    .est0 <- .est0[.s]
-  }
+  .s <- which(rep(.subset, each = length(.est0) / length(.subset)))
+  .est0 <- .est0[.s]
 
   do_inference <- (.vcov_type != "none") &&
     !is_null(.vcov) && (conf_level > 0)
@@ -265,14 +266,28 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
     proj_lt <- "55"
   }
 
+  # With a model that gives one prediction per category of the outcome and
+  # subgroups (or contrasts between them), each category gets its own panel,
+  # and colors distinguish the subgroups (or contrasts)
+  facet_outcome <- !is_null(.outcome) &&
+    (!is_null(.contrast) || !is_null(setdiff(names(.by_grid), .outcome)))
+
   # Apply by_grid and contrast labels if necessary
   if (!is_null(.contrast)) {
+    .contrast <- .contrast[.subset]
+
     contrast <- factor(rep(.contrast, each = length(.values)),
-                       levels = .contrast)
+                       levels = unique(.contrast))
 
     res[[.treat]] <- rep.int(.values, length(.contrast))
 
     res <- cbind(contrast = contrast, res)
+
+    if (facet_outcome) {
+      res$.facet <- rep(.by_grid[[.outcome]][.subset], each = length(.values))
+    }
+
+    .contrast <- unique(.contrast)
 
     p <- ggplot(res, aes(x = .data[[.treat]])) +
       geom_line(aes(y = .data$estimate,
@@ -318,16 +333,29 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
     res[[.treat]] <- .values[res$.vi]
 
-    .labels <- get_by_grid_labels(.by_grid, sep = ", ")
+    by_vars <- setdiff(names(.by_grid), .outcome)
+    outcome_only <- is_null(by_vars)
 
-    res$.by_id <- factor(res$.by_id, levels = seq_row(.by_grid),
-                         labels = .labels)
+    # The label of each row of `.by_grid`; with panels for the categories of
+    # the outcome, only the variables in `by` are in the labels, so a subgroup
+    # has the same color in every panel
+    .labels <- {
+      if (outcome_only) as.character(.by_grid[[.outcome]])
+      else get_by_grid_labels(ss(.by_grid, j = by_vars), sep = ", ")
+    }
+
+    if (facet_outcome) {
+      res$.facet <- .by_grid[[.outcome]][res$.by_id]
+    }
+
+    res$.by_id <- factor(.labels[res$.by_id], levels = unique(.labels))
+
+    group_label <- if (outcome_only) "Outcome" else "Subgroup"
 
     p <- ggplot(res, aes(x = .data[[.treat]])) +
       geom_line(aes(y = .data$estimate,
                     color = .data$.by_id)) +
-      labs(color = "Subgroup")
-
+      labs(color = group_label)
 
     if (do_inference) {
       p <- p +
@@ -335,7 +363,7 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                         ymax = .data$conf.high,
                         fill = .data$.by_id),
                     alpha = .2) +
-        labs(fill = "Subgroup")
+        labs(fill = group_label)
     }
 
     if (!is_null(proj)) {
@@ -347,8 +375,8 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
 
     p <- p + scale_color_brewer(palette = "Set1",
                                 aesthetics = c("color", "fill"),
-                                breaks = .labels[.subset],
-                                limits = .labels)
+                                breaks = unique(.labels[.subset]),
+                                limits = unique(.labels))
   }
   else {
     res[[.treat]] <- .values
@@ -368,6 +396,10 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                          linetype = proj_lt,
                          show.legend = FALSE)
     }
+  }
+
+  if (facet_outcome) {
+    p <- p + facet_wrap(vars(.data$.facet))
   }
 
   if (!anyNA(null)) {
@@ -406,10 +438,16 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
   .reference <- .attr(x, ".reference")
   .contrast <- .attr(x, ".contrast")
 
+  # With a model that gives one prediction per category of the outcome, the
+  # curves are probabilities of the categories
+  mean_atom <- {
+    if (is_null(.attr(x, ".outcome"))) bquote(E * group("[", .(.response), "]"))
+    else bquote(P * group("[", .(.response) == italic(k), "]"))
+  }
+
   curve_atom <- switch(get_curve_type(x),
-                       ADRF = bquote(E * group("[", .(.response), "]")),
-                       AMEF = bquote(over(d ~ E * group("[", .(.response), "]"),
-                                          d ~ .(.treat))))
+                       ADRF = mean_atom,
+                       AMEF = bquote(over(d ~ .(mean_atom), d ~ .(.treat))))
 
   label <- curve_atom
 

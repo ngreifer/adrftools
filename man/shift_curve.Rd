@@ -14,7 +14,8 @@ shift_curve(x, ...)
   shift_fun = "additive",
   vcov = "unconditional",
   cluster = NULL,
-  type = "response",
+  type = NULL,
+  outcome = NULL,
   data = NULL,
   subset = NULL,
   by = NULL,
@@ -39,7 +40,9 @@ shift_curve(x, ...)
 
 \item{cluster}{an optional data frame or one-sided formula with the clustering terms for cluster-robust inference. When \code{vcov} is \code{"unconditional"}, the CR2 small-sample adjustment is used when it is available (see Details). When \code{vcov} is \code{"conditional"}, the covariance matrix of the model coefficients is computed using \code{\link[sandwich:vcovCL]{sandwich::vcovCL()}} with its default type; \code{vcov} can also be \code{"HC0"}, \code{"HC1"}, \code{"HC2"}, or \code{"HC3"} to request that type from \code{\link[sandwich:vcovCL]{sandwich::vcovCL()}} (\code{"HC2"} and \code{"HC3"} are available only for \code{lm()} and \code{glm()} models). Other strings and functions supplied to \code{vcov} cannot be used with \code{cluster}.}
 
-\item{type}{character string indicating the type of prediction. Passed to \code{\link[marginaleffects:get_predict]{marginaleffects::get_predict()}}. Default is \code{"response"} for predictions on the scale of the outcome variable. Other options might include \code{"link"} for the linear predictor. This argument is ignored for \code{lm} objects.}
+\item{type}{character string indicating the type of prediction. Passed to \code{\link[marginaleffects:get_predict]{marginaleffects::get_predict()}}. When not supplied, \code{"response"} is used for predictions on the scale of the outcome variable, unless the model does not allow it (e.g., \code{MASS::polr()} models), in which case the type \code{\link[marginaleffects:predictions]{marginaleffects::predictions()}} uses by default for the model is used; for multinomial and ordinal models, both give the probability of each category of the outcome. Other options might include \code{"link"} for the linear predictor or, for some ordinal models, \code{"mean"} for the expected value of the outcome. This argument is ignored for \code{lm} objects.}
+
+\item{outcome}{optional; for models that give a separate prediction for each category of the outcome (e.g., multinomial and ordinal models), a character vector naming the categories for which to compute the effect curve. Default is to compute the effect curve for every category. See the section \emph{Categorical outcomes} in Details of \code{\link[=adrf]{adrf()}}.}
 
 \item{data}{an optional data frame containing the observations originally used to fit the outcome model supplied to \code{x}. This is needed when the dataset cannot be recovered from the model (e.g., when the model was fit inside a function or is not supported by \pkg{insight}), and it is used to find variables named in \code{subset}, \code{by}, \code{wts}, and \code{cluster} that are not in the dataset used to fit the model. In most cases, this does not need to be supplied.}
 

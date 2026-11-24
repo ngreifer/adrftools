@@ -29,7 +29,7 @@ adrftools News and Updates
 
 * *fwb* (>= 1.0.0) is now required for bootstrapping.
 
-* `adrf()` now gives an informative error for models that give a separate prediction for each category of the outcome, such as multinomial models and ordinal models with `type = "probs"`, which are not supported.
+* `adrf()` and `shift_curve()` now support models of categorical outcomes, such as multinomial and ordinal regression models, estimating an effect curve for each category of the outcome (i.e., the average probability of that category). The new `outcome` argument selects categories, in `adrf()` and in the effect curve, `summary()`, `plot()`, and the other functions that take one, and `curve_contrast()` compares subgroups within each category. With `by`, `plot()` displays each category in its own panel. When `type` is not supplied, models whose predictions have no `"response"` type, such as `MASS::polr()` models, now use their default type. See the section *Categorical outcomes* in `help("adrf")` for details.
 
 * `wts` in `adrf()` is now checked for missing, non-finite, and negative values and for a positive sum in each subgroup.
 

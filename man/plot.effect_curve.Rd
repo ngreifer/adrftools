@@ -10,6 +10,7 @@
   simultaneous = TRUE,
   null = NULL,
   subset = NULL,
+  outcome = NULL,
   proj = NULL,
   transform = TRUE,
   ci.type = "perc",
@@ -27,6 +28,8 @@
 \item{null}{the value at which to plot a horizontal reference line. Default is to plot a line with a y-intercept of 0 when the effect curve is an AMEF, a curve contrast, or a reference effect curve, and to omit a line otherwise. Set to \code{NA} to manually omit the line.}
 
 \item{subset}{an optional logical expression indicating the subset of the subgroups to plot. Can only be used when \code{by} was supplied to the original call to \code{\link[=adrf]{adrf()}}, and only to refer to variables defining subgroups.}
+
+\item{outcome}{an optional character vector naming the categories of the outcome to plot. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section \emph{Categorical outcomes} in Details of \code{\link[=adrf]{adrf()}}.}
 
 \item{proj}{an optional \code{curve_projection} object, the output of a call to \code{\link[=curve_projection]{curve_projection()}}. Supplying this adds the projection curve to the effect curve plot.}
 
@@ -74,6 +77,8 @@ Values in brackets are to be changed by the user. Refer to the \CRANpkg{ggplot2}
 \code{plot()} displays the effect curve in a plot. The solid line corresponds to the effect curve and the ribbon around it corresponds to its confidence band. When \code{null} is not \code{NA}, an additional flat line at \code{null} is displayed. When \code{proj} is supplied, a dashed line corresponding to the projection is added.
 
 When \code{by} is supplied to \code{\link[=adrf]{adrf()}}, \code{plot()} produces an effect curve plot for each subgroup. When \code{x} is the output of a call to \code{\link[=curve_contrast]{curve_contrast()}}, \code{plot()} produces an effect curve plot for each treatment contrast.
+
+For models that give a separate prediction for each category of the outcome (see the section \emph{Categorical outcomes} in \code{\link[=adrf]{adrf()}}), the effect curves for the categories are displayed in different colors. When \code{by} is also supplied, or when \code{x} is the output of a call to \code{\link[=curve_contrast]{curve_contrast()}}, each category is displayed in its own panel instead, and colors distinguish the subgroups or contrasts. The panels share the y-axis.
 \subsection{Transform}{
 
 The usual confidence bands assume the estimates along the effect curve are normally distributed (or t-distributed when \code{df} is not \code{Inf}). However, when the outcome is bounded (e.g., a probability bounded between 0 and 1), this assumption may not be valid for the ADRF in finite samples. \code{transform} transforms the estimates to ones that are unbounded and computes the corresponding distribution of transformed estimates using the delta method. By default, if a generalized linear model is used for the outcome with a non-identity link function, the estimates are transformed by the link function to be on an unbounded scale. Note this is not the same as using the linear predictor for the effect curve; this is simply a transformation of the estimated points along the curve already computed. Confidence bands are computed using the transformed estimates before being back-transformed to ensure they are within the bounds of the outcome.

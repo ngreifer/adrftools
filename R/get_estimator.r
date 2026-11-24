@@ -174,7 +174,7 @@
 }
 
 #' @exportS3Method NULL
-.get_pred_fun.default <- function(.x, type = NULL, ...) {
+.get_pred_fun.default <- function(.x, type = NULL, outcome = NULL, ...) {
   if (inherits(.x, "stan4bartFit")) {
     rlang::check_installed("stan4bart")
 
@@ -194,7 +194,8 @@
         model <- marginaleffects::set_coef(model, beta0)
       }
 
-      .get_predict(model, newdata = data_grid, type = type, ...)
+      .get_predict(model, newdata = data_grid, type = type, outcome = outcome,
+                   ...)
     }
   }
 }
@@ -206,7 +207,14 @@
 # `predvars`, so terms whose basis depends on the data, such as ns(), poly(),
 # or scale(), are recomputed from `newdata` and give wrong predictions on
 # counterfactual data.
-.get_predict <- function(model, newdata, type = "response", ...) {
+#
+# Models of multi-category outcomes (e.g., multinomial and ordinal models on
+# the probability scale) give one prediction per category, labeled by `group`.
+# These are returned with all predictions for the first category, then all for
+# the second, and so on, each in the order of the rows of `newdata`, with the
+# category labels in the "outcome" attribute. `outcome` selects categories, in
+# the order given.
+.get_predict <- function(model, newdata, type = "response", outcome = NULL, ...) {
   if (inherits(model, "svyglm") && anyv(c("response", "link"), type)) {
     out <- stats::predict.glm(model, newdata = newdata, type = type) |>
       as.numeric()
@@ -219,15 +227,90 @@
                                       type = type, ...)
   })
 
-  # Models of multi-category outcomes (e.g., multinomial and ordinal models on
-  # the probability scale) give one prediction per category, labeled by
-  # `group`, which cannot be averaged into a single curve
-  if (!is_null(p[["group"]]) && length(funique(p[["group"]])) > 1L) {
-    arg::err("the model gives a separate prediction for each category of the outcome, which {.fun adrf} does not support; supply a {.arg type} that gives a single prediction for each unit, if the model has one (e.g., {.code type = \"link\"} for {.fun WeightIt::ordinal_weightit} models)")
+  out <- p[["estimate"]]
+  draws <- .attr(p, "posterior_draws")
+
+  grp <- p[["group"]]
+
+  if (is_null(grp) || length(funique(grp)) == 1L) {
+    attr(out, "posterior_draws") <- draws
+
+    return(out)
   }
 
-  out <- p[["estimate"]]
-  attr(out, "posterior_draws") <- .attr(p, "posterior_draws")
+  categories <- {
+    if (is.factor(grp)) levels(droplevels(grp))
+    else as.character(funique(grp))
+  }
+
+  cat_id <- match(as.character(grp), categories)
+
+  row_id <- p[["rowid"]] %or% unlist(lapply(tabulate(cat_id), seq_len))
+
+  if (length(out) != length(categories) * fnrow(newdata) ||
+      !all(row_id %in% seq_row(newdata))) {
+    arg::err("the predictions for each category of the outcome could not be matched to the units")
+  }
+
+  # The position in `out` of the prediction for each unit (row) in each
+  # category (column)
+  ind <- matrix(NA_integer_, nrow = fnrow(newdata), ncol = length(categories))
+  ind[cbind(row_id, cat_id)] <- seq_along(out)
+
+  if (anyNA(ind)) {
+    arg::err("the predictions for each category of the outcome could not be matched to the units")
+  }
+
+  if (!is_null(outcome)) {
+    if (!all(outcome %in% categories)) {
+      arg::err("some categories of the outcome are missing from the predictions")
+    }
+
+    ind <- ind[, match(outcome, categories), drop = FALSE]
+    categories <- outcome
+  }
+
+  ind <- as.vector(ind)
+
+  out <- out[ind]
+  attr(out, "outcome") <- categories
+
+  if (!is_null(draws)) {
+    attr(out, "posterior_draws") <- draws[ind, , drop = FALSE]
+  }
 
   out
+}
+
+# The type of prediction used when `type` is not supplied: "response" when
+# marginaleffects::get_predict() accepts it for the model, and otherwise the
+# type marginaleffects::predictions() uses by default for the model (e.g.,
+# "probs" for MASS::polr() models, which give the probability of each category
+# of the outcome). `nd` is one row of the data.
+.default_type <- function(x, nd) {
+  if (inherits(x, c("lm", "stan4bartFit", "bart"))) {
+    return("response")
+  }
+
+  p <- try(marginaleffects::get_predict(x, newdata = nd, type = "response"),
+           silent = TRUE)
+
+  if (!null_or_error(p)) {
+    return("response")
+  }
+
+  p <- try(marginaleffects::predictions(x, newdata = nd, vcov = FALSE),
+           silent = TRUE)
+
+  if (null_or_error(p)) {
+    return("response")
+  }
+
+  type <- try(marginaleffects::components(p, "type"), silent = TRUE)
+
+  if (null_or_error(type) || !rlang::is_string(type)) {
+    return("response")
+  }
+
+  type
 }

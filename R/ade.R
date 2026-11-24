@@ -5,6 +5,7 @@
 #'
 #' @param x a `shift_curve` object; the output of a call to [shift_curve()], or of [reference_curve()] or [curve_contrast()] applied to one.
 #' @param subset an optional logical expression indicating the subset of the subgroups for which to compute the ADE. Can only be used when `by` was supplied to the original call to [shift_curve()], and only to refer to variables defining subgroups.
+#' @param outcome an optional character vector naming the categories of the outcome for which to compute the ADE. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section *Categorical outcomes* in Details of [adrf()].
 #' @param eps numeric; the step size to use when calculating the numerical derivative, relative to the range of shifts at which the shift curve was computed: the step is `eps` times a quarter of that range. Default is `1e-5` (.00001).
 #'
 #' @returns
@@ -59,7 +60,7 @@
 #'   summary()
 
 #' @export
-ade <- function(x, subset = NULL, eps = 1e-5) {
+ade <- function(x, subset = NULL, outcome = NULL, eps = 1e-5) {
   arg::arg_supplied(x)
 
   .shift <- .attr(x, ".shift")
@@ -84,17 +85,21 @@ ade <- function(x, subset = NULL, eps = 1e-5) {
 
   subset_substitute <- substitute(subset)
 
-  res <- {
-    if (anyv(rlang::fn_fmls_names(d), "subset")) {
-      rlang::inject(d(shift = 0, subset = !!subset_substitute))
-    }
-    else if (is_null(subset_substitute)) {
-      d(shift = 0)
-    }
-    else {
-      arg::err("{.arg subset} can only be used when {.arg by} was supplied to {.fun shift_curve} and {.arg x} is not a curve contrast")
-    }
+  d_fmls <- rlang::fn_fmls_names(d)
+
+  if (!is_null(subset_substitute) && !anyv(d_fmls, "subset")) {
+    arg::err("{.arg subset} can only be used when {.arg by} was supplied to {.fun shift_curve} and {.arg x} is not a curve contrast")
   }
+
+  if (!is_null(outcome) && !anyv(d_fmls, "outcome")) {
+    arg::err("{.arg outcome} can only be specified when the model gives a separate prediction for each category of the outcome")
+  }
+
+  d_args <- list(shift = 0,
+                 subset = if (anyv(d_fmls, "subset")) subset_substitute,
+                 outcome = if (anyv(d_fmls, "outcome")) outcome)
+
+  res <- rlang::inject(d(!!!d_args[c("shift", intersect(c("subset", "outcome"), d_fmls))]))
 
   res[["shift"]] <- NULL
 

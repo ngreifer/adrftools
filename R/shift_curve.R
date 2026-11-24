@@ -82,8 +82,8 @@ shift_curve <- function(x, ...) {
 #' @exportS3Method shift_curve default
 #' @rdname shift_curve
 shift_curve.default <- function(x, treat, shift = NULL, shift_fun = "additive",
-                                vcov = "unconditional", cluster = NULL, type = "response",
-                                data = NULL, subset = NULL, by = NULL, wts = NULL,
+                                vcov = "unconditional", cluster = NULL, type = NULL,
+                                outcome = NULL, data = NULL, subset = NULL, by = NULL, wts = NULL,
                                 n = 51, fwb.args = list(), ...) {
 
   arg::arg_supplied(treat)
@@ -100,14 +100,14 @@ shift_curve.default <- function(x, treat, shift = NULL, shift_fun = "additive",
     range = NULL, n = n,
     data = data, subset = subset_substitute,
     by = by, wts = wts, cluster = cluster, fwb.args = fwb.args,
-    type = type, shift_fun = shift_fun, shift = shift, ...
+    type = type, outcome = outcome, shift_fun = shift_fun, shift = shift, ...
   )
 }
 
 #' @exportS3Method shift_curve mira
 shift_curve.mira <- function(x, treat, shift = NULL, shift_fun = "additive",
-                             vcov = "unconditional", cluster = NULL, type = "response",
-                             data = NULL, subset = NULL, by = NULL, wts = NULL,
+                             vcov = "unconditional", cluster = NULL, type = NULL,
+                             outcome = NULL, data = NULL, subset = NULL, by = NULL, wts = NULL,
                              n = 51, ...) {
 
   arg::arg_supplied(treat)
@@ -124,7 +124,7 @@ shift_curve.mira <- function(x, treat, shift = NULL, shift_fun = "additive",
     range = NULL, n = n,
     data = data, subset = subset_substitute,
     by = by, wts = wts, cluster = cluster,
-    type = type, shift_fun = shift_fun, shift = shift, ...
+    type = type, outcome = outcome, shift_fun = shift_fun, shift = shift, ...
   )
 }
 

@@ -10,6 +10,7 @@
   hypothesis,
   method,
   subset = NULL,
+  outcome = NULL,
   transform = TRUE,
   df = NULL,
   nsim = 1e+06,
@@ -27,6 +28,8 @@
 \item{method}{string; the method used to compute the p-value of the test. Allowable options include \code{"sim"} for simulation-based, \code{"imhof"} for Imhof's approximation, \code{"davies"} for Davies's approximation, \code{"liu"} for Liu's approximation, \code{"satterthwaite"} for Satterthwaite's approximation, and \code{"saddlepoint"} for a saddlepoint approximation. Default is \code{"imhof"} when the \pkg{CompQuadForm} package is installed and \code{"saddlepoint"} otherwise. See Details.}
 
 \item{subset}{an optional logical expression indicating the subset of the subgroups for which to perform tests. Can only be used when \code{by} was supplied to the original call to \code{\link[=adrf]{adrf()}}, and only to refer to variables defining subgroups.}
+
+\item{outcome}{an optional character vector naming the categories of the outcome for which to perform tests. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section \emph{Categorical outcomes} in Details of \code{\link[=adrf]{adrf()}}.}
 
 \item{transform}{whether to perform the test on the transformed estimates. Allowable options include \code{TRUE}, \code{FALSE}, a family object (e.g., \code{binomial()}), a link object (e.g., the output of \code{\link[=make.link]{make.link()}}), or one of the functions \code{log}, \code{sqrt}, \code{exp}, \code{qlogis}, or \code{qnorm}. Ignored unless \code{object} is an ADRF object. See Details.}
 

@@ -10,10 +10,15 @@
 - Once *sandwich* > 3.1-3 is on CRAN (its development version 3.1-3.99 fixes `bread.gam()`, Codeberg issue 1), require it and replace `.gam_estfun_bread()` with `.sandwich_estfun_bread()` for standard families; verified on 2026-11-18 that the two give the same influence values (relative difference below 1e-14) for gaussian, Gamma, and binomial fits with smooths and prior weights. Also decide whether to email the *mgcv* maintainer about `vcov.gam(sandwich = TRUE)` leaving out prior weights.
 - Doubly robust ADRFs: settle the open questions in `_dev/plan-doubly-robust.md` (constructor name and inputs, whether the `<erf>` method re-smooths, whether to pursue Kennedy's estimator in *adrftools* and with which treatment-side input).
 - Once WeightIt > 2.1.0 (with `hatvalues()` methods for `ordinal_weightit` and `multinom_weightit`) is on CRAN, consider requiring it in Suggests and dropping the HC1 branch of the ordinal test in `test-integration-weightit.R`.
+- Categorical outcomes, follow-ups (`_dev/plan-categorical-outcomes.md`): decide whether to add a function forming linear combinations of categories (expected scores, cumulative probabilities); consider an analytic gradient for multinomial models; consider adding *nnet* to Suggests to test `nnet::multinom()`; `rstanarm::stan_polr()` is unsupported by *marginaleffects*.
 - Decide which items in `_dev/feature-ideas.md` to pursue.
 - Multivariate treatments (`_dev/adrf_mv.R`), to resume later.
 
 ## Done
+
+- 2026-11-24: Categorical outcomes (approach A of `_dev/plan-categorical-outcomes.md`): `adrf()` and `shift_curve()` estimate a curve per category of the outcome, stored as a column of `.by_grid` named `outcome` (or `.outcome` when a `by` variable has that name); a new `outcome` argument selects categories in `adrf()`, the effect curve, `summary()`, `plot()`, `summary.curve_projection()`, and `ade()`; `curve_contrast()` compares subgroups within categories; `type` defaults to the model's own default when it has no `"response"` type (`polr()`). Fixed the unconditional variance for `polr()`, whose coefficient order differs between `get_coef()` and `estfun()` (influence columns are now matched by name). Verified against `avg_predictions()`, a hand-built influence function (for `polr()` and `multinom_weightit()`), and *brms* draws; tests in `test-categorical-outcomes.R`; NEWS item replaces the error item; full suite passes.
+
+- 2026-11-24: Plan for categorical outcomes (`_dev/plan-categorical-outcomes.md`): checked that `get_predict()`, `get_coef()`/`set_coef()`, `.coef_influence()`, and `process_family()` already work for `multinom()`, `polr()`, `multinom_weightit()`, and `ordinal_weightit()`; the only blocker is the per-category predictions. Storing the category as a column of `.by_grid` makes every modifier, `summary()`, and `plot()` work; `curve_contrast()` and the covariate-sampling term need changes because categories share units.
 
 - 2026-11-19: Added shift curves and the ADE to the README (Overview sentence, and a `shift_curve()` + `ade()` example after the linear projection) with a link to `vignette("shift-effects")`.
 
