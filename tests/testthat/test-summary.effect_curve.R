@@ -14,6 +14,11 @@ test_that("omnibus test of a flat ADRF rejects a strong dose-response", {
   expect_output(print(s), "Omnibus Curve Test")
   expect_output(print(s), "ADRF is flat")
   expect_output(print(s), "Imhof")
+
+  # The p-value is below .0001, so it comes from the saddlepoint approximation
+  expect_true(attr(s, "saddlepoint_used"))
+  expect_output(print(s), "Saddlepoint approximation used for p-values below .0001",
+                fixed = TRUE)
 })
 
 test_that("an exactly linear ADRF is not rejected by a test of linearity", {
@@ -35,11 +40,16 @@ test_that("p-value approximation methods agree", {
 
   r <- reference_curve(a, reference = 1)
 
-  p_imhof <- summary(r, method = "imhof")$p.value
+  s_imhof <- summary(r, method = "imhof")
+  p_imhof <- s_imhof$p.value
 
   # The p-value should not be trivial for the comparison to be informative
   expect_gt(p_imhof, 1e-4)
   expect_lt(p_imhof, .9)
+
+  # The saddlepoint approximation was not used, so it is not mentioned
+  expect_false(attr(s_imhof, "saddlepoint_used"))
+  expect_false(any(grepl("Saddlepoint", capture.output(print(s_imhof)))))
 
   skip_if_not_installed("patrick")
 
@@ -256,8 +266,18 @@ test_that(".quad_form_tail() is accurate in the tails", {
       p <- adrftools:::.quad_form_tail(stat, ev, method = mt)
       p_f <- adrftools:::.quad_form_tail(stat_f, ev, method = mt, df = 30)
 
-      expect_equal(p, target, tolerance = .15, label = sprintf("%s, df = Inf, p = %g", mt, target))
-      expect_equal(p_f, target, tolerance = .15, label = sprintf("%s, df = 30, p = %g", mt, target))
+      expect_equal(p, target, tolerance = .15, ignore_attr = TRUE,
+                   label = sprintf("%s, df = Inf, p = %g", mt, target))
+      expect_equal(p_f, target, tolerance = .15, ignore_attr = TRUE,
+                   label = sprintf("%s, df = 30, p = %g", mt, target))
+
+      # Imhof's and Davies's methods mark the p-values they hand off to the
+      # saddlepoint approximation, which are those below .0001
+      handed_off <- mt != "saddlepoint" && target < 1e-4
+      expect_identical(isTRUE(attr(p, "saddlepoint")), handed_off,
+                       label = sprintf("%s, df = Inf, p = %g flag", mt, target))
+      expect_identical(isTRUE(attr(p_f, "saddlepoint")), handed_off,
+                       label = sprintf("%s, df = 30, p = %g flag", mt, target))
     }
   }
 

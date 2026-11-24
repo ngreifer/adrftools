@@ -261,7 +261,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
   w_list <- get_grid_w(.values, integrate, .attr(object, ".treat_density"), blocks)
 
-  p <- vapply(seq_along(by_list), function(k) {
+  p <- lapply(seq_along(by_list), function(k) {
     .b <- by_list[[k]]
     w <- w_list[[k]]
     wsq <- sqrt(w)
@@ -357,7 +357,14 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
 
     .omnibus_p_value(stat, ev, scale, method = method,
                      df = df, nsim = nsim, ...)
-  }, numeric(1L))
+  })
+
+  # Whether Imhof's or Davies's method fell back on the saddlepoint
+  # approximation for any p-value, which print() reports
+  saddlepoint_used <- any(vapply(p, function(.p) isTRUE(.attr(.p, "saddlepoint")),
+                                 logical(1L)))
+
+  p <- unlist(p)
 
   res_names <- "p.value"
 
@@ -366,6 +373,7 @@ summary.effect_curve <- function(object, hypothesis, method, subset = NULL,
     add_est_labels(.contrast, .by_grid)
 
   attr(out, "method") <- method
+  attr(out, "saddlepoint_used") <- saddlepoint_used
   attr(out, "hypothesis") <- hypothesis
   attr(out, "integrate") <- integrate
 
@@ -426,8 +434,8 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
 
   method <- switch(method,
                    "satterthwaite" = "the Satterthwaite approximation",
-                   "imhof" = "the Imhof approximation (the saddlepoint approximation for p-values below .0001)",
-                   "davies" = "the Davies approximation (the saddlepoint approximation for p-values below .0001)",
+                   "imhof" = "the Imhof approximation",
+                   "davies" = "the Davies approximation",
                    "liu" = "the Liu approximation",
                    "sim" = sprintf("a simulation approximation with %s replicates",
                                    prettyNum(nsim, big.mark = ",", scientific = FALSE)),
@@ -436,6 +444,11 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
   c(txtbar(width),
     cli::format_inline("{.emph Computed using {method}}") |>
       cli::ansi_strwrap(width, exdent = 2L),
+    if (isTRUE(.attr(x, "saddlepoint_used"))) {
+      paste0("  ",
+             cli::format_inline("{.emph * Saddlepoint approximation used for p-values below .0001}") |>
+               cli::ansi_strwrap(getOption("width", 80L) - 2L, exdent = 2L))
+    },
     if (identical(.attr(x, "integrate"), "empirical")) {
       cli::format_inline("{.emph Deviations weighted by the distribution of {(.treat)}}") |>
         cli::ansi_strwrap(width, exdent = 2L)
@@ -516,6 +529,7 @@ print.summary.effect_curve <- function(x, digits = max(4L, getOption("digits") -
 
     if (!is.na(p_sp)) {
       p <- p_sp
+      attr(p, "saddlepoint") <- TRUE
     }
   }
 
