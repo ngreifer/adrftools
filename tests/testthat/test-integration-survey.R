@@ -225,3 +225,133 @@ test_that("svyglm models cannot be bootstrapped", {
 
   expect_error(adrf(fit, treat = "logBLL", vcov = "fwb"), "survey design")
 })
+
+# The design-based standard errors of the ADRF of `treat` at `vals` for a
+# linear svyglm model, by Binder's linearization computed directly from the
+# influence matrix survey saves with `influence = TRUE` (one row per data row,
+# with rows of 0 for units dropped for missing values). `var_fun` computes the
+# design variance of a vector of per-unit contributions. Units the fit did not
+# use have weights of 0 in the average.
+svy_linearized_se <- function(fit_inf, treat, vals, var_fun) {
+  des <- fit_inf$survey.design
+  w <- stats::weights(des)
+  infl <- attr(fit_inf, "influence")
+  mf <- stats::model.frame(fit_inf)
+  tt <- stats::delete.response(stats::terms(fit_inf))
+  na_act <- as.integer(fit_inf$na.action)
+
+  # Designs that keep the incomplete units (e.g., calibrated and PPS designs)
+  # have a row for every data row; others drop them, but the influence matrix
+  # is still padded
+  if (nrow(des) == nrow(mf)) {
+    rows <- seq_len(nrow(des))
+
+    if (length(na_act) > 0L && nrow(infl) == nrow(mf) + length(na_act)) {
+      infl <- infl[-na_act, , drop = FALSE]
+    }
+  }
+  else {
+    rows <- setdiff(seq_len(nrow(des)), na_act)
+  }
+
+  vapply(vals, function(v) {
+    nd <- mf
+    nd[[treat]] <- v
+
+    Xv <- matrix(0, nrow(des), ncol(infl))
+    Xv[rows, ] <- stats::model.matrix(tt, nd)
+
+    p <- drop(Xv %*% stats::coef(fit_inf))
+
+    wr <- w
+    wr[-rows] <- 0
+
+    theta <- sum(wr * p) / sum(wr)
+    z <- wr * (p - theta) / sum(wr) + drop(infl %*% (colSums(wr * Xv) / sum(wr)))
+
+    sqrt(var_fun(z, des))
+  }, numeric(1L))
+}
+
+test_that("svyglm unconditional variance matches a hand linearization on calibrated, domain, and PPS designs", {
+  skip_if_not_installed("patrick")
+
+  data("api", package = "survey", envir = environment())
+
+  # Variance of a total of per-unit contributions for linearization designs,
+  # including calibration
+  rec_var <- function(z, des) {
+    as.numeric(survey::svyrecvar(z, des$cluster, des$strata, des$fpc,
+                                 postStrata = des$postStrata))
+  }
+
+  # svyrecvar() does not handle PPS designs, so svytotal() is used, with the
+  # per-unit values divided by the weights it multiplies them by
+  total_var <- function(z, des) {
+    w <- stats::weights(des)
+    zz <- ifelse(w == 0, 0, z / w)
+    as.numeric(stats::vcov(survey::svytotal(matrix(zz), des)))
+  }
+
+  dat_na <- apistrat
+  dat_na$ell[c(3, 50, 120)] <- NA
+
+  strat <- function(dat) {
+    survey::svydesign(id = ~1, strata = ~stype, weights = ~pw, data = dat, fpc = ~fpc)
+  }
+
+  # Calibrating to the population total of api99 moves every weight
+  cal <- function(des) {
+    survey::calibrate(des, ~stype + api99,
+                      c(`(Intercept)` = 6194, stypeH = 755, stypeM = 1018,
+                        api99 = 3914069))
+  }
+
+  expect_true(all(abs(stats::weights(cal(strat(dat_na))) /
+                        stats::weights(strat(dat_na)) - 1) > 1e-8))
+
+  # survey warns that units with weights of 0 are not used for the dispersion
+  quiet_svyglm <- function(...) {
+    withCallingHandlers(survey::svyglm(...), warning = function(w) {
+      if (grepl("zero weight", conditionMessage(w), fixed = TRUE)) {
+        invokeRestart("muffleWarning")
+      }
+    })
+  }
+
+  patrick::with_parameters_test_that(
+    "{label}",
+    {
+      f <- api00 ~ ell + meals + stype
+      vals <- c(10, 30, 50)
+
+      fit <- quiet_svyglm(f, design = design)
+      fit_inf <- quiet_svyglm(f, design = design, influence = TRUE)
+
+      ref <- svy_linearized_se(fit_inf, "ell", vals, var_fun)
+
+      a <- adrf(fit, treat = "ell", n = 3, range = c(10, 50))
+      a_inf <- adrf(fit_inf, treat = "ell", n = 3, range = c(10, 50))
+
+      expect_equal(get_values(a), vals)
+      expect_equal(get_se(a), ref, tolerance = 1e-8)
+      expect_equal(get_se(a_inf), ref, tolerance = 1e-8)
+    },
+    patrick::cases(
+      list(label = "stratified design with missing values",
+           design = strat(dat_na), var_fun = rec_var),
+      list(label = "calibrated design with missing values",
+           design = cal(strat(dat_na)), var_fun = rec_var),
+      list(label = "domain of a calibrated design with missing values",
+           design = subset(cal(strat(dat_na)), sch.wide == "Yes"), var_fun = rec_var),
+      list(label = "domain of a calibrated design",
+           design = subset(cal(strat(apistrat)), sch.wide == "Yes"), var_fun = rec_var),
+      list(label = "PPS design with missing values",
+           design = survey::svydesign(id = ~1, fpc = ~I(pw^-1), data = dat_na, pps = "brewer"),
+           var_fun = total_var),
+      list(label = "cluster sample with a finite population correction",
+           design = survey::svydesign(id = ~dnum, weights = ~pw, data = apiclus1, fpc = ~fpc),
+           var_fun = rec_var)
+    )
+  )
+})
