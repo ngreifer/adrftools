@@ -137,5 +137,6 @@ Montiel Olea, J. L., & Plagborg-Møller, M. (2019). Simultaneous confidence band
 \itemize{
 \item \code{\link[=adrf]{adrf()}} for computing the ADRF
 \item \code{\link[=summary.effect_curve]{summary.effect_curve()}} for testing hypotheses about an effect curve
+\item \code{\link[=as.data.frame.effect_curve]{as.data.frame.effect_curve()}} for extracting the estimates and confidence bands as a data frame
 }
 }

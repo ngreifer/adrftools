@@ -65,6 +65,7 @@
 #' @seealso
 #' * [adrf()] for computing the ADRF
 #' * [summary.effect_curve()] for testing hypotheses about an effect curve
+#' * [as.data.frame.effect_curve()] for extracting the estimates and confidence bands as a data frame
 #'
 #' @examples
 #' data("nhanes3lead")
@@ -114,157 +115,26 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
                               ci.type = "perc", df = NULL, ...) {
   check_proj(x, proj)
 
-  .est0 <- .attr(x, ".est")
-  .vcov <- .attr(x, ".vcov")
-  .vcov_type <- .attr(x, ".vcov_type")
-  .treat <- .attr(x, ".treat")
   .values <- .attr(x, ".values")
-  .boot <- .attr(x, ".boot")
-  .draws <- .attr(x, ".draws")
+  .treat <- .attr(x, ".treat")
   .by_grid <- .attr(x, ".by_grid")
   .contrast <- .attr(x, ".contrast")
   .outcome <- .attr(x, ".outcome")
 
-  if (.vcov_type == "none") {
-    conf_level <- 0
-    transform <- FALSE
-    simultaneous <- FALSE
-  }
-  else {
-    conf_level <- process_conf_level(conf_level)
-  }
-
   null <- process_null(null, x)
 
-  .est_all <- .est0
+  band <- .curve_band_data(x, conf_level = conf_level, simultaneous = simultaneous,
+                           subset = substitute(subset), outcome = outcome,
+                           proj = proj, transform = transform, ci.type = ci.type,
+                           df = df)
 
-  # subset and outcome
-  .subset <- process_subset_by_grid(substitute(subset),
-                                    .by_grid = .by_grid,
-                                    .contrast = .contrast,
-                                    outcome = outcome,
-                                    .outcome = .outcome)
+  res <- band[["res"]]
+  .subset <- band[["subset"]]
+  do_inference <- band[["do_inference"]]
+  conf_level <- band[["conf_level"]]
+  simultaneous <- band[["simultaneous"]]
 
-  .s <- which(rep(.subset, each = length(.est0) / length(.subset)))
-  .est0 <- .est0[.s]
-
-  do_inference <- (.vcov_type != "none") &&
-    !is_null(.vcov) && (conf_level > 0)
-
-  if (do_inference) {
-    simultaneous <- process_simultaneous(simultaneous, .est0)
-
-    ci.type <- process_ci.type(ci.type, .vcov_type, simultaneous)
-  }
-
-  # First, apply transforms if necessary; only Wald intervals transform the
-  # bootstrap or posterior draws
-  transform_list <- process_transform(transform, x, .est_all,
-                                      check_draws = do_inference && ci.type == "wald")
-
-  transform <- transform_list$transform
-  inv_transform <- transform_list$inv_transform
-
-  .est <- transform(.est0)
-
-  if (do_inference) {
-    res_names <- c(.treat, "estimate",
-                   "conf.low", "conf.high")
-
-    res <- make_df(res_names, length(.est))
-
-    do_transform <- ci.type != "perc" &&
-      !all(check_if_zero(.est - .est0))
-
-    t_crit <- vp <- NULL
-
-    # Compute CI
-    if (conf_level > 0) {
-      if (ci.type == "wald") {
-        # Process df
-        df <- df %or% .attr(x, ".df") %or% Inf
-
-        arg::arg_number(df)
-        arg::arg_gt(df, 0)
-
-        stat <- if (is.finite(df)) "t" else "z"
-
-        if (.vcov_type == "bootstrap") {
-          .vcov <- .boot[["t"]] |>
-            ss(j = .s) |>
-            transform() |>
-            cov()
-        }
-        else if (.vcov_type == "posterior") {
-          .vcov <- .draws |>
-            ss(j = .s) |>
-            transform() |>
-            cov()
-        }
-        else if (do_transform) {
-          d_transform <- transform_list$d_transform
-          .vcov <- quad_mult(diag(d_transform(.est0), nrow = length(.est0)), ss(.vcov, .s, .s))
-        }
-        else {
-          .vcov <- ss(.vcov, .s, .s)
-        }
-
-        se <- sqrt(diag(.vcov))
-        zeros <- se < 1e-10
-
-        if (simultaneous) {
-          vp <- ss(.vcov, !zeros, !zeros) |>
-            cov2cor() |>
-            .to_psd()
-
-          t_crit <- .mvt_crit(conf_level, vp, df)
-        }
-        else {
-          t_crit <- switch(stat,
-                           "z" = abs(qnorm((1 - conf_level) / 2)),
-                           "t" = abs(qt((1 - conf_level) / 2, df)))
-        }
-        # Reverse transformation
-        res$conf.low[] <- inv_transform(.est - t_crit * se)
-        res$conf.high[] <- inv_transform(.est + t_crit * se)
-      }
-      else if (.vcov_type == "bootstrap") {
-        boot_ci <- confint(.boot, level = conf_level,
-                           parm = .s,
-                           ci.type = ci.type,
-                           simultaneous = simultaneous)
-
-        res$conf.low[] <- boot_ci[, 1L]
-        res$conf.high[] <- boot_ci[, 2L]
-      }
-      else if (.vcov_type == "posterior") {
-        draw_ci <- posterior_ci(.draws, level = conf_level,
-                                parm = .s,
-                                simultaneous = simultaneous)
-
-        res$conf.low[] <- draw_ci[, 1L]
-        res$conf.high[] <- draw_ci[, 2L]
-      }
-    }
-
-    if (!is_null(t_crit)) {
-      attr(t_crit, "df") <- df
-      attr(conf_level, "crit") <- t_crit
-    }
-  }
-  else {
-    res_names <- c(.treat, "estimate")
-    res <- make_df(res_names, length(.est0))
-  }
-
-  # Use original estimate in output
-  res$estimate <- inv_transform(.est)
-
-  if (!is_null(proj)) {
-    res$proj_estimate <- .attr(proj, ".est")[.s]
-
-    proj_lt <- "55"
-  }
+  proj_lt <- "55"
 
   # With a model that gives one prediction per category of the outcome and
   # subgroups (or contrasts between them), each category gets its own panel,
@@ -417,6 +287,169 @@ plot.effect_curve <- function(x, conf_level = 0.95, simultaneous = TRUE, null = 
           geom = element_geom(ink = "#E41A1C"),
           plot.title = element_text(hjust = .5),
           plot.subtitle = element_text(hjust = .5))
+}
+
+# The estimates of an effect curve at its grid points and the limits of its
+# confidence band, as plotted by plot() and returned by as.data.frame(), in
+# the order of the estimates (subgroup or contrast, then treatment value), with
+# the treatment values in a column named for the treatment. `subset` is the
+# unevaluated expression supplied by the user. Also returns the selected
+# subgroups and the settings used, after processing.
+.curve_band_data <- function(x, conf_level = .95, simultaneous = TRUE, subset = NULL,
+                             outcome = NULL, proj = NULL, transform = TRUE,
+                             ci.type = "perc", df = NULL) {
+  .est0 <- .attr(x, ".est")
+  .vcov <- .attr(x, ".vcov")
+  .vcov_type <- .attr(x, ".vcov_type")
+  .treat <- .attr(x, ".treat")
+  .values <- .attr(x, ".values")
+  .boot <- .attr(x, ".boot")
+  .draws <- .attr(x, ".draws")
+  .by_grid <- .attr(x, ".by_grid")
+  .contrast <- .attr(x, ".contrast")
+  .outcome <- .attr(x, ".outcome")
+
+  if (.vcov_type == "none") {
+    conf_level <- 0
+    transform <- FALSE
+    simultaneous <- FALSE
+  }
+  else {
+    conf_level <- process_conf_level(conf_level)
+  }
+
+  .est_all <- .est0
+
+  # subset and outcome
+  .subset <- process_subset_by_grid(subset,
+                                    .by_grid = .by_grid,
+                                    .contrast = .contrast,
+                                    outcome = outcome,
+                                    .outcome = .outcome)
+
+  .s <- which(rep(.subset, each = length(.est0) / length(.subset)))
+  .est0 <- .est0[.s]
+
+  do_inference <- (.vcov_type != "none") &&
+    !is_null(.vcov) && (conf_level > 0)
+
+  if (do_inference) {
+    simultaneous <- process_simultaneous(simultaneous, .est0)
+
+    ci.type <- process_ci.type(ci.type, .vcov_type, simultaneous)
+  }
+
+  # First, apply transforms if necessary; only Wald intervals transform the
+  # bootstrap or posterior draws
+  transform_list <- process_transform(transform, x, .est_all,
+                                      check_draws = do_inference && ci.type == "wald")
+
+  transform <- transform_list$transform
+  inv_transform <- transform_list$inv_transform
+
+  .est <- transform(.est0)
+
+  if (do_inference) {
+    res_names <- c(.treat, "estimate",
+                   "conf.low", "conf.high")
+
+    res <- make_df(res_names, length(.est))
+
+    do_transform <- ci.type != "perc" &&
+      !all(check_if_zero(.est - .est0))
+
+    t_crit <- vp <- NULL
+
+    # Compute CI
+    if (conf_level > 0) {
+      if (ci.type == "wald") {
+        # Process df
+        df <- df %or% .attr(x, ".df") %or% Inf
+
+        arg::arg_number(df)
+        arg::arg_gt(df, 0)
+
+        stat <- if (is.finite(df)) "t" else "z"
+
+        if (.vcov_type == "bootstrap") {
+          .vcov <- .boot[["t"]] |>
+            ss(j = .s) |>
+            transform() |>
+            cov()
+        }
+        else if (.vcov_type == "posterior") {
+          .vcov <- .draws |>
+            ss(j = .s) |>
+            transform() |>
+            cov()
+        }
+        else if (do_transform) {
+          d_transform <- transform_list$d_transform
+          .vcov <- quad_mult(diag(d_transform(.est0), nrow = length(.est0)), ss(.vcov, .s, .s))
+        }
+        else {
+          .vcov <- ss(.vcov, .s, .s)
+        }
+
+        se <- sqrt(diag(.vcov))
+        zeros <- se < 1e-10
+
+        if (simultaneous) {
+          vp <- ss(.vcov, !zeros, !zeros) |>
+            cov2cor() |>
+            .to_psd()
+
+          t_crit <- .mvt_crit(conf_level, vp, df)
+        }
+        else {
+          t_crit <- switch(stat,
+                           "z" = abs(qnorm((1 - conf_level) / 2)),
+                           "t" = abs(qt((1 - conf_level) / 2, df)))
+        }
+        # Reverse transformation
+        res$conf.low[] <- inv_transform(.est - t_crit * se)
+        res$conf.high[] <- inv_transform(.est + t_crit * se)
+      }
+      else if (.vcov_type == "bootstrap") {
+        boot_ci <- confint(.boot, level = conf_level,
+                           parm = .s,
+                           ci.type = ci.type,
+                           simultaneous = simultaneous)
+
+        res$conf.low[] <- boot_ci[, 1L]
+        res$conf.high[] <- boot_ci[, 2L]
+      }
+      else if (.vcov_type == "posterior") {
+        draw_ci <- posterior_ci(.draws, level = conf_level,
+                                parm = .s,
+                                simultaneous = simultaneous)
+
+        res$conf.low[] <- draw_ci[, 1L]
+        res$conf.high[] <- draw_ci[, 2L]
+      }
+    }
+
+    if (!is_null(t_crit)) {
+      attr(t_crit, "df") <- df
+      attr(conf_level, "crit") <- t_crit
+    }
+  }
+  else {
+    res_names <- c(.treat, "estimate")
+    res <- make_df(res_names, length(.est0))
+  }
+
+  # Use original estimate in output
+  res$estimate <- inv_transform(.est)
+
+  res[[.treat]] <- rep.int(.values, sum(.subset))
+
+  if (!is_null(proj)) {
+    res$proj_estimate <- .attr(proj, ".est")[.s]
+  }
+
+  list(res = res, subset = .subset, do_inference = do_inference,
+       conf_level = conf_level, simultaneous = simultaneous)
 }
 
 .get_x_axis <- function(x) {

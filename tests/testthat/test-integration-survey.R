@@ -15,6 +15,8 @@ test_that("svyglm ADRFs use the survey weights as target weights", {
                manual_adrf(fit, d, "logBLL", get_values(a), w = d$sw),
                tolerance = 1e-8)
 
+  expect_output(print(a), "inference: unconditional \\(survey design\\)")
+
   # The design-based variance assumes the target population is the one the
   # design represents, so other target weights cannot be supplied
   expect_identical(get_est(adrf(fit, treat = "logBLL", n = 5, range = c(0, 2), wts = TRUE)),

@@ -68,7 +68,7 @@ NULL
                       .est, .vcov, .values, .treat, .vcov_type, .boot, .draws,
                       .curve_type, .family, .df, .response, .call,
                       .by_grid, .contrast, .reference, .treat_density, .shift,
-                      .outcome) {
+                      .outcome, .sample) {
 
   if (missing(.curve_type) && !is_null(fn)) {
     if (inherits(fn, "adrf_curve")) {
@@ -260,6 +260,7 @@ NULL
   attr(fn, ".call") <- .call
   attr(fn, ".treat_density") <- .treat_density
   attr(fn, ".shift") <- .shift
+  attr(fn, ".sample") <- .sample
 
   classes <- c("effect_curve", class(fn))
 

@@ -2,6 +2,7 @@
 
 S3method(adrf,default)
 S3method(adrf,mira)
+S3method(as.data.frame,effect_curve)
 S3method(coef,curve_est)
 S3method(plot,effect_curve)
 S3method(print,anova.curve_projection)

@@ -10,6 +10,7 @@ reference:
 - title: Characterize and test an effect curve
 - contents:
   - plot.effect_curve
+  - as.data.frame.effect_curve
   - summary.effect_curve
   - curve_projection
 - title: Compute and contrast points on an effect curve

@@ -373,3 +373,24 @@ test_that("brms categorical models give an ADRF for each category", {
   expect_equal(unname(attr(a, ".draws")), unname(draws), tolerance = 1e-8)
   expect_equal(get_est(a), unname(colMeans(draws)), tolerance = 1e-8)
 })
+
+test_that("print() and as.data.frame() treat the categories of the outcome apart from subgroups", {
+  skip_if_not_installed("MASS")
+
+  fit <- fit_categorical("polr")
+
+  a <- suppressMessages(adrf(fit, treat = "logBLL", n = 3, range = c(0, 2), by = ~Male))
+
+  # The categories are not counted as subgroups
+  expect_output(print(a), "by: Male \\(2 subgroups\\)")
+
+  d <- as.data.frame(a, simultaneous = FALSE)
+  expect_named(d, c("outcome", "Male", "logBLL", "estimate", "conf.low", "conf.high"))
+  expect_identical(nrow(d), 3L * 2L * 3L)
+  expect_identical(as.character(unique(d$outcome)), categories)
+  expect_equal(d$estimate, get_est(a), tolerance = 1e-12)
+
+  d_hi <- as.data.frame(a, simultaneous = FALSE, outcome = "hi")
+  expect_identical(as.character(unique(d_hi$outcome)), "hi")
+  expect_equal(d_hi$estimate, get_est(a)[13:18], tolerance = 1e-12)
+})

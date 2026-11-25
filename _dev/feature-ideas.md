@@ -8,11 +8,7 @@ First collected on 2026-11-12 while auditing the package and writing the test su
 
 **A small-sample reference distribution for the omnibus test** *(new)*. With HC2, the omnibus test still rejects 6.6% to 8.0% at the .05 level with a flexible logistic model (n up to 1,000) or with errors largest at the extremes of the treatment (n up to 500), because the variance estimate itself is variable (`_dev/omnibus-size-study/README.md`). A degrees-of-freedom correction in the spirit of Bell and McCaffrey's for CR2, or an F-type reference distribution for the quadratic form, would address it. The size of CR2 with `cluster` has not been checked either.
 
-**A joint omnibus test across subgroups** *(new)*. With `by`, `summary.effect_curve()` gives one p-value per subgroup. A single test that every subgroup's curve satisfies the hypothesis (e.g., all ADRFs are flat) would use the stacked deviations and their full covariance matrix, which is not block diagonal under the unconditional variance because the subgroups share coefficients. The quadratic-form machinery handles it as is.
-
 **One-sided and equivalence omnibus tests.** For example, a monotonicity test (H0: the AMEF is nonpositive everywhere) or a test that the ADRF stays within a margin of a reference value. The simultaneous-band machinery already in `summary.curve_est()` is most of what's needed.
-
-**Testing part of the curve.** A `range` argument to `summary.effect_curve()` (and `curve_projection()`) so the omnibus test can be restricted to a subinterval of the grid without re-running `adrf()`. With `integrate = "empirical"`, the density would be renormalized over the subinterval.
 
 **Uncertainty from smoothing-parameter selection in `gam()` fits** *(new)*. The unconditional variance treats the smoothing parameters as fixed, and on `nhanes3lead` it is smaller than a bootstrap that reselects them (0.066 against 0.086 at `logBLL = 1`). An option that adds a correction like the one behind `vcov.gam(unconditional = TRUE)` would close most of the gap; extended families (`nb()`, `tw()`) currently fall back to the conditional variance. Details are in `_dev/TASKS.md`.
 
@@ -21,8 +17,6 @@ First collected on 2026-11-12 while auditing the package and writing the test su
 ## Estimands
 
 **Doubly robust estimation.** The pseudo-outcome kernel-smoothing estimator of Kennedy et al. (2017), taking the user's outcome model and a treatment-side input (GPS values or stabilized weights). Planned in `_dev/plan-doubly-robust.md`: first an exported constructor that turns curves estimated elsewhere into an `effect_curve` (with the `adrf()` method for *discoverHTE*'s `<erf>` objects living in *discoverHTE*), then possibly Kennedy's estimator. The constructor is useful on its own, since it would give curves from any method the plotting, contrasts, and omnibus tests of *adrftools*.
-
-**Ratio contrasts.** `reference_curve(type = "ratio")` and `curve_contrast(type = "ratio")` for risk ratios and rate ratios, with inference on the log scale. With shift curves, a ratio reference curve at 0 gives the relative change in the mean outcome from a shift, which is how shift effects on binary and count outcomes are often reported.
 
 **Multi-category outcomes.** Ordinal and multinomial models (`polr`, `ordinal_weightit`, `multinom_weightit`, `nnet::multinom`, *brms* `categorical`) return one prediction per category. `adrf()` now gives an informative error for them. Planned (2026-11-24) in `_dev/plan-categorical-outcomes.md`: the curves for all categories are estimated at once, with the category stored as a column of `.by_grid`, so `subset`, `summary()`, and `plot()` select a category as they select a subgroup. Sums across categories (e.g., the probability of the top two categories of an ordinal outcome) would be a natural addition once that exists.
 
@@ -42,8 +36,6 @@ First collected on 2026-11-12 while auditing the package and writing the test su
 
 **A positivity diagnostic** *(new; deferred in `_dev/plan-shift-effects.md`)*. For shift curves, the share of shifted treatment values outside the observed support (or beyond its .01 and .99 quantiles) at each shift, overall and by subgroup; in `nhanes3lead`, a shift of $-0.5$ SD moves 10.8% of units below the observed minimum. For the ADRF, an estimate of the conditional treatment density at each grid value, averaged over units, would show where the curve rests on extrapolation. Either could be printed by `summary()` or drawn by `plot()` (see the next section).
 
-**Quantile-spaced grids.** An option to place grid points at treatment quantiles so they are densest where the data are. `integrate = "empirical"` now handles the weighting of the omnibus test, so the remaining benefit is a better interpolated curve where the data are dense, at the cost of a less even plot.
-
 ## Output and plotting
 
 **Treatment distribution on plots.** A rug or density strip beneath the curve, so readers can see where the curve is extrapolating. `adrf()` already stores the treatment density used by `integrate = "empirical"` (`.treat_density`), so the strip needs no extra data. For shift curves, the positivity diagnostic above would be the natural equivalent.
@@ -52,11 +44,7 @@ First collected on 2026-11-12 while auditing the package and writing the test su
 
 **`tidy()`, `glance()`, and `as.data.frame()` methods.** These would need *generics*, which was removed from Suggests because nothing used it (audit R44). `confint()` methods for `curve_est` and `curve_projection` would also be natural.
 
-**Plot data access.** `plot()` returns a *ggplot2* object, so `ggplot2::layer_data()` works, but its columns are not documented. `plot(..., plot = FALSE)` or an exported helper returning a data frame of the estimates and band limits would help users who build their own figures.
-
 **Pointwise and simultaneous bands together.** An option to draw both, as is common in the functional data literature.
-
-**Richer print output.** `print.effect_curve()` shows the curve type, response, treatment, range, `by`, and inference method. The number of units, the number of grid points, the number of subgroups, the number of bootstrap replicates or posterior draws, and whether the variance used HC2 or CR2 would all help.
 
 ## Package internals
 
@@ -77,3 +65,5 @@ First collected on 2026-11-12 while auditing the package and writing the test su
 - **`subset`, `by`, `wts`, and `cluster` from the full data**, not just model predictors (audit issue 31).
 - **Memory for large samples** (audit R38, 2026-11-16): the model matrix is built one treatment value at a time from a model frame of the whole grid, which cut peak memory on the `?adrf` example from 447 MB to 169 MB at `n = 201`.
 - **Unused helpers** (audit M13): `simultaneous_conf_level()` moved to `_dev/`; the other helpers and `make_rmvt()` are kept for possible future features, such as multivariate treatments.
+- **Plot data access** (2026-11-25): an `as.data.frame()` method for effect curves returns the estimates at the grid points and the confidence bands `plot()` draws, computed by the same code.
+- **Richer print output** (2026-11-25): `print()` reports the number of grid points and subgroups, the sample size and number of imputed datasets, and the small-sample adjustment (HC2, HC1, CR2, CR1, or the survey design), the type of bootstrap or named covariance matrix, and the number of replicates or draws.

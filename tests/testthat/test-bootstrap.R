@@ -24,6 +24,10 @@ test_that("bootstrap point estimates equal the original estimates", {
   a_b <- adrf(fit, treat = "logBLL", n = 5, vcov = "boot",
               fwb.args = list(R = 20, verbose = FALSE))
   expect_identical(attr(a_b, ".boot")$wtype, "multinom")
+
+  # print() reports the type of bootstrap and the number of replicates
+  expect_output(print(a), "inference: bootstrap \\(fractional weighted, 199 replicates\\)")
+  expect_output(print(a_b), "inference: bootstrap \\(traditional, 20 replicates\\)")
   expect_true(all(attr(a_b, ".boot")$t >= 0))
 
 

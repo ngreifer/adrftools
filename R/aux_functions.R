@@ -1623,10 +1623,20 @@ process_vcov_and_cluster <- function(vcov, model, cluster = NULL, is_bayes = FAL
           }
         }
 
+        # The small-sample adjustment, which print() reports
+        adjustment <- {
+          if (inherits(model, "svyglm")) "survey design"
+          else if (is_null(cl) && isTRUE(.attr(infl, "hc2_failed"))) "HC1"
+          else if (is_null(cl)) "HC2"
+          else if (is_null(.attr(infl, "cr2"))) "CR1"
+          else "CR2"
+        }
+
         attr(infl, "hc2_failed") <- NULL
         attr(infl, "cr2") <- NULL
 
-        return(c(list(vcov = builtin_vcovs[p], infl = infl), cl))
+        return(c(list(vcov = builtin_vcovs[p], infl = infl, adjustment = adjustment),
+                 cl))
       }
 
       if (!is_null(cluster)) {

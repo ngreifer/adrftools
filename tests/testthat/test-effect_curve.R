@@ -110,7 +110,7 @@ test_that("print methods produce output", {
   expect_output(print(a), "inference: unconditional")
 
   a_cl <- adrf(fit, treat = "logBLL", n = 5, cluster = ~Race)
-  expect_output(print(a_cl), "unconditional \\(clustered\\)")
+  expect_output(print(a_cl), "unconditional \\(clustered, CR2\\)")
 
   expect_output(print(a(logBLL = c(0, 1))), "ADRF Estimates")
 
@@ -184,4 +184,73 @@ test_that("values just outside the grid are moved to its ends and others give an
   expect_equal(attr(r, ".reference"), max(v))
   expect_false(anyNA(get_est(r)))
   expect_error(reference_curve(a, reference = max(v) + .005 * w), "within the range")
+})
+
+test_that("print() reports the grid, subgroups, and sample size", {
+  fit <- lm(Math ~ logBLL * Male + PIR, data = nhanes3lead)
+
+  a <- adrf(fit, treat = "logBLL", n = 7, by = ~Race, subset = Age > 8)
+  n <- sum(nhanes3lead$Age > 8)
+
+  expect_output(print(a), "grid points: 7")
+  expect_output(print(a), sprintf("by: Race \\(%s subgroups\\)",
+                                  length(unique(nhanes3lead$Race))))
+  expect_output(print(a), sprintf("sample size: %s",
+                                  format(n, big.mark = ",")))
+  expect_no_match(capture.output(print(a)), "imputed datasets")
+
+  # Curves derived from the ADRF keep the sample size and inference details
+  expect_output(print(amef(a)), sprintf("sample size: %s", format(n, big.mark = ",")))
+  expect_output(print(reference_curve(a, 1)), "inference: unconditional \\(HC2\\)")
+  expect_output(print(curve_contrast(a)), "inference: unconditional \\(HC2\\)")
+
+  # A shift curve reports the number of shifts
+  expect_output(print(shift_curve(fit, treat = "logBLL", n = 9)), "grid points: 9")
+})
+
+test_that("print() reports the small-sample adjustment or covariance matrix used", {
+  skip_if_not_installed("patrick")
+
+  fit <- lm(Math ~ logBLL * Male + PIR, data = nhanes3lead)
+
+  patrick::with_parameters_test_that(
+    "{label}",
+    {
+      a <- do.call("adrf", c(list(fit, treat = "logBLL", n = 3), args))
+      expect_output(print(a), pattern)
+    },
+    patrick::cases(
+      list(label = "unconditional", args = list(),
+           pattern = "inference: unconditional \\(HC2\\)"),
+      list(label = "unconditional with clustering", args = list(cluster = ~Race),
+           pattern = "inference: unconditional \\(clustered, CR2\\)"),
+      list(label = "conditional with the model's covariance", args = list(vcov = "conditional"),
+           pattern = "inference: conditional\n"),
+      list(label = "conditional with a named type", args = list(vcov = "HC3"),
+           pattern = "inference: conditional \\(HC3\\)"),
+      list(label = "conditional with a matrix", args = list(vcov = vcov(fit)),
+           pattern = "inference: conditional \\(user-supplied\\)"),
+      list(label = "conditional with clustering", args = list(vcov = "HC1", cluster = ~Race),
+           pattern = "inference: conditional \\(clustered, HC1\\)"),
+      list(label = "no inference", args = list(vcov = "none"),
+           pattern = "inference: none\n")
+    )
+  )
+})
+
+test_that("print() reports HC1 and CR1 when HC2 and CR2 are not available", {
+  skip_if_not_installed("mgcv")
+  skip_if_not_installed("betareg")
+
+  # bam() fits have no leverages
+  fit_bam <- mgcv::bam(Math ~ s(logBLL) + Male, data = nhanes3lead)
+  a_bam <- suppressMessages(adrf(fit_bam, treat = "logBLL", n = 3))
+  expect_output(print(a_bam), "inference: unconditional \\(HC1\\)")
+
+  # CR2 is available only for lm() and glm() models
+  d <- nhanes3lead
+  d$y <- (d$Math + 1) / (max(d$Math) + 2)
+  fit_beta <- betareg::betareg(y ~ logBLL + Male, data = d)
+  a_beta <- suppressMessages(adrf(fit_beta, treat = "logBLL", n = 3, cluster = ~Race))
+  expect_output(print(a_beta), "inference: unconditional \\(clustered, CR1\\)")
 })

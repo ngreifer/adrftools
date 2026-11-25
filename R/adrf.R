@@ -455,6 +455,18 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
 
   attr(vcov_type, "clustered") <- !is_null(cl_list.list[[1L]][["cluster"]])
 
+  # Details of the inference, which print() reports: the small-sample
+  # adjustment of the unconditional variance, and the type of bootstrap or
+  # the covariance matrix of the coefficients used for the conditional
+  # variance
+  attr(vcov_type, "adjustment") <- cl_list.list[[1L]][["adjustment"]]
+  attr(vcov_type, "method") <- .vcov_method(vcov, cl_list.list[[1L]][["vcov"]],
+                                            vcov_type)
+
+  # The number of units used from each imputed dataset and the number of
+  # imputed datasets, which print() reports
+  .sample <- list(n = lengths(s.list), m = m)
+
   # The shift function is not stored, so the object does not carry its
   # environment
   if (is_shift) {
@@ -502,7 +514,45 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
             .response = .response,
             .by_grid = by_grid,
             .outcome = .outcome,
-            .treat_density = .treat_density)
+            .treat_density = .treat_density,
+            .sample = .sample)
+}
+
+# A label for how the covariance matrix was computed, beyond `vcov_type`: the
+# type of bootstrap, or, for the conditional variance, the type of covariance
+# matrix of the coefficients when `vcov` names one (e.g., "HC3") or
+# "user-supplied" when it is a matrix, function, or formula. NULL otherwise.
+.vcov_method <- function(vcov, vcov_processed, vcov_type) {
+  if (vcov_type == "bootstrap") {
+    return(switch(vcov_processed,
+                  boot = "traditional",
+                  fwb = "fractional weighted"))
+  }
+
+  if (vcov_type != "conditional") {
+    return(NULL)
+  }
+
+  # With multiply imputed data, `vcov` can have one entry per imputed dataset
+  if (is.list(vcov) && !is.data.frame(vcov)) {
+    vcov <- vcov[[1L]]
+  }
+
+  if (is_null(vcov)) {
+    return(NULL)
+  }
+
+  if (!rlang::is_string(vcov)) {
+    return("user-supplied")
+  }
+
+  builtin_vcovs <- c("none", "unconditional", "conditional", "boot", "fwb")
+
+  if (pmatch(vcov, builtin_vcovs, nomatch = 0L) != 0L) {
+    return(NULL)
+  }
+
+  vcov
 }
 
 # The weighted mean predictions from `model` with its coefficients set to `b`
@@ -574,7 +624,7 @@ adrf.mira <- function(x, treat, vcov = "unconditional", cluster = NULL, type = N
 
   vcov <- cl_list[["vcov"]]
   infl <- cl_list[["infl"]]
-  cl_list[c("vcov", "infl")] <- NULL
+  cl_list[c("vcov", "infl", "adjustment")] <- NULL
 
   model_data <- ss(model_data, s)
 

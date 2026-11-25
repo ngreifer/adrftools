@@ -35,6 +35,10 @@ test_that("ADRFs from mira objects are pooled with Rubin's rules", {
 
   a <- adrf(fits, treat = "logBLL", n = 4, range = c(0, 2))
 
+  expect_output(print(a), sprintf("sample size: %s in each imputed dataset",
+                                  format(nrow(nhanes3lead), big.mark = ",")))
+  expect_output(print(a), "imputed datasets: 3")
+
   # Pool single-dataset ADRFs by hand
   per_imp <- lapply(seq_len(imp$m), function(i) {
     di <- mice::complete(imp, i)

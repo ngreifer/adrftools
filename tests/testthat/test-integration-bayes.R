@@ -30,6 +30,8 @@ test_that("Bayesian ADRFs average the posterior predictions draw by draw", {
   expect_equal(get_est(a), unname(colMeans(draws)), tolerance = 1e-8)
   expect_equal(get_vcov(a), unname(cov(draws)), tolerance = 1e-8)
 
+  expect_output(print(a), sprintf("inference: posterior \\(%s draws\\)", nrow(draws)))
+
   a_none <- adrf(fit, treat = "logBLL", n = 5, vcov = "none")
   expect_null(attr(a_none, ".draws"))
   expect_equal(get_est(a_none), get_est(a), tolerance = 1e-8)

@@ -21,6 +21,8 @@ print.effect_curve <- function(x, ...) {
 
   .print_contrast(x)
 
+  .print_sample(x)
+
   .print_vcov_type(x)
 
   cli::cat_line()
@@ -91,6 +93,9 @@ print.effect_curve <- function(x, ...) {
 
   cli::format_inline("   + range: {round(min(.values), 4)} to {round(max(.values), 4)}{sd_msg}") |>
     cli::cat_line()
+
+  cli::format_inline("   + grid points: {length(.values)}") |>
+    cli::cat_line()
 }
 
 .print_reference <- function(x) {
@@ -106,11 +111,18 @@ print.effect_curve <- function(x, ...) {
 
 .print_by <- function(x) {
   if (!inherits(x, "contrast_curve")) {
-    by_vars <- setdiff(names(.attr(x, ".by_grid")), .attr(x, ".outcome"))
+    .by_grid <- .attr(x, ".by_grid")
+    by_vars <- setdiff(names(.by_grid), .attr(x, ".outcome"))
 
     if (!is_null(by_vars)) {
       by_vec <- cli::cli_vec(by_vars, style = list("vec-last" = ", "))
-      cli::format_inline(" - by: {by_vec}") |>
+
+      # Subgroups, not counting the categories of the outcome
+      n_subgroups <- ss(.by_grid, j = by_vars) |>
+        funique() |>
+        fnrow()
+
+      cli::format_inline(" - by: {by_vec} ({n_subgroups} subgroup{?s})") |>
         cli::cat_line()
     }
   }
@@ -143,10 +155,30 @@ print.effect_curve <- function(x, ...) {
   }
 }
 
-.get_vcov_type_name <- function(.vcov_type, simultaneous = NULL) {
+# With `details = TRUE` (in print()), the small-sample adjustment, the type of
+# bootstrap or of the covariance matrix of the coefficients, and the number of
+# bootstrap replicates (`R`) or posterior draws (`n_draws`) are given in
+# parentheses along with whether the inference is clustered
+.get_vcov_type_name <- function(.vcov_type, simultaneous = NULL, details = FALSE,
+                                R = NULL, n_draws = NULL) {
   out <- as.character(.vcov_type)
 
-  if (isTRUE(.attr(.vcov_type, "clustered"))) {
+  if (details) {
+    fmt <- function(k) {
+      format(k, big.mark = ",", scientific = FALSE)
+    }
+
+    info <- c(if (isTRUE(.attr(.vcov_type, "clustered"))) "clustered",
+              .attr(.vcov_type, "adjustment"),
+              .attr(.vcov_type, "method"),
+              if (!is_null(R)) sprintf("%s replicates", fmt(R)),
+              if (!is_null(n_draws)) sprintf("%s draws", fmt(n_draws)))
+
+    if (!is_null(info)) {
+      out <- sprintf("%s (%s)", out, toString(info))
+    }
+  }
+  else if (isTRUE(.attr(.vcov_type, "clustered"))) {
     out <- paste(out, "(clustered)")
   }
 
@@ -161,8 +193,40 @@ print.effect_curve <- function(x, ...) {
 }
 
 .print_vcov_type <- function(x) {
-  cli::format_inline(' - inference: {(.get_vcov_type_name(.attr(x, ".vcov_type")))}') |>
+  .boot <- .attr(x, ".boot")
+  .draws <- .attr(x, ".draws")
+
+  vcov_name <- .get_vcov_type_name(.attr(x, ".vcov_type"), details = TRUE,
+                                   R = if (!is_null(.boot)) fnrow(.boot[["t"]]),
+                                   n_draws = if (!is_null(.draws)) fnrow(.draws))
+
+  cli::format_inline(" - inference: {vcov_name}") |>
     cli::cat_line()
+}
+
+.print_sample <- function(x) {
+  .sample <- .attr(x, ".sample")
+
+  if (is_null(.sample)) {
+    return(invisible(NULL))
+  }
+
+  n <- format(range(.sample[["n"]]), big.mark = ",", scientific = FALSE)
+  m <- .sample[["m"]]
+
+  n_msg <- {
+    if (m == 1L) n[1L]
+    else if (n[1L] == n[2L]) sprintf("%s in each imputed dataset", n[1L])
+    else sprintf("%s to %s in each imputed dataset", n[1L], n[2L])
+  }
+
+  cli::format_inline(" - sample size: {n_msg}") |>
+    cli::cat_line()
+
+  if (m > 1L) {
+    cli::format_inline(" - imputed datasets: {m}") |>
+      cli::cat_line()
+  }
 }
 
 .print_projection <- function(x) {
