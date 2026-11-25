@@ -101,7 +101,9 @@ amef1
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
-#>  - inference: unconditional
+#>    + grid points: 51
+#>  - sample size: 2,521
+#>  - inference: unconditional (HC2)
 #> 
 
 # Plot the AMEF
@@ -116,7 +118,7 @@ amef1(logBLL = c(0, 1, 2)) |>
 #>  logBLL Estimate Std. Error       t P-value  CI Low CI High
 #>       0  -0.1768     0.4531 -0.3902  0.9624 -1.2451  0.8915
 #>       1  -0.8144     0.2857 -2.8505  0.0124 -1.4881 -0.1407
-#>       2  -0.7111     0.7808 -0.9108  0.6939 -2.5521  1.1299
+#>       2  -0.7111     0.7808 -0.9108  0.6939 -2.5522  1.1299
 #> ───────────────────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
 #> Confidence level: 95% (t* = 2.358, df = 2437)

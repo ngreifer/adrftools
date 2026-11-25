@@ -66,7 +66,7 @@
                         <h4 data-toc-skip class="author">Noah
 Greifer</h4>
             
-            <h4 data-toc-skip class="date">2026-11-19</h4>
+            <h4 data-toc-skip class="date">2026-11-25</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/ngreifer/adrftools/blob/main/vignettes/adrftools.Rmd" class="external-link"><code>vignettes/adrftools.Rmd</code></a></small>
       <div class="d-none name"><code>adrftools.Rmd</code></div>
@@ -314,7 +314,9 @@ some information about the effect curve.</p>
 <span><span class="co">##  - response: Math</span></span>
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">##    + grid points: 51</span></span>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: unconditional (HC2)</span></span></code></pre></div>
 <p>An <code>&lt;effect_curve&gt;</code> object is a function that takes
 in values of the treatment and returns estimates of the ADRF at those
 points. For example, to display the ADRF estimates at values of
@@ -381,12 +383,12 @@ estimates requested, not the full effect curve.</p>
 <span><span class="co">##                               ADRF Point Contrasts</span></span>
 <span><span class="co">## ────────────────────────────────────────────────────────────────────────────────</span></span>
 <span><span class="co">##                         Term Estimate Std. Error      t  P-value  CI Low CI High</span></span>
-<span><span class="co">##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2193 -1.807   0.1648 -0.9089  0.1161</span></span>
-<span><span class="co">##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2925 -4.362 &lt; 0.0001 -1.9592 -0.5923</span></span>
-<span><span class="co">##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2748 -3.200   0.0028 -1.5214 -0.2373</span></span>
+<span><span class="co">##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2193 -1.807   0.1649 -0.9093  0.1165</span></span>
+<span><span class="co">##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2925 -4.362 &lt; 0.0001 -1.9596 -0.5919</span></span>
+<span><span class="co">##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2748 -3.200   0.0039 -1.5219 -0.2368</span></span>
 <span><span class="co">## ────────────────────────────────────────────────────────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.337, df = 2401)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.338, df = 2401)</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <p>In addition to the contrast estimates and confidence intervals, test
 statistics and p-values for the tests that the contrasts are equal to 0
@@ -415,8 +417,8 @@ effect of the treatment.</p>
 <span><span class="co">##   P-value</span></span>
 <span><span class="co">##  &lt; 0.0001</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span></span></code></pre></div>
 <p>This test works in two steps: first, the projection <span class="math inline">\(\hat{P}(a)\)</span> is computed, and second, the
 residuals of the projection are used to compute the test statistic. The
 test statistic <span class="math inline">\(T\)</span> is defined as</p>
@@ -486,8 +488,7 @@ whether the ADRF is approximately linear:</p>
 <span><span class="co">##  P-value</span></span>
 <span><span class="co">##   0.5278</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>In this case, the high p-value indicates that we cannot reject the
 null hypothesis that the ADRF is linear, even though there appears to be
 a curve in the plot. We can interpret this as indicating that a linear
@@ -612,8 +613,10 @@ when printed, displays the reference level.</p>
 <span><span class="co">##  - response: Math</span></span>
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##    + grid points: 52</span></span>
 <span><span class="co">##  - reference level: 0</span></span>
-<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: unconditional (HC2)</span></span></code></pre></div>
 <p>We can plot the reference curve, which will essentially be the
 original ADRF shifted so that the curve height at the reference level is
 equal to 0.</p>
@@ -636,8 +639,8 @@ value at the reference level:</p>
 <span><span class="co">##   P-value</span></span>
 <span><span class="co">##  &lt; 0.0001</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span></span></code></pre></div>
 <p>Theoretically, this is equivalent to testing whether the ADRF is flat
 (no matter what the reference level is set to), though there may be
 slight differences between the results of this test and those of the
@@ -684,7 +687,9 @@ by supplying to it an <code>&lt;effect_curve&gt;</code> object.</p>
 <span><span class="co">##  - response: Math</span></span>
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">##    + grid points: 51</span></span>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: unconditional (HC2)</span></span></code></pre></div>
 <p>The result is an <code>&lt;amef_curve&gt;</code> object, which, like
 all <code>&lt;effect_curve&gt;</code> objects, is a function. We can
 plot the AMEF with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</p>
@@ -730,8 +735,7 @@ test whether the AMEF is 0 everywhere.</p>
 <span><span class="co">##  P-value</span></span>
 <span><span class="co">##    0.403</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>Conclusions from the test that the ADRF is flat and that the AMEF is
 0 may differ due to differing sensitivities to local alternatives
 between the tests. More research is needed to understand these
@@ -784,8 +788,10 @@ displays which variables were supplied to <code>by</code>:</p>
 <span><span class="co">##  - response: Math</span></span>
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">##  - by: Male</span></span>
-<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">##    + grid points: 51</span></span>
+<span><span class="co">##  - by: Male (2 subgroups)</span></span>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: unconditional (HC2)</span></span></code></pre></div>
 <p>When we plot the ADRF, we can see curves for both groups:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_by_male</span><span class="op">)</span></span></code></pre></div>
@@ -804,8 +810,8 @@ that the ADRF for each subgroup is flat:</p>
 <span><span class="co">##     0   0.1030</span></span>
 <span><span class="co">##     1 &lt; 0.0001</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span></span></code></pre></div>
 <p>We can reject the null hypothesis for the <code>Male = 1</code>
 group, but not for the <code>Male = 0</code> group at the .05 level.</p>
 <p>We can display ADRF estimates for each subgroup by supplying values
@@ -916,8 +922,7 @@ arguments. We can do the same with other functions as well:</p>
 <span><span class="co">##  Male P-value</span></span>
 <span><span class="co">##     0   0.103</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Estimates along the ADRF</span></span>
 <span><span class="fu">adrf_bll_by_male</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -945,8 +950,8 @@ arguments. We can do the same with other functions as well:</p>
 <span><span class="co">##  Male  P-value</span></span>
 <span><span class="co">##     1 &lt; 0.0001</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span></span>
 <span></span>
 <span><span class="co"># Estimates along the ADRF</span></span>
 <span><span class="fu">adrf_bll_by_male</span><span class="op">(</span>logBLL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, subset <span class="op">=</span> <span class="va">Male</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -991,8 +996,10 @@ two subgroups, all pairs of subgroups are compared.</p>
 <span><span class="co">##  - response: Math</span></span>
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
+<span><span class="co">##    + grid points: 51</span></span>
 <span><span class="co">##  - contrast: [Male = 1] - [Male = 0]</span></span>
-<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: unconditional (HC2)</span></span></code></pre></div>
 <p>We can plot the difference between the two ADRFs using
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
 <div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
@@ -1013,8 +1020,7 @@ across subgroups:</p>
 <span><span class="co">##                 Contrast P-value</span></span>
 <span><span class="co">##  [Male = 1] - [Male = 0]  0.0183</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>Given the small p-value, we can reject the null hypothesis that the
 ADRF contrast is 0, implying the subgroup ADRFs differ from each
 other.</p>
@@ -1029,7 +1035,7 @@ between the subgroup ADRFs at specific points:</p>
 <span><span class="co">##                 Contrast logBLL Estimate Std. Error      t P-value  CI Low CI High</span></span>
 <span><span class="co">##  [Male = 1] - [Male = 0]      0  -0.0938     0.3483 -0.269  0.9901 -0.9250  0.7374</span></span>
 <span><span class="co">##  [Male = 1] - [Male = 0]      1  -0.8551     0.2283 -3.746  0.0006 -1.3998 -0.3103</span></span>
-<span><span class="co">##  [Male = 1] - [Male = 0]      2  -0.9300     0.4545 -2.046  0.1164 -2.0147  0.1546</span></span>
+<span><span class="co">##  [Male = 1] - [Male = 0]      2  -0.9300     0.4545 -2.046  0.1164 -2.0147  0.1547</span></span>
 <span><span class="co">## ──────────────────────────────────────────────────────────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.386, df = 2401)</span></span></span>
@@ -1090,7 +1096,9 @@ binary outcome.</p>
 <span><span class="co">##  - response: Block_bin</span></span>
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">##    + grid points: 51</span></span>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: unconditional (HC2)</span></span></code></pre></div>
 <p>We can plot the ADRF with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
 <div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span><span class="op">)</span></span></code></pre></div>
@@ -1183,7 +1191,7 @@ computes transformed confidence intervals.</p>
 <span><span class="co">##  logBLL Estimate Std. Error CI Low CI High</span></span>
 <span><span class="co">##       0   0.2420     0.0226 0.1880  0.2959</span></span>
 <span><span class="co">##       1   0.1926     0.0147 0.1574  0.2276</span></span>
-<span><span class="co">##       2   0.0752     0.0205 0.0262  0.1241</span></span>
+<span><span class="co">##       2   0.0752     0.0205 0.0263  0.1241</span></span>
 <span><span class="co">## ──────────────────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (z* = 2.386)</span></span></span></code></pre></div>
@@ -1281,8 +1289,8 @@ test statistic.</p>
 <span><span class="co">##   P-value</span></span>
 <span><span class="co">##  &lt; 0.0001</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span></span>
 <span></span>
 <span><span class="co"># Test for linearity</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, <span class="st">"linear"</span><span class="op">)</span></span>
@@ -1294,8 +1302,7 @@ test statistic.</p>
 <span><span class="co">##  P-value</span></span>
 <span><span class="co">##   0.1662</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Estimate projection on transformed ADRF</span></span>
 <span><span class="va">proj_t</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/curve_projection.html">curve_projection</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, <span class="st">"linear"</span><span class="op">)</span></span>
@@ -1324,8 +1331,8 @@ test statistic.</p>
 <span><span class="co">##   P-value</span></span>
 <span><span class="co">##  &lt; 0.0001</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span></span>
 <span></span>
 <span><span class="co"># Test for linearity</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, <span class="st">"linear"</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -1337,8 +1344,7 @@ test statistic.</p>
 <span><span class="co">##  P-value</span></span>
 <span><span class="co">##   0.5455</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
 <span></span>
 <span><span class="co"># Estimate projection on untransformed ADRF</span></span>
 <span><span class="va">proj_u</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/curve_projection.html">curve_projection</a></span><span class="op">(</span><span class="va">adrf_bll_bin</span>, <span class="st">"linear"</span>, transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -1763,7 +1769,9 @@ points.&lt;/p&gt;"><sup>4</sup></a>.</p>
 <span><span class="co">##  - response: Math</span></span>
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##    + range: -0.3567 to 2.4248</span></span>
-<span><span class="co">##  - inference: posterior</span></span></code></pre></div>
+<span><span class="co">##    + grid points: 21</span></span>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: posterior (800 draws)</span></span></code></pre></div>
 <p>All credible intervals and bands use the confidence interval
 interface (e.g., using <code>conf_level</code> in <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>
 and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> to request the credibility level). The posterior
@@ -1785,9 +1793,9 @@ up to Monte Carlo error from the finite number of posterior draws.</p>
 <span><span class="co">##         ADRF Estimates</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">##  logBLL Estimate CI Low CI High</span></span>
-<span><span class="co">##       0    8.384  8.091   8.698</span></span>
-<span><span class="co">##       1    8.004  7.744   8.253</span></span>
-<span><span class="co">##       2    7.116  6.723   7.529</span></span>
+<span><span class="co">##       0    8.394  8.113   8.702</span></span>
+<span><span class="co">##       1    8.007  7.746   8.259</span></span>
+<span><span class="co">##       2    7.184  6.810   7.516</span></span>
 <span><span class="co">## ───────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: posterior, simultaneous</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Confidence level: 95%</span></span></span></code></pre></div>

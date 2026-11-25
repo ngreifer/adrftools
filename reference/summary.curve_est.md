@@ -163,11 +163,21 @@ for the other tests contains the null value. The widths of the
 confidence intervals and the p-values depend on how many and which
 estimates are computed. With Wald inference, the simultaneous critical
 value and p-values are computed from the multivariate t (or normal)
-distribution of the estimates using
-[`mvtnorm::qmvt()`](https://rdrr.io/pkg/mvtnorm/man/qmvt.html) and
-[`mvtnorm::pmvt()`](https://rdrr.io/pkg/mvtnorm/man/pmvt.html) , which
-use a randomized algorithm, so they can differ slightly between calls;
-use [`set.seed()`](https://rdrr.io/r/base/Random.html) for reproducible
+distribution of the estimates. With more than 10 estimates, or when the
+correlation matrix of the estimates is singular (e.g., for estimates at
+many points along a curve, which are smooth functions of a few model
+coefficients), the critical value is computed by simulating the maximum
+of the absolute test statistics from a factor of the correlation matrix,
+with enough draws that its Monte Carlo standard error is about .001.
+Otherwise, it is computed using
+[`mvtnorm::qmvt()`](https://rdrr.io/pkg/mvtnorm/man/qmvt.html) , which
+is more accurate in that case. The p-values are computed by the same
+simulation when the correlation matrix is singular, with enough draws
+that the Monte Carlo standard error of each p-value is at most the
+larger of .0001 and .5% of the p-value, and otherwise using
+[`mvtnorm::pmvt()`](https://rdrr.io/pkg/mvtnorm/man/pmvt.html) . Both
+use random numbers, so they can differ slightly between calls; use
+[`set.seed()`](https://rdrr.io/r/base/Random.html) for reproducible
 results. With bootstrapping or Bayesian models and `ci.type = "perc"`,
 the simultaneous intervals are the equal-tailed percentile intervals
 with the tail probability calibrated so that they jointly contain the

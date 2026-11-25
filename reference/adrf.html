@@ -58,7 +58,8 @@
 <span>  <span class="va">treat</span>,</span>
 <span>  vcov <span class="op">=</span> <span class="st">"unconditional"</span>,</span>
 <span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"response"</span>,</span>
+<span>  type <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  outcome <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subset <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -95,7 +96,11 @@
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>character string indicating the type of prediction. Passed to <code><a href="https://rdrr.io/pkg/marginaleffects/man/get_predict.html" class="external-link">marginaleffects::get_predict()</a></code>. Default is <code>"response"</code> for predictions on the scale of the outcome variable. Other options might include <code>"link"</code> for the linear predictor. This argument is ignored for <code>lm</code> objects.</p></dd>
+<dd><p>character string indicating the type of prediction. Passed to <code><a href="https://rdrr.io/pkg/marginaleffects/man/get_predict.html" class="external-link">marginaleffects::get_predict()</a></code>. When not supplied, <code>"response"</code> is used for predictions on the scale of the outcome variable, unless the model does not allow it (e.g., <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code> models), in which case the type <code><a href="https://rdrr.io/pkg/marginaleffects/man/predictions.html" class="external-link">marginaleffects::predictions()</a></code> uses by default for the model is used; for multinomial and ordinal models, both give the probability of each category of the outcome. Other options might include <code>"link"</code> for the linear predictor or, for some ordinal models, <code>"mean"</code> for the expected value of the outcome. This argument is ignored for <code>lm</code> objects.</p></dd>
+
+
+<dt id="arg-outcome">outcome<a class="anchor" aria-label="anchor" href="#arg-outcome"></a></dt>
+<dd><p>optional; for models that give a separate prediction for each category of the outcome (e.g., multinomial and ordinal models), a character vector naming the categories for which to compute the effect curve. Default is to compute the effect curve for every category. See the section <em>Categorical outcomes</em> in Details of <code>adrf()</code>.</p></dd>
 
 
 <dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
@@ -124,7 +129,7 @@
 
 <dt id="arg-fwb-args">fwb.args<a class="anchor" aria-label="anchor" href="#arg-fwb-args"></a></dt>
 <dd><p>an optional list of arguments to be passed to <code><a href="https://ngreifer.github.io/fwb/reference/fwb.html" class="external-link">fwb::fwb()</a></code>
- when <code>vcov</code> is <code>"boot"</code> or <code>"fwb"</code>.</p></dd>
+ when <code>vcov</code> is <code>"boot"</code> or <code>"fwb"</code>. When <code>cl</code> is not included and a <span class="pkg">future</span> plan with more than one worker is set, <code>cl = "future"</code> is used; see the section <em>Parallelization with <span class="pkg">future</span></em> in Details.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -139,6 +144,14 @@
 <p>In the unconditional variance, each unit's contribution to the influence function of the model coefficients is divided by \(\sqrt{1 - h_i}\), where \(h_i\) is the unit's leverage (i.e., hat value), as in the HC2 estimator of MacKinnon and White (1985). Without this adjustment, the variance would share the downward bias of the HC0 sandwich estimator, which is largest for estimates that depend on units with high leverage, such as the ADRF at the extremes of the treatment, and which can make the omnibus tests in <code><a href="summary.effect_curve.html">summary.effect_curve()</a></code> reject a true null hypothesis too often in small samples. The leverages are computed from the fitted model for <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> models, taken from the fit for <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code> models (in which they are the leverages of the penalized fit, which sum to the effective degrees of freedom), and extracted using <code><a href="https://rdrr.io/r/stats/influence.measures.html" class="external-link">hatvalues()</a></code> for other models; when they cannot be found, the HC1 adjustment is used instead with a message, which multiplies the variance contributed by the model coefficients by \(n/(n-p)\), where \(n\) is the number of units and \(p\) the number of estimated parameters (the effective degrees of freedom for <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code> and <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam()</a></code> models), and corrects the bias only for the average leverage. The adjustment is not used with <code>svyglm</code> models, whose variance is computed from the survey design.</p>
 <p>When <code>cluster</code> is supplied, the unconditional variance uses the CR2 adjustment described by Pustejovsky and Tipton (2018), the cluster-level analog of HC2: within each cluster, the vector of residuals is multiplied by \((I - H_{gg})^{-1/2}\), where \(H_{gg}\) is the block of the hat matrix for the units in the cluster, in place of the usual \(G/(G-1)\) adjustment, where \(G\) is the number of clusters. With clusters of one unit, it is the HC2 adjustment. CR2 is available only for <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> models (including those whose influence function is that of an ordinary <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> fit, such as <code>glm_weightit()</code> models with fixed weights); for other models, the CR1 adjustment, \(\frac{G}{G-1}\frac{n-1}{n-p}\) (the default of <code><a href="https://zeileis.codeberg.page/sandwich/reference/vcovCL.html" class="external-link">sandwich::vcovCL()</a></code>), is used with a message. For generalized linear models, the residuals and hat matrix are those of the final iteratively reweighted least squares fit, so the adjusted variance can differ from that of <code>sandwich::vcovCL(type = "HC2")</code> when the working weights vary within clusters.</p>
 <p>When a <code>&lt;mira&gt;</code> object from <span class="pkg">mice</span> or a <code>&lt;mimira&gt;</code> object from <span class="pkg">MatchThem</span> is supplied, analyses are applied to each imputed dataset and pooled using Rubin's rules. The degrees of freedom used for tests and confidence intervals are those of Reiter (2007), or of Li, Raghunathan, and Rubin (1991) when the complete-data degrees of freedom are infinite (e.g., for generalized linear models). These account for the number of imputations and the fraction of missing information, which is assumed to be the same for all points on the curve, so a single value is used for every point and for joint inference. Bootstrapping is not allowed with such objects.</p><div class="section">
+<h3 id="categorical-outcomes">Categorical outcomes<a class="anchor" aria-label="anchor" href="#categorical-outcomes"></a></h3>
+
+
+<p>For models of categorical outcomes, such as multinomial and ordinal regression models, the predictions are by default the probabilities of each category of the outcome, and <code>adrf()</code> estimates an ADRF for each category, i.e., the average probability of that category at each treatment value. These are stored together in one <code>&lt;effect_curve&gt;</code> object, and at each treatment value, the estimates for all categories sum to 1. The categories are treated much like subgroups defined by <code>by</code>: the output of the effect curve and of the functions that take it contain a column named <code>outcome</code> identifying the category (or <code>.outcome</code>, if a variable named in <code>by</code> is called <code>outcome</code>), and the <code>outcome</code> argument of the effect curve, <code><a href="summary.effect_curve.html">summary.effect_curve()</a></code>, <code><a href="plot.effect_curve.html">plot.effect_curve()</a></code>, and the other functions that take an effect curve selects categories. <code><a href="curve_contrast.html">curve_contrast()</a></code> compares subgroups within each category rather than categories with each other. Supplying <code>outcome</code> to <code>adrf()</code> computes the effect curve for only those categories, which saves computation when only some categories are of interest.</p>
+<p>To estimate a single curve with such a model, supply a <code>type</code> that gives one prediction per unit, if the model has one (e.g., <code>type = "link"</code> or <code>type = "mean"</code> for <code><a href="https://ngreifer.github.io/WeightIt/reference/ordinal_weightit.html" class="external-link">WeightIt::ordinal_weightit()</a></code> models). Further arguments needed by the model's <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> method (e.g., <code>values</code> for <code>type = "mean"</code> with <code><a href="https://ngreifer.github.io/WeightIt/reference/ordinal_weightit.html" class="external-link">WeightIt::ordinal_weightit()</a></code> models whose outcome categories are not numbers) can be supplied through <code>...</code>.</p>
+</div>
+
+<div class="section">
 <h3 id="range"><code>range</code><a class="anchor" aria-label="anchor" href="#range"></a></h3>
 
 
@@ -152,6 +165,18 @@
 
 <p>The <code>wts</code> argument supplies weights that define the population over which the predicted outcomes are averaged, such as sampling weights. When supplied as a numeric vector, it must have one value for each unit used to fit the model (or, with multiply imputed data, either one value for each unit in each imputed dataset or one value for each row of the imputed datasets stacked together). When supplied as a string, it is the name of a variable in the original dataset. <code>wts = TRUE</code> uses the weights used to fit the model, as extracted by <code><a href="https://easystats.github.io/insight/reference/get_weights.html" class="external-link">insight::get_weights()</a></code>, and <code>wts = FALSE</code> weights all units equally.</p>
 <p>When <code>wts</code> is not supplied, the default depends on the model. When a <code>&lt;svyglm&gt;</code> object from <span class="pkg">survey</span> is supplied, the survey weights are always used, and <code>wts</code> cannot be supplied (other than as <code>TRUE</code>), because the design-based variance treats the estimates as describing the population the survey design represents. When a <code>&lt;glm_weightit&gt;</code> object, etc., from <span class="pkg">WeightIt</span> is supplied, the sampling weights are used if <code>s.weights</code> were supplied in the original call to <code>weightit()</code>; the balancing weights are not, because they are used to fit the outcome model rather than to define the target population. For other models, all units are weighted equally, even when the model was fit with weights. See <code><a href="../articles/adrftools.html">vignette("adrftools")</a></code> for more details on using the <code>wts</code> argument.</p>
+</div>
+
+<div class="section">
+<h3 id="parallelization-with-future">Parallelization with <span class="pkg">future</span><a class="anchor" aria-label="anchor" href="#parallelization-with-future"></a></h3>
+
+
+<p><code>adrf()</code> can run its slowest computations in parallel using the <a href="https://CRAN.R-project.org/package=future" class="external-link"><span class="pkg">future</span></a> framework, which requires the <a href="https://CRAN.R-project.org/package=future.apply" class="external-link"><span class="pkg">future.apply</span></a> package to be installed. These are the bootstrap replicates, the predictions at each treatment value for Bayesian models, the numerical derivatives of the estimates with respect to the model coefficients (used in the delta method for models whose predictions are not computed from the model matrix), and the analyses of the imputed datasets for models fit to multiply imputed data. To request parallel processing, specify a future plan before calling <code>adrf()</code>, e.g., using</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="st">"multisession"</span>, workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre><p></p></div>
+<p>after which these computations are distributed across the workers in pieces (a treatment value, a model coefficient, or an imputed dataset), each worker starting a new piece as soon as it finishes one. No argument to <code>adrf()</code> is involved, and without a plan, or with a plan of a single worker, they run sequentially. Parallelization helps most with large datasets, slow predictions (e.g., from Bayesian models), and bootstrapping; for small problems, starting the work on the workers can take longer than it saves.</p>
+<p>The results are the same whether or not parallel processing is used and do not depend on the number of workers. None of these computations draws random numbers other than the bootstrap, but each runs on its own random number stream generated from the current seed, and the bootstrap weights are drawn by <code><a href="https://ngreifer.github.io/fwb/reference/fwb.html" class="external-link">fwb::fwb()</a></code>
+ from the current seed before the replicates are computed, so calling <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> before <code>adrf()</code> is all that is needed to make the results reproducible. The random number stream after the call is also the same either way; generating the streams moves it on by one draw.</p>
+<p>Each worker receives its own copy of the model and the data it needs. <span class="pkg">future</span> refuses to send more than <code>getOption("future.globals.maxSize")</code> (500 MB by default) to a worker at once; with large models or datasets, raise it, e.g., with <code>options(future.globals.maxSize = 2e9)</code>. Packages attached in the current session are attached on the workers, but objects in the global environment that the model formula refers to (e.g., a function defined by the user) are not, so with such a model, a plan whose workers are separate <span style="R">R</span> sessions gives an error. <code><a href="https://rdrr.io/pkg/stan4bart/man/stan4bart.html" class="external-link">stan4bart::stan4bart()</a></code> models cannot be copied to another <span style="R">R</span> session, so their predictions are always computed in the current session. On Linux and macOS outside RStudio, <code>future::plan("multicore")</code> instead forks the current session, so the workers share its memory and nothing is copied.</p>
 </div>
 
     </div>
@@ -197,7 +222,9 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - treatment: logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    + grid points: 51</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - sample size: 2,521</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional (HC2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Plot the ADRF</span></span></span>
@@ -212,7 +239,7 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  logBLL Estimate Std. Error CI Low CI High</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       0    8.413     0.2312  7.861   8.964</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       1    8.005     0.1005  7.765   8.245</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       2    7.103     0.2495  6.508   7.698</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       2    7.103     0.2495  6.508   7.699</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ──────────────────────────────────────────</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Confidence level: 95% (t* = 2.385, df = 2437)</span></span>
@@ -229,7 +256,9 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - treatment: logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: 0 to 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    + grid points: 51</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - sample size: 2,521</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional (HC2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf2</span><span class="op">)</span></span></span>
@@ -240,106 +269,106 @@
 <span class="r-in"><span>               vcov <span class="op">=</span> <span class="st">"fwb"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 
   |                                                  | 0 % ~calculating  
-  |+                                                 | 1 % ~31s          
-  |+                                                 | 2 % ~22s          
-  |++                                                | 3 % ~25s          
-  |++                                                | 4 % ~21s          
-  |+++                                               | 5 % ~20s          
-  |+++                                               | 6 % ~18s          
-  |++++                                              | 7 % ~17s          
-  |++++                                              | 8 % ~17s          
-  |+++++                                             | 9 % ~16s          
-  |+++++                                             | 10% ~15s          
-  |++++++                                            | 11% ~15s          
-  |++++++                                            | 12% ~15s          
-  |+++++++                                           | 13% ~14s          
-  |+++++++                                           | 14% ~14s          
-  |++++++++                                          | 15% ~13s          
-  |++++++++                                          | 16% ~13s          
-  |+++++++++                                         | 17% ~13s          
-  |+++++++++                                         | 18% ~13s          
-  |++++++++++                                        | 19% ~12s          
-  |++++++++++                                        | 20% ~12s          
-  |+++++++++++                                       | 21% ~12s          
-  |+++++++++++                                       | 22% ~12s          
-  |++++++++++++                                      | 23% ~12s          
-  |++++++++++++                                      | 24% ~11s          
-  |+++++++++++++                                     | 25% ~11s          
-  |+++++++++++++                                     | 26% ~11s          
-  |++++++++++++++                                    | 27% ~11s          
-  |++++++++++++++                                    | 28% ~11s          
-  |+++++++++++++++                                   | 29% ~10s          
-  |+++++++++++++++                                   | 30% ~10s          
-  |++++++++++++++++                                  | 31% ~11s          
-  |++++++++++++++++                                  | 32% ~10s          
-  |+++++++++++++++++                                 | 33% ~10s          
-  |+++++++++++++++++                                 | 34% ~10s          
-  |++++++++++++++++++                                | 35% ~10s          
-  |++++++++++++++++++                                | 36% ~10s          
-  |+++++++++++++++++++                               | 37% ~09s          
-  |+++++++++++++++++++                               | 38% ~09s          
-  |++++++++++++++++++++                              | 39% ~09s          
-  |++++++++++++++++++++                              | 40% ~09s          
-  |+++++++++++++++++++++                             | 41% ~09s          
-  |+++++++++++++++++++++                             | 42% ~09s          
-  |++++++++++++++++++++++                            | 43% ~08s          
-  |++++++++++++++++++++++                            | 44% ~08s          
-  |+++++++++++++++++++++++                           | 45% ~08s          
-  |+++++++++++++++++++++++                           | 46% ~08s          
-  |++++++++++++++++++++++++                          | 47% ~08s          
-  |++++++++++++++++++++++++                          | 48% ~08s          
-  |+++++++++++++++++++++++++                         | 49% ~07s          
-  |+++++++++++++++++++++++++                         | 50% ~07s          
-  |++++++++++++++++++++++++++                        | 51% ~07s          
-  |++++++++++++++++++++++++++                        | 52% ~07s          
-  |+++++++++++++++++++++++++++                       | 53% ~07s          
-  |+++++++++++++++++++++++++++                       | 54% ~07s          
-  |++++++++++++++++++++++++++++                      | 55% ~06s          
-  |++++++++++++++++++++++++++++                      | 56% ~06s          
-  |+++++++++++++++++++++++++++++                     | 57% ~06s          
-  |+++++++++++++++++++++++++++++                     | 58% ~06s          
-  |++++++++++++++++++++++++++++++                    | 59% ~06s          
-  |++++++++++++++++++++++++++++++                    | 60% ~06s          
-  |+++++++++++++++++++++++++++++++                   | 61% ~06s          
-  |+++++++++++++++++++++++++++++++                   | 62% ~06s          
-  |++++++++++++++++++++++++++++++++                  | 63% ~05s          
-  |++++++++++++++++++++++++++++++++                  | 64% ~05s          
-  |+++++++++++++++++++++++++++++++++                 | 65% ~05s          
-  |+++++++++++++++++++++++++++++++++                 | 66% ~05s          
-  |++++++++++++++++++++++++++++++++++                | 67% ~05s          
-  |++++++++++++++++++++++++++++++++++                | 68% ~05s          
-  |+++++++++++++++++++++++++++++++++++               | 69% ~04s          
-  |+++++++++++++++++++++++++++++++++++               | 70% ~04s          
-  |++++++++++++++++++++++++++++++++++++              | 71% ~04s          
-  |++++++++++++++++++++++++++++++++++++              | 72% ~04s          
-  |+++++++++++++++++++++++++++++++++++++             | 73% ~04s          
-  |+++++++++++++++++++++++++++++++++++++             | 74% ~04s          
-  |++++++++++++++++++++++++++++++++++++++            | 75% ~04s          
-  |++++++++++++++++++++++++++++++++++++++            | 76% ~03s          
-  |+++++++++++++++++++++++++++++++++++++++           | 77% ~03s          
-  |+++++++++++++++++++++++++++++++++++++++           | 78% ~03s          
-  |++++++++++++++++++++++++++++++++++++++++          | 79% ~03s          
-  |++++++++++++++++++++++++++++++++++++++++          | 80% ~03s          
-  |+++++++++++++++++++++++++++++++++++++++++         | 81% ~03s          
-  |+++++++++++++++++++++++++++++++++++++++++         | 82% ~03s          
-  |++++++++++++++++++++++++++++++++++++++++++        | 83% ~02s          
-  |++++++++++++++++++++++++++++++++++++++++++        | 84% ~02s          
-  |+++++++++++++++++++++++++++++++++++++++++++       | 85% ~02s          
-  |+++++++++++++++++++++++++++++++++++++++++++       | 86% ~02s          
-  |++++++++++++++++++++++++++++++++++++++++++++      | 87% ~02s          
-  |++++++++++++++++++++++++++++++++++++++++++++      | 88% ~02s          
-  |+++++++++++++++++++++++++++++++++++++++++++++     | 89% ~02s          
-  |+++++++++++++++++++++++++++++++++++++++++++++     | 90% ~01s          
-  |++++++++++++++++++++++++++++++++++++++++++++++    | 91% ~01s          
-  |++++++++++++++++++++++++++++++++++++++++++++++    | 92% ~01s          
-  |+++++++++++++++++++++++++++++++++++++++++++++++   | 93% ~01s          
+  |+                                                 | 1 % ~37s          
+  |+                                                 | 2 % ~29s          
+  |++                                                | 3 % ~26s          
+  |++                                                | 4 % ~25s          
+  |+++                                               | 5 % ~24s          
+  |+++                                               | 6 % ~23s          
+  |++++                                              | 7 % ~23s          
+  |++++                                              | 8 % ~22s          
+  |+++++                                             | 9 % ~22s          
+  |+++++                                             | 10% ~21s          
+  |++++++                                            | 11% ~21s          
+  |++++++                                            | 12% ~21s          
+  |+++++++                                           | 13% ~20s          
+  |+++++++                                           | 14% ~20s          
+  |++++++++                                          | 15% ~20s          
+  |++++++++                                          | 16% ~20s          
+  |+++++++++                                         | 17% ~19s          
+  |+++++++++                                         | 18% ~19s          
+  |++++++++++                                        | 19% ~19s          
+  |++++++++++                                        | 20% ~19s          
+  |+++++++++++                                       | 21% ~18s          
+  |+++++++++++                                       | 22% ~19s          
+  |++++++++++++                                      | 23% ~19s          
+  |++++++++++++                                      | 24% ~18s          
+  |+++++++++++++                                     | 25% ~18s          
+  |+++++++++++++                                     | 26% ~18s          
+  |++++++++++++++                                    | 27% ~18s          
+  |++++++++++++++                                    | 28% ~17s          
+  |+++++++++++++++                                   | 29% ~17s          
+  |+++++++++++++++                                   | 30% ~17s          
+  |++++++++++++++++                                  | 31% ~16s          
+  |++++++++++++++++                                  | 32% ~16s          
+  |+++++++++++++++++                                 | 33% ~16s          
+  |+++++++++++++++++                                 | 34% ~16s          
+  |++++++++++++++++++                                | 35% ~15s          
+  |++++++++++++++++++                                | 36% ~15s          
+  |+++++++++++++++++++                               | 37% ~15s          
+  |+++++++++++++++++++                               | 38% ~15s          
+  |++++++++++++++++++++                              | 39% ~14s          
+  |++++++++++++++++++++                              | 40% ~14s          
+  |+++++++++++++++++++++                             | 41% ~14s          
+  |+++++++++++++++++++++                             | 42% ~14s          
+  |++++++++++++++++++++++                            | 43% ~14s          
+  |++++++++++++++++++++++                            | 44% ~13s          
+  |+++++++++++++++++++++++                           | 45% ~13s          
+  |+++++++++++++++++++++++                           | 46% ~13s          
+  |++++++++++++++++++++++++                          | 47% ~12s          
+  |++++++++++++++++++++++++                          | 48% ~12s          
+  |+++++++++++++++++++++++++                         | 49% ~12s          
+  |+++++++++++++++++++++++++                         | 50% ~12s          
+  |++++++++++++++++++++++++++                        | 51% ~11s          
+  |++++++++++++++++++++++++++                        | 52% ~11s          
+  |+++++++++++++++++++++++++++                       | 53% ~11s          
+  |+++++++++++++++++++++++++++                       | 54% ~11s          
+  |++++++++++++++++++++++++++++                      | 55% ~10s          
+  |++++++++++++++++++++++++++++                      | 56% ~10s          
+  |+++++++++++++++++++++++++++++                     | 57% ~10s          
+  |+++++++++++++++++++++++++++++                     | 58% ~10s          
+  |++++++++++++++++++++++++++++++                    | 59% ~09s          
+  |++++++++++++++++++++++++++++++                    | 60% ~09s          
+  |+++++++++++++++++++++++++++++++                   | 61% ~09s          
+  |+++++++++++++++++++++++++++++++                   | 62% ~09s          
+  |++++++++++++++++++++++++++++++++                  | 63% ~09s          
+  |++++++++++++++++++++++++++++++++                  | 64% ~08s          
+  |+++++++++++++++++++++++++++++++++                 | 65% ~08s          
+  |+++++++++++++++++++++++++++++++++                 | 66% ~08s          
+  |++++++++++++++++++++++++++++++++++                | 67% ~08s          
+  |++++++++++++++++++++++++++++++++++                | 68% ~07s          
+  |+++++++++++++++++++++++++++++++++++               | 69% ~07s          
+  |+++++++++++++++++++++++++++++++++++               | 70% ~07s          
+  |++++++++++++++++++++++++++++++++++++              | 71% ~07s          
+  |++++++++++++++++++++++++++++++++++++              | 72% ~06s          
+  |+++++++++++++++++++++++++++++++++++++             | 73% ~06s          
+  |+++++++++++++++++++++++++++++++++++++             | 74% ~06s          
+  |++++++++++++++++++++++++++++++++++++++            | 75% ~06s          
+  |++++++++++++++++++++++++++++++++++++++            | 76% ~05s          
+  |+++++++++++++++++++++++++++++++++++++++           | 77% ~05s          
+  |+++++++++++++++++++++++++++++++++++++++           | 78% ~05s          
+  |++++++++++++++++++++++++++++++++++++++++          | 79% ~05s          
+  |++++++++++++++++++++++++++++++++++++++++          | 80% ~05s          
+  |+++++++++++++++++++++++++++++++++++++++++         | 81% ~04s          
+  |+++++++++++++++++++++++++++++++++++++++++         | 82% ~04s          
+  |++++++++++++++++++++++++++++++++++++++++++        | 83% ~04s          
+  |++++++++++++++++++++++++++++++++++++++++++        | 84% ~04s          
+  |+++++++++++++++++++++++++++++++++++++++++++       | 85% ~03s          
+  |+++++++++++++++++++++++++++++++++++++++++++       | 86% ~03s          
+  |++++++++++++++++++++++++++++++++++++++++++++      | 87% ~03s          
+  |++++++++++++++++++++++++++++++++++++++++++++      | 88% ~03s          
+  |+++++++++++++++++++++++++++++++++++++++++++++     | 89% ~03s          
+  |+++++++++++++++++++++++++++++++++++++++++++++     | 90% ~02s          
+  |++++++++++++++++++++++++++++++++++++++++++++++    | 91% ~02s          
+  |++++++++++++++++++++++++++++++++++++++++++++++    | 92% ~02s          
+  |+++++++++++++++++++++++++++++++++++++++++++++++   | 93% ~02s          
   |+++++++++++++++++++++++++++++++++++++++++++++++   | 94% ~01s          
   |++++++++++++++++++++++++++++++++++++++++++++++++  | 95% ~01s          
   |++++++++++++++++++++++++++++++++++++++++++++++++  | 96% ~01s          
-  |+++++++++++++++++++++++++++++++++++++++++++++++++ | 97% ~00s          
+  |+++++++++++++++++++++++++++++++++++++++++++++++++ | 97% ~01s          
   |+++++++++++++++++++++++++++++++++++++++++++++++++ | 98% ~00s          
   |++++++++++++++++++++++++++++++++++++++++++++++++++| 99% ~00s          
-  |++++++++++++++++++++++++++++++++++++++++++++++++++| 100% elapsed=14s  </span>
+  |++++++++++++++++++++++++++++++++++++++++++++++++++| 100% elapsed=23s  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">adrf_b</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> An <span style="color: #0000BB;">&lt;effect_curve&gt;</span> object</span>
@@ -348,7 +377,9 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - treatment: logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: bootstrap</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    + grid points: 51</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - sample size: 2,521</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: bootstrap (fractional weighted, 999 replicates)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">adrf_b</span><span class="op">)</span></span></span>
@@ -364,7 +395,9 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - treatment: logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    + grid points: 51</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - sample size: 1,282</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional (HC2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># ADRFs in subgroups</span></span></span>
@@ -378,8 +411,10 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - treatment: logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - by: Male</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    + grid points: 51</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - by: Male (2 subgroups)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - sample size: 2,521</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional (HC2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

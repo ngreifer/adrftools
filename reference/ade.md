@@ -6,7 +6,7 @@ which is the derivative of the shift curve at a shift of 0.
 ## Usage
 
 ``` r
-ade(x, subset = NULL, eps = 1e-05)
+ade(x, subset = NULL, outcome = NULL, eps = 1e-05)
 ```
 
 ## Arguments
@@ -28,6 +28,15 @@ ade(x, subset = NULL, eps = 1e-05)
   to the original call to
   [`shift_curve()`](https://ngreifer.github.io/adrftools/reference/shift_curve.md),
   and only to refer to variables defining subgroups.
+
+- outcome:
+
+  an optional character vector naming the categories of the outcome for
+  which to compute the ADE. Can only be used when the model gives a
+  separate prediction for each category of the outcome (e.g.,
+  multinomial and ordinal models); see the section *Categorical
+  outcomes* in Details of
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md).
 
 - eps:
 

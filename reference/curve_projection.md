@@ -17,6 +17,7 @@ summary(
   df = NULL,
   ci.type = "perc",
   subset = NULL,
+  outcome = NULL,
   ...
 )
 
@@ -114,6 +115,15 @@ anova(object, object2, df = NULL, ...)
   supplied to the original call to
   [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md),
   and only to refer to variables defining subgroups.
+
+- outcome:
+
+  an optional character vector naming the categories of the outcome for
+  which to compute the projection. Can only be used when the model gives
+  a separate prediction for each category of the outcome (e.g.,
+  multinomial and ordinal models); see the section *Categorical
+  outcomes* in Details of
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md).
 
 - ...:
 
@@ -275,8 +285,7 @@ summary(adrf1, hypothesis = "linear")
 #>  P-value
 #>   0.3975
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation (the
-#>   saddlepoint approximation for p-values below .0001)
+#> Computed using the Imhof approximation
 
 # Compute the linear projection
 proj1 <- curve_projection(adrf1, "linear")
@@ -289,8 +298,10 @@ proj1
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
+#>    + grid points: 51
 #>  - projection model: ~logBLL
-#>  - inference: unconditional
+#>  - sample size: 2,521
+#>  - inference: unconditional (HC2)
 #> 
 
 # Coefficients of the projection model

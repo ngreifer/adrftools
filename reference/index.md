@@ -9,6 +9,8 @@
 
 - [`plot(`*`<effect_curve>`*`)`](https://ngreifer.github.io/adrftools/reference/plot.effect_curve.md)
   : Plot an effect curve
+- [`as.data.frame(`*`<effect_curve>`*`)`](https://ngreifer.github.io/adrftools/reference/as.data.frame.effect_curve.md)
+  : Extract estimates and confidence bands of an effect curve
 - [`summary(`*`<effect_curve>`*`)`](https://ngreifer.github.io/adrftools/reference/summary.effect_curve.md)
   [`print(`*`<summary.effect_curve>`*`)`](https://ngreifer.github.io/adrftools/reference/summary.effect_curve.md)
   : Test omnibus hypotheses about an effect curve

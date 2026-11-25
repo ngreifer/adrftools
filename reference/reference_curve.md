@@ -86,8 +86,10 @@ ref1
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
+#>    + grid points: 52
 #>  - reference level: 0
-#>  - inference: unconditional
+#>  - sample size: 2,521
+#>  - inference: unconditional (HC2)
 #> 
 
 # Plot the reference effect curve
@@ -119,6 +121,5 @@ summary(ref1)
 #>  P-value
 #>   0.0001
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation (the
-#>   saddlepoint approximation for p-values below .0001)
+#> Computed using the Imhof approximation
 ```

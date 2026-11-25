@@ -17,7 +17,8 @@ shift_curve(
   shift_fun = "additive",
   vcov = "unconditional",
   cluster = NULL,
-  type = "response",
+  type = NULL,
+  outcome = NULL,
   data = NULL,
   subset = NULL,
   by = NULL,
@@ -104,9 +105,25 @@ shift_curve(
 
   character string indicating the type of prediction. Passed to
   [`marginaleffects::get_predict()`](https://rdrr.io/pkg/marginaleffects/man/get_predict.html).
-  Default is `"response"` for predictions on the scale of the outcome
-  variable. Other options might include `"link"` for the linear
-  predictor. This argument is ignored for `lm` objects.
+  When not supplied, `"response"` is used for predictions on the scale
+  of the outcome variable, unless the model does not allow it (e.g.,
+  [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html) models), in
+  which case the type
+  [`marginaleffects::predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html)
+  uses by default for the model is used; for multinomial and ordinal
+  models, both give the probability of each category of the outcome.
+  Other options might include `"link"` for the linear predictor or, for
+  some ordinal models, `"mean"` for the expected value of the outcome.
+  This argument is ignored for `lm` objects.
+
+- outcome:
+
+  optional; for models that give a separate prediction for each category
+  of the outcome (e.g., multinomial and ordinal models), a character
+  vector naming the categories for which to compute the effect curve.
+  Default is to compute the effect curve for every category. See the
+  section *Categorical outcomes* in Details of
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md).
 
 - data:
 
@@ -150,7 +167,9 @@ shift_curve(
 
   an optional list of arguments to be passed to
   [`fwb::fwb()`](https://ngreifer.github.io/fwb/reference/fwb.html) when
-  `vcov` is `"boot"` or `"fwb"`.
+  `vcov` is `"boot"` or `"fwb"`. When `cl` is not included and a future
+  plan with more than one worker is set, `cl = "future"` is used; see
+  the section *Parallelization with future* in Details.
 
 ## Value
 
@@ -246,6 +265,17 @@ range changes the mean outcome), and
 [`curve_contrast()`](https://ngreifer.github.io/adrftools/reference/curve_contrast.md)
 compares shift curves computed within subgroups.
 
+### Parallelization with future
+
+The bootstrap replicates, the predictions for Bayesian models, the
+numerical derivatives used in the delta method, and the analyses of the
+imputed datasets run in parallel when a
+[future](https://CRAN.R-project.org/package=future) plan with more than
+one worker is set, and one
+[`set.seed()`](https://rdrr.io/r/base/Random.html) reproduces the result
+either way. See the section *Parallelization with future* in Details of
+[`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md).
+
 ## References
 
 Díaz Muñoz, I., & van der Laan, M. (2012). Population intervention
@@ -305,7 +335,9 @@ sc
 #>  - treatment: logBLL
 #>  - shift: additive
 #>    + range: -0.3631 to 0.3631 (-0.5 to 0.5 SD)
-#>  - inference: unconditional
+#>    + grid points: 51
+#>  - sample size: 2,521
+#>  - inference: unconditional (HC2)
 #> 
 
 plot(sc)

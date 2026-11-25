@@ -19,6 +19,35 @@
   [`vignette("shift-effects")`](https://ngreifer.github.io/adrftools/articles/shift-effects.md)
   for details.
 
+- [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) and
+  [`shift_curve()`](https://ngreifer.github.io/adrftools/reference/shift_curve.md)
+  now split their slowest computations over the workers of a *future*
+  plan when one with more than one worker is set and *future* and
+  *future.apply* are installed. These are the bootstrap replicates, the
+  predictions for Bayesian models, the numerical derivatives used in the
+  delta method, and the analyses of the imputed datasets. No argument is
+  involved; setting the plan is all that is needed, and the results do
+  not depend on the number of workers. Each of these computations other
+  than the bootstrap now runs on its own random number stream generated
+  from the current seed, which moves the random number stream on by one
+  draw, so random numbers drawn after the call (e.g., by
+  [`summary()`](https://rdrr.io/r/base/summary.html) for simultaneous
+  confidence intervals) can differ from those of the previous version
+  for the same seed. See the section *Parallelization with future* in
+  [`help("adrf")`](https://ngreifer.github.io/adrftools/reference/adrf.md).
+
+- New [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html)
+  method for `effect_curve` objects, which returns the estimates at the
+  grid points and the limits of the confidence bands that
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) displays, for
+  building custom plots.
+
+- [`print()`](https://rdrr.io/r/base/print.html) for effect curves now
+  displays the number of grid points, the number of subgroups, the
+  sample size (and the number of imputed datasets), and details of the
+  inference, such as the small-sample adjustment of the unconditional
+  variance and the number of bootstrap replicates or posterior draws.
+
 - [`summary.effect_curve()`](https://ngreifer.github.io/adrftools/reference/summary.effect_curve.md)
   and
   [`curve_projection()`](https://ngreifer.github.io/adrftools/reference/curve_projection.md)
@@ -124,10 +153,26 @@
 
 - *fwb* (\>= 1.0.0) is now required for bootstrapping.
 
-- [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) now
-  gives an informative error for models that give a separate prediction
-  for each category of the outcome, such as multinomial models and
-  ordinal models with `type = "probs"`, which are not supported.
+- [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) and
+  [`shift_curve()`](https://ngreifer.github.io/adrftools/reference/shift_curve.md)
+  now support models of categorical outcomes, such as multinomial and
+  ordinal regression models, estimating an effect curve for each
+  category of the outcome (i.e., the average probability of that
+  category). The new `outcome` argument selects categories, in
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) and
+  in the effect curve,
+  [`summary()`](https://rdrr.io/r/base/summary.html),
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html), and the
+  other functions that take one, and
+  [`curve_contrast()`](https://ngreifer.github.io/adrftools/reference/curve_contrast.md)
+  compares subgroups within each category. With `by`,
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) displays each
+  category in its own panel. When `type` is not supplied, models whose
+  predictions have no `"response"` type, such as
+  [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html) models, now
+  use their default type. See the section *Categorical outcomes* in
+  [`help("adrf")`](https://ngreifer.github.io/adrftools/reference/adrf.md)
+  for details.
 
 - `wts` in
   [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md) is
@@ -230,16 +275,23 @@
   the effect curve. `subset = TRUE` when evaluating or summarizing an
   effect curve now selects all subgroups.
 
-- Simultaneous Wald p-values in
-  [`summary()`](https://rdrr.io/r/base/summary.html) are now much
-  faster, and simultaneous Wald critical values are faster in
-  [`summary()`](https://rdrr.io/r/base/summary.html) and more accurate
-  in [`plot()`](https://rdrr.io/r/graphics/plot.default.html) and
-  [`point_contrast()`](https://ngreifer.github.io/adrftools/reference/point_contrast.md).
-  [`summary()`](https://rdrr.io/r/base/summary.html) and
-  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) now compute
-  the critical value with the same settings, so their intervals and
-  bands agree. Previously,
+- Simultaneous Wald critical values in
+  [`summary()`](https://rdrr.io/r/base/summary.html),
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html), and
+  [`point_contrast()`](https://ngreifer.github.io/adrftools/reference/point_contrast.md)
+  with many estimates are now computed by simulating the maximum of the
+  absolute test statistics from a low-rank factor of the correlation
+  matrix of the estimates, which is much faster and more accurate than
+  [`mvtnorm::qmvt()`](https://rdrr.io/pkg/mvtnorm/man/qmvt.html) in that
+  case (e.g., about 1 second rather than 18 seconds for a plot of six
+  curves). The three functions use the same method, so their intervals
+  and bands agree; for the same seed, the critical values differ
+  slightly from those of the previous version. Simultaneous Wald
+  p-values in [`summary()`](https://rdrr.io/r/base/summary.html) are
+  also much faster, and with many estimates, they are computed by the
+  same simulation, which is also more accurate than
+  [`mvtnorm::pmvt()`](https://rdrr.io/pkg/mvtnorm/man/pmvt.html) in that
+  case. Previously,
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html) and
   [`point_contrast()`](https://ngreifer.github.io/adrftools/reference/point_contrast.md)
   used less accurate settings than

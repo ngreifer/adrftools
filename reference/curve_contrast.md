@@ -75,8 +75,10 @@ adrf_by
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
-#>  - by: Race
-#>  - inference: unconditional
+#>    + grid points: 51
+#>  - by: Race (3 subgroups)
+#>  - sample size: 2,410
+#>  - inference: unconditional (HC2)
 #> 
 
 # Contrast subgroup ADRFs
@@ -89,8 +91,10 @@ adrf_contrast
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
+#>    + grid points: 51
 #>  - contrasts: [Race = "Hispanic"] - [Race = "Black"], [Race = "White"] - [Race = "Black"], [Race = "White"] - [Race = "Hispanic"]
-#>  - inference: unconditional
+#>  - sample size: 2,410
+#>  - inference: unconditional (HC2)
 #> 
 
 # Plot contrast ADRFs
@@ -112,7 +116,7 @@ adrf_contrast(logBLL = c(0, 2)) |>
 #>  [Race = "White"] - [Race = "Hispanic"]      2  -0.5921     0.7006 -0.845
 #> ─────────────────────────────────────────────────────────────────────────
 #> Inference: unconditional, simultaneous
-#> Confidence level: 95% (t* = 2.592, df = 2377)
+#> Confidence level: 95% (t* = 2.59, df = 2377)
 #> Null value: 0
 
 # Test if ADRF differences are present
@@ -127,6 +131,5 @@ summary(adrf_contrast)
 #>     [Race = "White"] - [Race = "Black"]  0.0058
 #>  [Race = "White"] - [Race = "Hispanic"]  0.0025
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation (the
-#>   saddlepoint approximation for p-values below .0001)
+#> Computed using the Imhof approximation
 ```

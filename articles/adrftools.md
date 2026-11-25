@@ -243,7 +243,9 @@ adrf_bll
 ##  - response: Math
 ##  - treatment: logBLL
 ##    + range: -0.3567 to 2.4248
-##  - inference: unconditional
+##    + grid points: 51
+##  - sample size: 2,521
+##  - inference: unconditional (HC2)
 ```
 
 An `<effect_curve>` object is a function that takes in values of the
@@ -337,12 +339,12 @@ adrf_bll(logBLL = c(0, 1, 2)) |>
 ##                               ADRF Point Contrasts
 ## ────────────────────────────────────────────────────────────────────────────────
 ##                         Term Estimate Std. Error      t  P-value  CI Low CI High
-##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2193 -1.807   0.1648 -0.9089  0.1161
-##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2925 -4.362 < 0.0001 -1.9592 -0.5923
-##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2748 -3.200   0.0028 -1.5214 -0.2373
+##  [logBLL = 1] - [logBLL = 0]  -0.3964     0.2193 -1.807   0.1649 -0.9093  0.1165
+##  [logBLL = 2] - [logBLL = 0]  -1.2757     0.2925 -4.362 < 0.0001 -1.9596 -0.5919
+##  [logBLL = 2] - [logBLL = 1]  -0.8793     0.2748 -3.200   0.0039 -1.5219 -0.2368
 ## ────────────────────────────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
-## Confidence level: 95% (t* = 2.337, df = 2401)
+## Confidence level: 95% (t* = 2.338, df = 2401)
 ## Null value: 0
 ```
 
@@ -374,8 +376,8 @@ summary(adrf_bll)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
+##   * Saddlepoint approximation used for p-values below .0001
 ```
 
 This test works in two steps: first, the projection \\\hat{P}(a)\\ is
@@ -449,8 +451,7 @@ summary(adrf_bll, hypothesis = "linear")
 ##  P-value
 ##   0.5278
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
 ```
 
 In this case, the high p-value indicates that we cannot reject the null
@@ -610,8 +611,10 @@ adrf_bll_ref
 ##  - response: Math
 ##  - treatment: logBLL
 ##    + range: -0.3567 to 2.4248
+##    + grid points: 52
 ##  - reference level: 0
-##  - inference: unconditional
+##  - sample size: 2,521
+##  - inference: unconditional (HC2)
 ```
 
 We can plot the reference curve, which will essentially be the original
@@ -644,8 +647,8 @@ summary(adrf_bll_ref)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
+##   * Saddlepoint approximation used for p-values below .0001
 ```
 
 Theoretically, this is equivalent to testing whether the ADRF is flat
@@ -701,7 +704,9 @@ amef_bll
 ##  - response: Math
 ##  - treatment: logBLL
 ##    + range: -0.3567 to 2.4248
-##  - inference: unconditional
+##    + grid points: 51
+##  - sample size: 2,521
+##  - inference: unconditional (HC2)
 ```
 
 The result is an `<amef_curve>` object, which, like all `<effect_curve>`
@@ -763,8 +768,7 @@ summary(amef_bll)
 ##  P-value
 ##    0.403
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
 ```
 
 Conclusions from the test that the ADRF is flat and that the AMEF is 0
@@ -838,8 +842,10 @@ adrf_bll_by_male
 ##  - response: Math
 ##  - treatment: logBLL
 ##    + range: -0.3567 to 2.4248
-##  - by: Male
-##  - inference: unconditional
+##    + grid points: 51
+##  - by: Male (2 subgroups)
+##  - sample size: 2,521
+##  - inference: unconditional (HC2)
 ```
 
 When we plot the ADRF, we can see curves for both groups:
@@ -867,8 +873,8 @@ summary(adrf_bll_by_male)
 ##     0   0.1030
 ##     1 < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
+##   * Saddlepoint approximation used for p-values below .0001
 ```
 
 We can reject the null hypothesis for the `Male = 1` group, but not for
@@ -996,8 +1002,7 @@ summary(adrf_bll_by_male, subset = Male == 0)
 ##  Male P-value
 ##     0   0.103
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
 
 # Estimates along the ADRF
 adrf_bll_by_male(logBLL = c(0, 1, 2), subset = Male == 0) |>
@@ -1025,8 +1030,8 @@ summary(adrf_bll_by_male, subset = Male == 1)
 ##  Male  P-value
 ##     1 < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
+##   * Saddlepoint approximation used for p-values below .0001
 
 # Estimates along the ADRF
 adrf_bll_by_male(logBLL = c(0, 1, 2), subset = Male == 1) |>
@@ -1074,8 +1079,10 @@ adrf_bll_male_contrast
 ##  - response: Math
 ##  - treatment: logBLL
 ##    + range: -0.3567 to 2.4248
+##    + grid points: 51
 ##  - contrast: [Male = 1] - [Male = 0]
-##  - inference: unconditional
+##  - sample size: 2,521
+##  - inference: unconditional (HC2)
 ```
 
 We can plot the difference between the two ADRFs using
@@ -1105,8 +1112,7 @@ summary(adrf_bll_male_contrast)
 ##                 Contrast P-value
 ##  [Male = 1] - [Male = 0]  0.0183
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
 ```
 
 Given the small p-value, we can reject the null hypothesis that the ADRF
@@ -1125,7 +1131,7 @@ adrf_bll_male_contrast(logBLL = c(0, 1, 2)) |>
 ##                 Contrast logBLL Estimate Std. Error      t P-value  CI Low CI High
 ##  [Male = 1] - [Male = 0]      0  -0.0938     0.3483 -0.269  0.9901 -0.9250  0.7374
 ##  [Male = 1] - [Male = 0]      1  -0.8551     0.2283 -3.746  0.0006 -1.3998 -0.3103
-##  [Male = 1] - [Male = 0]      2  -0.9300     0.4545 -2.046  0.1164 -2.0147  0.1546
+##  [Male = 1] - [Male = 0]      2  -0.9300     0.4545 -2.046  0.1164 -2.0147  0.1547
 ## ──────────────────────────────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (t* = 2.386, df = 2401)
@@ -1191,7 +1197,9 @@ adrf_bll_bin
 ##  - response: Block_bin
 ##  - treatment: logBLL
 ##    + range: -0.3567 to 2.4248
-##  - inference: unconditional
+##    + grid points: 51
+##  - sample size: 2,521
+##  - inference: unconditional (HC2)
 ```
 
 We can plot the ADRF with
@@ -1283,7 +1291,7 @@ adrf_bll_bin(logBLL = c(0, 1, 2)) |>
 ##  logBLL Estimate Std. Error CI Low CI High
 ##       0   0.2420     0.0226 0.1880  0.2959
 ##       1   0.1926     0.0147 0.1574  0.2276
-##       2   0.0752     0.0205 0.0262  0.1241
+##       2   0.0752     0.0205 0.0263  0.1241
 ## ──────────────────────────────────────────
 ## Inference: unconditional, simultaneous
 ## Confidence level: 95% (z* = 2.386)
@@ -1385,8 +1393,8 @@ summary(adrf_bll_bin)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
+##   * Saddlepoint approximation used for p-values below .0001
 
 # Test for linearity
 summary(adrf_bll_bin, "linear")
@@ -1398,8 +1406,7 @@ summary(adrf_bll_bin, "linear")
 ##  P-value
 ##   0.1662
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
 
 # Estimate projection on transformed ADRF
 proj_t <- curve_projection(adrf_bll_bin, "linear")
@@ -1428,8 +1435,8 @@ summary(adrf_bll_bin, transform = FALSE)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
+##   * Saddlepoint approximation used for p-values below .0001
 
 # Test for linearity
 summary(adrf_bll_bin, "linear", transform = FALSE)
@@ -1441,8 +1448,7 @@ summary(adrf_bll_bin, "linear", transform = FALSE)
 ##  P-value
 ##   0.5455
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
 
 # Estimate projection on untransformed ADRF
 proj_u <- curve_projection(adrf_bll_bin, "linear", transform = FALSE)
@@ -1934,7 +1940,9 @@ adrf_bll_bayes
 ##  - response: Math
 ##  - treatment: logBLL
 ##    + range: -0.3567 to 2.4248
-##  - inference: posterior
+##    + grid points: 21
+##  - sample size: 2,521
+##  - inference: posterior (800 draws)
 ```
 
 All credible intervals and bands use the confidence interval interface
@@ -1966,9 +1974,9 @@ adrf_bll_bayes(logBLL = c(0, 1, 2)) |>
 ##         ADRF Estimates
 ## ───────────────────────────────
 ##  logBLL Estimate CI Low CI High
-##       0    8.384  8.091   8.698
-##       1    8.004  7.744   8.253
-##       2    7.116  6.723   7.529
+##       0    8.394  8.113   8.702
+##       1    8.007  7.746   8.259
+##       2    7.184  6.810   7.516
 ## ───────────────────────────────
 ## Inference: posterior, simultaneous
 ## Confidence level: 95%

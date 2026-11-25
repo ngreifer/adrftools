@@ -56,6 +56,7 @@
 <span>  <span class="va">hypothesis</span>,</span>
 <span>  <span class="va">method</span>,</span>
 <span>  subset <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  outcome <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  transform <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  df <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nsim <span class="op">=</span> <span class="fl">1e+06</span>,</span>
@@ -85,6 +86,10 @@
 
 <dt id="arg-subset">subset<a class="anchor" aria-label="anchor" href="#arg-subset"></a></dt>
 <dd><p>an optional logical expression indicating the subset of the subgroups for which to perform tests. Can only be used when <code>by</code> was supplied to the original call to <code><a href="adrf.html">adrf()</a></code>, and only to refer to variables defining subgroups.</p></dd>
+
+
+<dt id="arg-outcome">outcome<a class="anchor" aria-label="anchor" href="#arg-outcome"></a></dt>
+<dd><p>an optional character vector naming the categories of the outcome for which to perform tests. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section <em>Categorical outcomes</em> in Details of <code><a href="adrf.html">adrf()</a></code>.</p></dd>
 
 
 <dt id="arg-transform">transform<a class="anchor" aria-label="anchor" href="#arg-transform"></a></dt>
@@ -189,8 +194,10 @@ where \(\hat{\theta}_0\) is the projection of \(\theta(a)\) onto the null subspa
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Block &gt;= 12</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - treatment: logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - by: Male</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    + grid points: 51</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - by: Male (2 subgroups)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - sample size: 2,521</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional (HC2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Test if ADRFs are flat</span></span></span>
@@ -204,8 +211,8 @@ where \(\hat{\theta}_0\) is the projection of \(\theta(a)\) onto the null subspa
 <span class="r-out co"><span class="r-pr">#&gt;</span>     0   0.0001</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     1 &lt; 0.0001</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ───────────────────────────────────────────────────────</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Test if logit-transformed ADRFs are linear</span></span></span>
 <span class="r-in"><span><span class="co"># (i.e., if ADRFs have sigmoid shape)</span></span></span>
@@ -219,8 +226,7 @@ where \(\hat{\theta}_0\) is the projection of \(\theta(a)\) onto the null subspa
 <span class="r-out co"><span class="r-pr">#&gt;</span>     0  0.1827</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     1  0.0242</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ───────────────────────────────────────────────────────</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation</span></span>
 <span class="r-in"><span><span class="co"># summary(adrf1, hypothesis = ~logBLL) # same test</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">proj1</span> <span class="op">&lt;-</span> <span class="fu"><a href="curve_projection.html">curve_projection</a></span><span class="op">(</span><span class="va">adrf1</span>, <span class="st">"linear"</span><span class="op">)</span></span></span>
@@ -240,8 +246,7 @@ where \(\hat{\theta}_0\) is the projection of \(\theta(a)\) onto the null subspa
 <span class="r-out co"><span class="r-pr">#&gt;</span>     0  0.4955</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     1  0.1046</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ───────────────────────────────────────────────────────</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">proj2</span> <span class="op">&lt;-</span> <span class="fu"><a href="curve_projection.html">curve_projection</a></span><span class="op">(</span><span class="va">adrf1</span>, <span class="st">"linear"</span>,</span></span>
 <span class="r-in"><span>                          transform <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
@@ -261,8 +266,7 @@ where \(\hat{\theta}_0\) is the projection of \(\theta(a)\) onto the null subspa
 <span class="r-out co"><span class="r-pr">#&gt;</span>                 Contrast P-value</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [Male = 1] - [Male = 0]  0.0002</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ───────────────────────────────────────────────────────</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Computed using the Imhof approximation</span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

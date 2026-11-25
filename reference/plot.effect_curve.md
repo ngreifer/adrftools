@@ -13,6 +13,7 @@ plot(
   simultaneous = TRUE,
   null = NULL,
   subset = NULL,
+  outcome = NULL,
   proj = NULL,
   transform = TRUE,
   ci.type = "perc",
@@ -54,6 +55,14 @@ plot(
   to plot. Can only be used when `by` was supplied to the original call
   to [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md),
   and only to refer to variables defining subgroups.
+
+- outcome:
+
+  an optional character vector naming the categories of the outcome to
+  plot. Can only be used when the model gives a separate prediction for
+  each category of the outcome (e.g., multinomial and ordinal models);
+  see the section *Categorical outcomes* in Details of
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md).
 
 - proj:
 
@@ -154,6 +163,15 @@ effect curve plot for each subgroup. When `x` is the output of a call to
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) produces an
 effect curve plot for each treatment contrast.
 
+For models that give a separate prediction for each category of the
+outcome (see the section *Categorical outcomes* in
+[`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md)), the
+effect curves for the categories are displayed in different colors. When
+`by` is also supplied, or when `x` is the output of a call to
+[`curve_contrast()`](https://ngreifer.github.io/adrftools/reference/curve_contrast.md),
+each category is displayed in its own panel instead, and colors
+distinguish the subgroups or contrasts. The panels share the y-axis.
+
 ### Transform
 
 The usual confidence bands assume the estimates along the effect curve
@@ -181,17 +199,16 @@ true coverage rate from that specified.
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) uses the
 "sup-t" simultaneous confidence band, which is the smallest
 one-parameter band that covers the whole effect curve at the desired
-rate. With Wald inference, the critical value is computed using
-[`mvtnorm::qmvt()`](https://rdrr.io/pkg/mvtnorm/man/qmvt.html) with the
-same settings as
-[`summary.curve_est()`](https://ngreifer.github.io/adrftools/reference/summary.curve_est.md),
-which uses a randomized algorithm; use
-[`set.seed()`](https://rdrr.io/r/base/Random.html) for reproducible
-results. With bootstrapping or Bayesian models and `ci.type = "perc"`,
-the simultaneous band is the product of the equal-tailed percentile
-intervals with the tail probability calibrated so that it contains the
-desired proportion of the bootstrap or posterior draws, as described by
-Montiel Olea and Plagborg-Møller (2019).
+rate. With Wald inference, the critical value is computed by simulation
+in the same way as in
+[`summary.curve_est()`](https://ngreifer.github.io/adrftools/reference/summary.curve_est.md)
+(see there for details), so
+[`set.seed()`](https://rdrr.io/r/base/Random.html) should be used for
+reproducible results. With bootstrapping or Bayesian models and
+`ci.type = "perc"`, the simultaneous band is the product of the
+equal-tailed percentile intervals with the tail probability calibrated
+so that it contains the desired proportion of the bootstrap or posterior
+draws, as described by Montiel Olea and Plagborg-Møller (2019).
 
 ## References
 
@@ -207,6 +224,9 @@ confidence bands: Theory, implementation, and an application to SVARs.
 
 - [`summary.effect_curve()`](https://ngreifer.github.io/adrftools/reference/summary.effect_curve.md)
   for testing hypotheses about an effect curve
+
+- [`as.data.frame.effect_curve()`](https://ngreifer.github.io/adrftools/reference/as.data.frame.effect_curve.md)
+  for extracting the estimates and confidence bands as a data frame
 
 ## Examples
 

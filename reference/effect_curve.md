@@ -19,7 +19,7 @@ containing the effect curve estimates. This page describes
 
     f <- adrf(x, ...)
 
-    f({treat}, subset = NULL)
+    f({treat}, subset = NULL, outcome = NULL)
 
 ## Arguments
 
@@ -35,6 +35,15 @@ containing the effect curve estimates. This page describes
   supplied to the original call to
   [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md),
   and only to refer to variables defining subgroups.
+
+- outcome:
+
+  an optional character vector naming the categories of the outcome for
+  which to compute estimates. Can only be used when the model gives a
+  separate prediction for each category of the outcome (e.g.,
+  multinomial and ordinal models); see the section *Categorical
+  outcomes* in Details of
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md).
 
 - x:
 
@@ -114,7 +123,9 @@ adrf1
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
-#>  - inference: unconditional
+#>    + grid points: 51
+#>  - sample size: 2,521
+#>  - inference: unconditional (HC2)
 #> 
 
 # Compute estimates along the ADRF
@@ -151,8 +162,10 @@ adrf2
 #>  - response: Math
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
-#>  - by: Male
-#>  - inference: unconditional
+#>    + grid points: 51
+#>  - by: Male (2 subgroups)
+#>  - sample size: 2,521
+#>  - inference: unconditional (HC2)
 #> 
 
 # Estimates in both groups

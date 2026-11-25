@@ -1,10 +1,10 @@
 # adrftools: Estimating, Visualizing, and Testing Average Dose-Response Functions
 
 Facilitates estimating, visualizing, and testing average dose-response
-functions (ADRFs) for characterizing the causal effect of a continuous
-(i.e., non-discrete) treatment or exposure. Includes support for
-frequentist and Bayesian regression models, analytical and bootstrap
-inference, and characterization of subgroup effects.
+functions (ADRFs) and shift effects for characterizing the causal effect
+of a continuous (i.e., non-discrete) treatment or exposure. Includes
+support for frequentist and Bayesian regression models, analytical and
+bootstrap inference, and characterization of subgroup effects.
 
 ## See also
 

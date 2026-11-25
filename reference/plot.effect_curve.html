@@ -57,6 +57,7 @@
 <span>  simultaneous <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  null <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subset <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  outcome <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  proj <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  transform <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ci.type <span class="op">=</span> <span class="st">"perc"</span>,</span>
@@ -87,6 +88,10 @@
 
 <dt id="arg-subset">subset<a class="anchor" aria-label="anchor" href="#arg-subset"></a></dt>
 <dd><p>an optional logical expression indicating the subset of the subgroups to plot. Can only be used when <code>by</code> was supplied to the original call to <code><a href="adrf.html">adrf()</a></code>, and only to refer to variables defining subgroups.</p></dd>
+
+
+<dt id="arg-outcome">outcome<a class="anchor" aria-label="anchor" href="#arg-outcome"></a></dt>
+<dd><p>an optional character vector naming the categories of the outcome to plot. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section <em>Categorical outcomes</em> in Details of <code><a href="adrf.html">adrf()</a></code>.</p></dd>
 
 
 <dt id="arg-proj">proj<a class="anchor" aria-label="anchor" href="#arg-proj"></a></dt>
@@ -133,7 +138,8 @@
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> displays the effect curve in a plot. The solid line corresponds to the effect curve and the ribbon around it corresponds to its confidence band. When <code>null</code> is not <code>NA</code>, an additional flat line at <code>null</code> is displayed. When <code>proj</code> is supplied, a dashed line corresponding to the projection is added.</p>
-<p>When <code>by</code> is supplied to <code><a href="adrf.html">adrf()</a></code>, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> produces an effect curve plot for each subgroup. When <code>x</code> is the output of a call to <code><a href="curve_contrast.html">curve_contrast()</a></code>, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> produces an effect curve plot for each treatment contrast.</p><div class="section">
+<p>When <code>by</code> is supplied to <code><a href="adrf.html">adrf()</a></code>, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> produces an effect curve plot for each subgroup. When <code>x</code> is the output of a call to <code><a href="curve_contrast.html">curve_contrast()</a></code>, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> produces an effect curve plot for each treatment contrast.</p>
+<p>For models that give a separate prediction for each category of the outcome (see the section <em>Categorical outcomes</em> in <code><a href="adrf.html">adrf()</a></code>), the effect curves for the categories are displayed in different colors. When <code>by</code> is also supplied, or when <code>x</code> is the output of a call to <code><a href="curve_contrast.html">curve_contrast()</a></code>, each category is displayed in its own panel instead, and colors distinguish the subgroups or contrasts. The panels share the y-axis.</p><div class="section">
 <h3 id="transform">Transform<a class="anchor" aria-label="anchor" href="#transform"></a></h3>
 
 
@@ -144,8 +150,7 @@
 <h3 id="simultaneous-confidence-bands">Simultaneous confidence bands<a class="anchor" aria-label="anchor" href="#simultaneous-confidence-bands"></a></h3>
 
 
-<p>Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate. With Wald inference, the critical value is computed using <code><a href="https://rdrr.io/pkg/mvtnorm/man/qmvt.html" class="external-link">mvtnorm::qmvt()</a></code>
- with the same settings as <code><a href="summary.curve_est.html">summary.curve_est()</a></code>, which uses a randomized algorithm; use <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for reproducible results. With bootstrapping or Bayesian models and <code>ci.type = "perc"</code>, the simultaneous band is the product of the equal-tailed percentile intervals with the tail probability calibrated so that it contains the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).</p>
+<p>Simultaneous confidence bands ensure the whole effect curve, not just a given individual point, is contained within the band at the given confidence level. These are wider than pointwise bands to reflect that they are covering multiple estimates, which otherwise would decrease the true coverage rate from that specified. <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> uses the "sup-t" simultaneous confidence band, which is the smallest one-parameter band that covers the whole effect curve at the desired rate. With Wald inference, the critical value is computed by simulation in the same way as in <code><a href="summary.curve_est.html">summary.curve_est()</a></code> (see there for details), so <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> should be used for reproducible results. With bootstrapping or Bayesian models and <code>ci.type = "perc"</code>, the simultaneous band is the product of the equal-tailed percentile intervals with the tail probability calibrated so that it contains the desired proportion of the bootstrap or posterior draws, as described by Montiel Olea and Plagborg-Møller (2019).</p>
 </div>
 
     </div>
@@ -158,6 +163,7 @@
     <div class="dont-index">
 <ul><li><p><code><a href="adrf.html">adrf()</a></code> for computing the ADRF</p></li>
 <li><p><code><a href="summary.effect_curve.html">summary.effect_curve()</a></code> for testing hypotheses about an effect curve</p></li>
+<li><p><code><a href="as.data.frame.effect_curve.html">as.data.frame.effect_curve()</a></code> for extracting the estimates and confidence bands as a data frame</p></li>
 </ul></div>
     </div>
 

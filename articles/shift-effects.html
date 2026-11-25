@@ -66,7 +66,7 @@
                         <h4 data-toc-skip class="author">Noah
 Greifer</h4>
             
-            <h4 data-toc-skip class="date">2026-11-19</h4>
+            <h4 data-toc-skip class="date">2026-11-25</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/ngreifer/adrftools/blob/main/vignettes/shift-effects.Rmd" class="external-link"><code>vignettes/shift-effects.Rmd</code></a></small>
       <div class="d-none name"><code>shift-effects.Rmd</code></div>
@@ -238,7 +238,9 @@ in <code><a href="../articles/adrftools.html">vignette("adrftools")</a></code>.<
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##  - shift: additive</span></span>
 <span><span class="co">##    + range: -0.3631 to 0.3631 (-0.5 to 0.5 SD)</span></span>
-<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">##    + grid points: 51</span></span>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: unconditional (HC2)</span></span></code></pre></div>
 <p>By default, the shift is additive
 (<code>shift_fun = "additive"</code>), and the shift curve is computed
 for shifts from half a standard deviation of the treatment below to half
@@ -352,11 +354,11 @@ effects of a few specific shifts:</p>
 <span><span class="co">##  shift Estimate Std. Error      t  P-value  CI Low CI High</span></span>
 <span><span class="co">##   -0.3   0.1541     0.0359  4.289 &lt; 0.0001  0.0741  0.2341</span></span>
 <span><span class="co">##   -0.1   0.0552     0.0120  4.607 &lt; 0.0001  0.0285  0.0818</span></span>
-<span><span class="co">##    0.1  -0.0612     0.0120 -5.083 &lt; 0.0001 -0.0879 -0.0344</span></span>
-<span><span class="co">##    0.3  -0.1982     0.0373 -5.313 &lt; 0.0001 -0.2812 -0.1151</span></span>
+<span><span class="co">##    0.1  -0.0612     0.0120 -5.083 &lt; 0.0001 -0.0880 -0.0344</span></span>
+<span><span class="co">##    0.3  -0.1982     0.0373 -5.313 &lt; 0.0001 -0.2813 -0.1151</span></span>
 <span><span class="co">## ──────────────────────────────────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
-<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.226, df = 2401)</span></span></span>
+<span><span class="co">## <span style="font-style: italic;">Confidence level: 95% (t* = 2.227, df = 2401)</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Reference: shift = 0</span> | <span style="font-style: italic;">Null value: 0</span></span></span></code></pre></div>
 <p>For example, decreasing every child’s <code>logBLL</code> by .3 would
 increase the average Math score by an estimated 0.154 points, with a 95%
@@ -375,8 +377,8 @@ for details on these tests):</p>
 <span><span class="co">##   P-value</span></span>
 <span><span class="co">##  &lt; 0.0001</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span></span></code></pre></div>
 <p>The small p-value indicates that at least some shifts in the range
 change the average Math score. We can also test whether the shift curve
 is linear in the range of shifts:</p>
@@ -390,8 +392,7 @@ is linear in the range of shifts:</p>
 <span><span class="co">##  P-value</span></span>
 <span><span class="co">##   0.1335</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>We cannot reject the null hypothesis that the shift curve is linear,
 so there isn’t evidence that the effects of the shifts in this range
 depart from being proportional to their size. This makes the ADE,
@@ -562,8 +563,8 @@ curves differ between boys and girls:</p>
 <span><span class="co">##                 Contrast  P-value</span></span>
 <span><span class="co">##  [Male = 1] - [Male = 0] &lt; 0.0001</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span>
+<span><span class="co">##   <span style="font-style: italic;">* Saddlepoint approximation used for p-values below .0001</span></span></span></code></pre></div>
 <p>The small p-value indicates that the expected Math scores differ
 between boys and girls, but not necessarily that the effects of the
 shifts differ. To compare the effects of the shifts, we can contrast the
@@ -584,8 +585,7 @@ shift:</p>
 <span><span class="co">##                 Contrast P-value</span></span>
 <span><span class="co">##  [Male = 1] - [Male = 0]   0.812</span></span>
 <span><span class="co">## ───────────────────────────────────────────────────────</span></span>
-<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation (the</span></span></span>
-<span><span class="co">##   <span style="font-style: italic;">saddlepoint approximation for p-values below .0001)</span></span></span></code></pre></div>
+<span><span class="co">## <span style="font-style: italic;">Computed using the Imhof approximation</span></span></span></code></pre></div>
 <p>Here, we cannot reject the null hypothesis that the effects of the
 shifts are the same for boys and girls. Similarly, <code><a href="../reference/ade.html">ade()</a></code>
 applied to a contrast of shift curves computes the difference between
@@ -659,7 +659,9 @@ plotted.</p>
 <span><span class="co">##  - treatment: logBLL</span></span>
 <span><span class="co">##  - shift: proportional</span></span>
 <span><span class="co">##    + range: -0.5 to 0</span></span>
-<span><span class="co">##  - inference: unconditional</span></span></code></pre></div>
+<span><span class="co">##    + grid points: 51</span></span>
+<span><span class="co">##  - sample size: 2,521</span></span>
+<span><span class="co">##  - inference: unconditional (HC2)</span></span></code></pre></div>
 <p>Here, the shifts range from -.5 (i.e., halving every child’s blood
 lead level) to 0 (no change). As before, we use
 <code><a href="../reference/reference_curve.html">reference_curve()</a></code> to compute the effects of the shifts
@@ -677,7 +679,7 @@ estimate the effects of specific proportional reductions:</p>
 <span><span class="co">##             Shift Curve Reference Estimates</span></span>
 <span><span class="co">## ────────────────────────────────────────────────────────</span></span>
 <span><span class="co">##  shift Estimate Std. Error     t  P-value CI Low CI High</span></span>
-<span><span class="co">##  -0.50   0.3303     0.0947 3.487   0.0009 0.1214  0.5391</span></span>
+<span><span class="co">##  -0.50   0.3303     0.0947 3.487   0.0010 0.1214  0.5391</span></span>
 <span><span class="co">##  -0.25   0.1482     0.0344 4.303 &lt; 0.0001 0.0722  0.2241</span></span>
 <span><span class="co">##  -0.10   0.0580     0.0126 4.596 &lt; 0.0001 0.0302  0.0858</span></span>
 <span><span class="co">## ────────────────────────────────────────────────────────</span></span>
@@ -748,8 +750,8 @@ as 3.5, 5, and 10 μg/dL:</p>
 <span><span class="co">##              Shift Curve Reference Estimates</span></span>
 <span><span class="co">## ──────────────────────────────────────────────────────────</span></span>
 <span><span class="co">##   shift Estimate Std. Error      t P-value  CI Low CI High</span></span>
-<span><span class="co">##  1.2528   0.1279     0.0506 2.5265  0.0318  0.0086  0.2471</span></span>
-<span><span class="co">##  1.6094   0.0515     0.0222 2.3203  0.0548 -0.0008  0.1037</span></span>
+<span><span class="co">##  1.2528   0.1279     0.0506 2.5265  0.0318  0.0086  0.2472</span></span>
+<span><span class="co">##  1.6094   0.0515     0.0222 2.3203  0.0547 -0.0008  0.1037</span></span>
 <span><span class="co">##  2.3026   0.0134     0.0069 1.9280  0.1362 -0.0030  0.0298</span></span>
 <span><span class="co">## ──────────────────────────────────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: unconditional, simultaneous</span></span></span>
@@ -812,7 +814,7 @@ confidence intervals are computed by default.</p>
 <span><span class="co">## Average Derivative Effect Estimates</span></span>
 <span><span class="co">## ──────────────────────────────────</span></span>
 <span><span class="co">##  Estimate  P-value  CI Low CI High</span></span>
-<span><span class="co">##   -0.5809 &lt; 0.0001 -0.8239 -0.3588</span></span>
+<span><span class="co">##   -0.5809 &lt; 0.0001 -0.8198   -0.37</span></span>
 <span><span class="co">## ──────────────────────────────────</span></span>
 <span><span class="co">## <span style="font-style: italic;">Inference: bootstrap, pointwise</span></span></span>
 <span><span class="co">## <span style="font-style: italic;">Confidence level: 95%</span></span></span>

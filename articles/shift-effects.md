@@ -179,7 +179,9 @@ sc_bll
 ##  - treatment: logBLL
 ##  - shift: additive
 ##    + range: -0.3631 to 0.3631 (-0.5 to 0.5 SD)
-##  - inference: unconditional
+##    + grid points: 51
+##  - sample size: 2,521
+##  - inference: unconditional (HC2)
 ```
 
 By default, the shift is additive (`shift_fun = "additive"`), and the
@@ -322,11 +324,11 @@ summary(est_ref)
 ##  shift Estimate Std. Error      t  P-value  CI Low CI High
 ##   -0.3   0.1541     0.0359  4.289 < 0.0001  0.0741  0.2341
 ##   -0.1   0.0552     0.0120  4.607 < 0.0001  0.0285  0.0818
-##    0.1  -0.0612     0.0120 -5.083 < 0.0001 -0.0879 -0.0344
-##    0.3  -0.1982     0.0373 -5.313 < 0.0001 -0.2812 -0.1151
+##    0.1  -0.0612     0.0120 -5.083 < 0.0001 -0.0880 -0.0344
+##    0.3  -0.1982     0.0373 -5.313 < 0.0001 -0.2813 -0.1151
 ## ──────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
-## Confidence level: 95% (t* = 2.226, df = 2401)
+## Confidence level: 95% (t* = 2.227, df = 2401)
 ## Reference: shift = 0 | Null value: 0
 ```
 
@@ -351,8 +353,8 @@ summary(sc_bll)
 ##   P-value
 ##  < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
+##   * Saddlepoint approximation used for p-values below .0001
 ```
 
 The small p-value indicates that at least some shifts in the range
@@ -370,8 +372,7 @@ summary(sc_bll, hypothesis = "linear")
 ##  P-value
 ##   0.1335
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
 ```
 
 We cannot reject the null hypothesis that the shift curve is linear, so
@@ -579,8 +580,8 @@ curve_contrast(sc_bll_by_male) |>
 ##                 Contrast  P-value
 ##  [Male = 1] - [Male = 0] < 0.0001
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
+##   * Saddlepoint approximation used for p-values below .0001
 ```
 
 The small p-value indicates that the expected Math scores differ between
@@ -605,8 +606,7 @@ summary(sc_bll_ref_contrast)
 ##                 Contrast P-value
 ##  [Male = 1] - [Male = 0]   0.812
 ## ───────────────────────────────────────────────────────
-## Computed using the Imhof approximation (the
-##   saddlepoint approximation for p-values below .0001)
+## Computed using the Imhof approximation
 ```
 
 Here, we cannot reject the null hypothesis that the effects of the
@@ -682,7 +682,9 @@ sc_bll_prop
 ##  - treatment: logBLL
 ##  - shift: proportional
 ##    + range: -0.5 to 0
-##  - inference: unconditional
+##    + grid points: 51
+##  - sample size: 2,521
+##  - inference: unconditional (HC2)
 ```
 
 Here, the shifts range from -.5 (i.e., halving every child’s blood lead
@@ -710,7 +712,7 @@ sc_bll_prop_ref(shift = c(-.5, -.25, -.1)) |>
 ##             Shift Curve Reference Estimates
 ## ────────────────────────────────────────────────────────
 ##  shift Estimate Std. Error     t  P-value CI Low CI High
-##  -0.50   0.3303     0.0947 3.487   0.0009 0.1214  0.5391
+##  -0.50   0.3303     0.0947 3.487   0.0010 0.1214  0.5391
 ##  -0.25   0.1482     0.0344 4.303 < 0.0001 0.0722  0.2241
 ##  -0.10   0.0580     0.0126 4.596 < 0.0001 0.0302  0.0858
 ## ────────────────────────────────────────────────────────
@@ -797,8 +799,8 @@ sc_bll_cap_ref(shift = log(c(3.5, 5, 10))) |>
 ##              Shift Curve Reference Estimates
 ## ──────────────────────────────────────────────────────────
 ##   shift Estimate Std. Error      t P-value  CI Low CI High
-##  1.2528   0.1279     0.0506 2.5265  0.0318  0.0086  0.2471
-##  1.6094   0.0515     0.0222 2.3203  0.0548 -0.0008  0.1037
+##  1.2528   0.1279     0.0506 2.5265  0.0318  0.0086  0.2472
+##  1.6094   0.0515     0.0222 2.3203  0.0547 -0.0008  0.1037
 ##  2.3026   0.0134     0.0069 1.9280  0.1362 -0.0030  0.0298
 ## ──────────────────────────────────────────────────────────
 ## Inference: unconditional, simultaneous
@@ -874,7 +876,7 @@ ade(sc_bll_boot) |>
 ## Average Derivative Effect Estimates
 ## ──────────────────────────────────
 ##  Estimate  P-value  CI Low CI High
-##   -0.5809 < 0.0001 -0.8239 -0.3588
+##   -0.5809 < 0.0001 -0.8198   -0.37
 ## ──────────────────────────────────
 ## Inference: bootstrap, pointwise
 ## Confidence level: 95%

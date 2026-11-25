@@ -14,6 +14,7 @@ summary(
   hypothesis,
   method,
   subset = NULL,
+  outcome = NULL,
   transform = TRUE,
   df = NULL,
   nsim = 1e+06,
@@ -59,6 +60,15 @@ print(x, digits = max(4L, getOption("digits") - 3L), ...)
   the original call to
   [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md),
   and only to refer to variables defining subgroups.
+
+- outcome:
+
+  an optional character vector naming the categories of the outcome for
+  which to perform tests. Can only be used when the model gives a
+  separate prediction for each category of the outcome (e.g.,
+  multinomial and ordinal models); see the section *Categorical
+  outcomes* in Details of
+  [`adrf()`](https://ngreifer.github.io/adrftools/reference/adrf.md).
 
 - transform:
 
@@ -340,8 +350,10 @@ adrf1
 #>  - response: Block >= 12
 #>  - treatment: logBLL
 #>    + range: -0.3567 to 2.4248
-#>  - by: Male
-#>  - inference: unconditional
+#>    + grid points: 51
+#>  - by: Male (2 subgroups)
+#>  - sample size: 2,521
+#>  - inference: unconditional (HC2)
 #> 
 
 # Test if ADRFs are flat
@@ -355,8 +367,8 @@ summary(adrf1)
 #>     0   0.0001
 #>     1 < 0.0001
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation (the
-#>   saddlepoint approximation for p-values below .0001)
+#> Computed using the Imhof approximation
+#>   * Saddlepoint approximation used for p-values below .0001
 
 # Test if logit-transformed ADRFs are linear
 # (i.e., if ADRFs have sigmoid shape)
@@ -370,8 +382,7 @@ summary(adrf1, hypothesis = "linear")
 #>     0  0.1827
 #>     1  0.0242
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation (the
-#>   saddlepoint approximation for p-values below .0001)
+#> Computed using the Imhof approximation
 # summary(adrf1, hypothesis = ~logBLL) # same test
 
 proj1 <- curve_projection(adrf1, "linear")
@@ -391,8 +402,7 @@ summary(adrf1, hypothesis = "linear",
 #>     0  0.4955
 #>     1  0.1046
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation (the
-#>   saddlepoint approximation for p-values below .0001)
+#> Computed using the Imhof approximation
 
 proj2 <- curve_projection(adrf1, "linear",
                           transform = FALSE)
@@ -412,6 +422,5 @@ curve_contrast(adrf1) |>
 #>                 Contrast P-value
 #>  [Male = 1] - [Male = 0]  0.0002
 #> ───────────────────────────────────────────────────────
-#> Computed using the Imhof approximation (the
-#>   saddlepoint approximation for p-values below .0001)
+#> Computed using the Imhof approximation
 ```

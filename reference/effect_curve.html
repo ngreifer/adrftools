@@ -11,7 +11,7 @@ Usage
 
 f &amp;lt;- adrf(x, ...)
 
-f({treat}, subset = NULL)
+f({treat}, subset = NULL, outcome = NULL)
 
 
 "><meta property="og:description" content="An effect_curve object is a function that takes in values of the treatment and produces estimates of the effect curve at those values. effect_curve objects are produced by adrf() and shift_curve() and by functions that modify effect curves, such as amef(), curve_contrast(), reference_curve(), and curve_projection(). The output of an effect_curve object is a curve_est object containing the effect curve estimates. This page describes effect_curve and curve_est objects.
@@ -20,7 +20,7 @@ Usage
 
 f &amp;lt;- adrf(x, ...)
 
-f({treat}, subset = NULL)
+f({treat}, subset = NULL, outcome = NULL)
 
 
 "></head><body>
@@ -69,7 +69,7 @@ f({treat}, subset = NULL)
 
 <div class="sourceCode"><pre><code><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adrf.html">adrf</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">f</span><span class="op">(</span><span class="op">{</span><span class="va">treat</span><span class="op">}</span>, subset <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">f</span><span class="op">(</span><span class="op">{</span><span class="va">treat</span><span class="op">}</span>, subset <span class="op">=</span> <span class="cn">NULL</span>, outcome <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
 
 </div>
 
@@ -86,6 +86,10 @@ f({treat}, subset = NULL)
 
 <dt id="arg-subset">subset<a class="anchor" aria-label="anchor" href="#arg-subset"></a></dt>
 <dd><p>an optional logical expression indicating the subset of the subgroups for which to compute estimates. Can only be used when <code>by</code> was supplied to the original call to <code><a href="adrf.html">adrf()</a></code>, and only to refer to variables defining subgroups.</p></dd>
+
+
+<dt id="arg-outcome">outcome<a class="anchor" aria-label="anchor" href="#arg-outcome"></a></dt>
+<dd><p>an optional character vector naming the categories of the outcome for which to compute estimates. Can only be used when the model gives a separate prediction for each category of the outcome (e.g., multinomial and ordinal models); see the section <em>Categorical outcomes</em> in Details of <code><a href="adrf.html">adrf()</a></code>.</p></dd>
 
 
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
@@ -138,7 +142,9 @@ f({treat}, subset = NULL)
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - treatment: logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    + grid points: 51</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - sample size: 2,521</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional (HC2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Compute estimates along the ADRF</span></span></span>
@@ -175,8 +181,10 @@ f({treat}, subset = NULL)
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - response: Math</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - treatment: logBLL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    + range: -0.3567 to 2.4248</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - by: Male</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    + grid points: 51</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - by: Male (2 subgroups)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - sample size: 2,521</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - inference: unconditional (HC2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimates in both groups</span></span></span>
