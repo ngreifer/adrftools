@@ -1,4 +1,4 @@
-skip_if_not_installed("WeightIt")
+skip_if_not_installed("WeightIt", "2.2.0")
 
 test_that("glm_weightit() with estimated weights gives correct point estimates", {
   W <- WeightIt::weightit(logBLL ~ PIR + Male + Age + Race, data = nhanes3lead,
@@ -76,22 +76,15 @@ test_that("ordinal_weightit() models are supported on the link scale", {
   fit <- WeightIt::ordinal_weightit(ordered(cut(Math, 4)) ~ logBLL + PIR + Male,
                                     data = nhanes3lead)
 
-  # WeightIt (> 2.1.0) has a hatvalues() method for these models, so HC2 is
-  # used, scaling each unit's influence by 1 / sqrt(1 - h); without it, HC1 is
-  # used with a message
-  if (is_null(utils::getS3method("hatvalues", "ordinal_weightit", optional = TRUE))) {
-    expect_message(a <- adrf(fit, treat = "logBLL", n = 3, range = c(0, 2), type = "link"),
-                   "HC2")
-  }
-  else {
-    expect_no_message(a <- adrf(fit, treat = "logBLL", n = 3, range = c(0, 2), type = "link"))
+  # WeightIt (>= 2.2.0) has a hatvalues() method for these models, so HC2 is
+  # used, scaling each unit's influence by 1 / sqrt(1 - h)
+  expect_no_message(a <- adrf(fit, treat = "logBLL", n = 3, range = c(0, 2), type = "link"))
 
-    h <- stats::hatvalues(fit)
-    expect_equal(sum(h), ncol(sandwich::estfun(fit)), tolerance = 1e-8)
-    expect_equal(adrftools:::.coef_influence(fit, hc2 = TRUE),
-                 adrftools:::.coef_influence(fit, hc2 = FALSE) / sqrt(1 - h),
-                 tolerance = 1e-10)
-  }
+  h <- stats::hatvalues(fit)
+  expect_equal(sum(h), ncol(sandwich::estfun(fit)), tolerance = 1e-8)
+  expect_equal(adrftools:::.coef_influence(fit, hc2 = TRUE),
+               adrftools:::.coef_influence(fit, hc2 = FALSE) / sqrt(1 - h),
+               tolerance = 1e-10)
 
   ref <- vapply(get_values(a), function(v) {
     nd <- transform(nhanes3lead, logBLL = v)

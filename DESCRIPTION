@@ -28,7 +28,7 @@ Suggests:
     future.apply,
     survey,
     splines,
-    WeightIt,
+    WeightIt (>= 2.2.0),
     MatchThem,
     mice,
     dbarts,
