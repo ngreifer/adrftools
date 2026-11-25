@@ -396,6 +396,91 @@ test_that("simultaneous Wald critical values and p-values are accurate and consi
   expect_equal(adrftools:::.mvt_p_values(cr, R, df = 30), .1, tolerance = 2e-3)
 })
 
+test_that("simulated simultaneous critical values match exact values for full and low rank correlations", {
+  # 50 equicorrelated estimates: Z_j = sqrt(rho) W + sqrt(1 - rho) e_j, so the
+  # probability that all |Z_j| <= c is a one-dimensional integral
+  k <- 50
+  rho <- .5
+  R <- matrix(rho, k, k)
+  diag(R) <- 1
+
+  p_all_within <- function(c) {
+    stats::integrate(function(w) {
+      (pnorm((c - sqrt(rho) * w) / sqrt(1 - rho)) -
+         pnorm((-c - sqrt(rho) * w) / sqrt(1 - rho)))^k * dnorm(w)
+    }, -Inf, Inf, rel.tol = 1e-10)$value
+  }
+
+  crit_exact <- uniroot(function(c) p_all_within(c) - .95, c(2, 4), tol = 1e-10)$root
+
+  # The Monte Carlo standard error of the simulated value is at most .001
+  set.seed(1)
+  expect_lt(abs(adrftools:::.mvt_crit(.95, R) - crit_exact), .004)
+
+  # 100 estimates in two blocks of 50 identical ones, with correlation .7
+  # between the blocks: the correlation matrix has rank 2, and the maximum is
+  # that of a bivariate normal pair
+  R2 <- matrix(c(1, .7, .7, 1), 2, 2)
+  R_block <- kronecker(R2, matrix(1, 50, 50))
+
+  crit_exact2 <- mvtnorm::qmvnorm(.95, tail = "both.tails", corr = R2,
+                                  abseps = 1e-8)$quantile
+
+  set.seed(2)
+  expect_lt(abs(adrftools:::.mvt_crit(.95, adrftools:::.to_psd(R_block)) - crit_exact2), .004)
+
+  # With finite degrees of freedom, the critical value is larger
+  set.seed(2)
+  expect_gt(adrftools:::.mvt_crit(.95, adrftools:::.to_psd(R_block), df = 20),
+            crit_exact2)
+
+  # The critical value lies between the pointwise and Bonferroni values
+  set.seed(3)
+  cr <- adrftools:::.mvt_crit(.9, R)
+  expect_gt(cr, qnorm(.95))
+  expect_lt(cr, qnorm(1 - .1 / (2 * k)))
+})
+
+test_that("simulated simultaneous p-values match exact values for a singular correlation matrix", {
+  # 100 estimates in two blocks of 50 identical ones, with correlation .7
+  # between the blocks: the correlation matrix has rank 2, so the p-values are
+  # simulated, and the maximum is that of a bivariate normal pair
+  R2 <- matrix(c(1, .7, .7, 1), 2, 2)
+  R_block <- adrftools:::.to_psd(kronecker(R2, matrix(1, 50, 50)))
+
+  z <- c(-1.5, 2, 2.4, -2.4, 3)
+  p_exact <- vapply(abs(z), function(.z) {
+    1 - mvtnorm::pmvnorm(lower = c(-.z, -.z), upper = c(.z, .z), corr = R2,
+                         algorithm = mvtnorm::Miwa(steps = 512))
+  }, numeric(1L))
+
+  set.seed(4)
+  p <- adrftools:::.mvt_p_values(z, R_block)
+
+  # Within 4 times the target Monte Carlo standard error of each p-value
+  expect_true(all(abs(p - p_exact) <= 4 * pmax(1e-4, .005 * p_exact)))
+
+  # Equal |z| give equal p-values, which decrease in |z|
+  expect_identical(p[3L], p[4L])
+  expect_true(all(diff(p[order(abs(z))]) <= 0))
+
+  # The p-value at the simulated critical value is close to 1 - conf_level
+  set.seed(5)
+  cr <- adrftools:::.mvt_crit(.95, R_block, df = 20)
+  set.seed(6)
+  expect_equal(adrftools:::.mvt_p_values(cr, R_block, df = 20), .05, tolerance = .02)
+})
+
+test_that("the factor of a correlation matrix drops the ridge of .to_psd() and has unit rows", {
+  R_block <- kronecker(matrix(c(1, .7, .7, 1), 2, 2), matrix(1, 10, 10))
+
+  L <- adrftools:::.corr_factor(adrftools:::.to_psd(R_block))
+
+  expect_identical(ncol(L), 2L)
+  expect_equal(rowSums(L^2), rep(1, 20), tolerance = 1e-12)
+  expect_equal(tcrossprod(L), R_block, tolerance = 1e-5, ignore_attr = TRUE)
+})
+
 test_that("summary() intervals and plot() bands use the same simultaneous critical value", {
   fit <- lm(Math ~ poly(logBLL, 3) + Male + PIR, data = nhanes3lead)
   a <- adrf(fit, treat = "logBLL", n = 21)

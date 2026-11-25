@@ -427,25 +427,126 @@ all_apply <- function(X, FUN, ...) {
 
 # mvtnorm::pmvt() and mvtnorm::qmvt() require integer degrees of freedom (and
 # treat 0 as infinite), so finite degrees of freedom are rounded down, which is
-# conservative
+# conservative; the simulated critical values use the same rounding so that
+# simultaneous intervals and p-values agree
 .mvt_df <- function(df) {
   if (is.finite(df)) max(1, floor(df))
   else Inf
 }
 
-# Simultaneous critical values and p-values for Wald inference, from the
-# multivariate t (or normal) distribution with correlation matrix `corr`. Both
-# use the same settings of the Genz-Bretz algorithm, so intervals from
-# summary() and bands from plot() agree to within its Monte Carlo error. With
-# 51 highly correlated estimates, these settings give critical values within
-# about 1e-3 and p-values within about 1e-4 of their exact values.
+# Settings of the Genz-Bretz algorithm used by mvtnorm::pmvt() for simultaneous
+# p-values and by mvtnorm::qmvt() for critical values of a few estimates. With
+# 51 highly correlated estimates, these give p-values within about 1e-4 of
+# their exact values.
 .mvt_maxpts <- 1e5
 .mvt_abseps <- 1e-5
 
+# Settings of the simulation used for simultaneous critical values: directions
+# are drawn until the Monte Carlo standard error of the critical value is at
+# most `.sim_crit_se` or `.sim_max_draws` have been drawn, starting with
+# `.sim_start`, in chunks of `.sim_chunk` so that little memory is used at once
+.sim_crit_se <- 1e-3
+.sim_start <- 2e4
+# Settings of the simulation used for simultaneous p-values (see .sim_tail()):
+# the number of directions drawn first, and the target Monte Carlo standard
+# error, max(.sim_p_se_abs, .sim_p_se_rel * p) for a p-value p
+.sim_start_p <- 1e5
+.sim_p_se_abs <- 1e-4
+.sim_p_se_rel <- .005
+
+# The largest number of estimates for which mvtnorm::qmvt() is used when their
+# correlation matrix has full rank (see .mvt_crit())
+.qmvt_max_dim <- 10
+.sim_max_draws <- 1e6
+.sim_chunk <- 1e3
+
+# The simultaneous critical value for Wald inference, the `conf_level`
+# quantile of max_j |T_j| for T multivariate t (or normal) with correlation
+# matrix `corr`.
+#
+# The estimates along effect curves are linear in a few model coefficients, so
+# `corr` usually has a rank r far below its dimension k (e.g., 12 for 306
+# estimates), and T can be written as L u / sqrt(W / df) with L a k x r factor
+# of `corr`, u standard normal in r dimensions, and W chi-squared with df
+# degrees of freedom. Writing u = R theta, with theta uniform on the unit
+# sphere and R^2 chi-squared with r degrees of freedom independent of it,
+# max_j |T_j| = R m(theta) / sqrt(W / df) with m(theta) = max_j |l_j' theta|,
+# so given theta, the probability that it exceeds c is that of an F(r, df)
+# variable exceeding c^2 / (r m(theta)^2) (or of a chi-squared variable with r
+# degrees of freedom exceeding c^2 / m(theta)^2 when df is infinite). The tail
+# probability is the mean of these over random directions theta, and the
+# critical value is the root of its difference from 1 - conf_level. This is
+# exact apart from Monte Carlo error, which is much smaller than that of
+# simulating T directly because R and W are integrated analytically. It is
+# also much faster than numerical integration over all k estimates: for 306
+# estimates, mvtnorm::qmvt() took 18 s with a standard error of about .005,
+# and this takes under 1 s with a standard error of .001.
+#
+# For a few estimates whose correlation matrix has full rank (e.g., when
+# summary() is applied to an effect curve evaluated at three points),
+# mvtnorm::qmvt() is as fast and more accurate (a standard error of about
+# 2e-5 for three estimates and 1e-4 for 10 equicorrelated ones), so it is used
+# instead. For rank-deficient matrices, such as those of the estimates at the
+# grid points of a curve, qmvt() is much less accurate (a standard error of
+# .002 to .006 even for five estimates), and for full-rank matrices of more
+# than 10 estimates, it is no more accurate than the simulation and slower.
+#
+# Eigenvalues below 1e-6 of the largest are dropped, which removes the ridge
+# .to_psd() adds to rank-deficient matrices. With a single dimension, every T_j
+# is the same t variable up to sign, so the pointwise critical value is exact.
 .mvt_crit <- function(conf_level, corr, df = Inf) {
+  df <- .mvt_df(df)
+  alpha <- 1 - conf_level
+
+  .q <- function(p) {
+    if (is.finite(df)) stats::qt(p, df)
+    else stats::qnorm(p)
+  }
+
+  L <- .corr_factor(corr)
+  r <- fncol(L)
+
+  # The simultaneous critical value lies between the pointwise and Bonferroni
+  # critical values
+  lower <- .q(1 - alpha / 2)
+
+  if (r == 1L) {
+    return(lower)
+  }
+
+  if (r == fnrow(L) && r <= .qmvt_max_dim) {
+    return(.qmvt_crit(conf_level, corr, df))
+  }
+
+  upper <- .q(1 - alpha / (2 * fnrow(L)))
+
+  m <- .sim_sphere_max(L, .sim_start)
+
+  repeat {
+    crit <- stats::uniroot(function(cr) mean(.tail_given_dir(cr, m, r, df)) - alpha,
+                           interval = c(lower, upper), extendInt = "downX",
+                           tol = 1e-8)$root
+
+    se <- .crit_se(crit, m, r, df)
+
+    if (se <= .sim_crit_se || length(m) >= .sim_max_draws) {
+      break
+    }
+
+    # Enough further directions to reach the target, with a margin
+    n_total <- min(.sim_max_draws, ceiling(1.1 * length(m) * (se / .sim_crit_se)^2))
+
+    m <- c(m, .sim_sphere_max(L, n_total - length(m)))
+  }
+
+  crit
+}
+
+.qmvt_crit <- function(conf_level, corr, df = Inf) {
   t_crit <- try(mvtnorm::qmvt(conf_level,
                               tail = "both.tails",
-                              df = .mvt_df(df), corr = corr,
+                              df = if (is.finite(df)) df else 0,
+                              corr = corr,
                               maxpts = .mvt_maxpts,
                               abseps = .mvt_abseps)$quantile,
                 silent = TRUE)
@@ -458,13 +559,76 @@ all_apply <- function(X, FUN, ...) {
   t_crit
 }
 
+# A factor L of a correlation matrix with tcrossprod(L) equal to it after
+# dropping eigenvalues below `rel_tol` of the largest, with its rows rescaled
+# to unit length so that each implied variance is 1
+.corr_factor <- function(corr, rel_tol = 1e-6) {
+  es <- eigen(corr, symmetric = TRUE)
+
+  keep <- es$values > rel_tol * es$values[1L]
+
+  L <- es$vectors[, keep, drop = FALSE] %*%
+    diag(sqrt(es$values[keep]), nrow = sum(keep))
+
+  L / sqrt(rowSums(L^2))
+}
+
+# `n` draws of m(theta) = max_j |l_j' theta| for directions theta uniform on
+# the unit sphere, made in chunks so that only one chunk of L theta is held at
+# once
+.sim_sphere_max <- function(L, n) {
+  r <- fncol(L)
+  out <- numeric(n)
+  done <- 0L
+
+  while (done < n) {
+    b <- min(.sim_chunk, n - done)
+
+    U <- matrix(stats::rnorm(r * b), nrow = r, ncol = b)
+    U <- U / rep(sqrt(colSums(U^2)), each = r)
+
+    out[done + seq_len(b)] <- (L %*% U) |>
+      abs() |>
+      fmax()
+
+    done <- done + b
+  }
+
+  out
+}
+
+# P(max_j |T_j| > crit) given each direction, with `m` the values of m(theta)
+.tail_given_dir <- function(crit, m, r, df = Inf) {
+  if (is.finite(df)) stats::pf(crit^2 / (r * m^2), r, df, lower.tail = FALSE)
+  else stats::pchisq(crit^2 / m^2, r, lower.tail = FALSE)
+}
+
+# The Monte Carlo standard error of the critical value: that of the estimated
+# tail probability divided by the derivative of the tail probability
+.crit_se <- function(crit, m, r, df = Inf) {
+  se_p <- stats::sd(.tail_given_dir(crit, m, r, df)) / sqrt(length(m))
+
+  d_p <- {
+    if (is.finite(df)) mean(stats::df(crit^2 / (r * m^2), r, df) * 2 * crit / (r * m^2))
+    else mean(stats::dchisq(crit^2 / m^2, r) * 2 * crit / m^2)
+  }
+
+  se_p / d_p
+}
+
 # P(max_j |T_j| >= |z|) for each value of `z`. The p-value is a decreasing
 # function of |z|, so it is computed once per distinct value and made
-# monotone (taking the larger, i.e., conservative, value when Monte Carlo error
-# reverses the order). It lies between the pointwise p-value and its
-# Bonferroni bound, so when these are within the precision of the algorithm,
-# the bound is used without calling pmvt(); this skips the estimates far from
-# the null, which are the slowest to compute accurately.
+# monotone. It lies between the pointwise p-value and its Bonferroni bound, so
+# when these are within 1e-4, the bound is used; this skips the estimates far
+# from the null. When the correlation matrix is singular (e.g., for estimates
+# along curves, which are smooth functions of a few model coefficients), the
+# others are computed by simulation from a factor of the correlation matrix
+# (see .sim_tail()), which was 2 to 10 times more accurate than
+# mvtnorm::pmvt() for p-values below .05 and 10 to 40 times faster (e.g., 0.3 s
+# rather than 10 s for six p-values of 306 estimates). When it has full rank,
+# pmvt() is used: it is nearly exact for a few estimates (an error of about
+# 1e-6 for three or four) and was more accurate than the simulation for
+# p-values above .1 with 50 equicorrelated estimates.
 .mvt_p_values <- function(z, corr, df = Inf) {
   k <- fnrow(corr)
   df <- .mvt_df(df)
@@ -483,10 +647,31 @@ all_apply <- function(X, FUN, ...) {
 
   todo <- which(p_bonf - p_point > 1e-4)
 
-  for (i in todo) {
-    pr <- try(1 - mvtnorm::pmvt(lower = rep.int(-u[i], k),
-                                upper = rep.int(u[i], k),
-                                df = df, corr = corr,
+  if (!is_null(todo)) {
+    L <- .corr_factor(corr)
+
+    p[todo] <- {
+      if (fncol(L) == k) .pmvt_tail(u[todo], corr, df)
+      else .sim_tail(u[todo], L, df)
+    }
+
+    p[todo] <- pmin(pmax(p[todo], p_point[todo]), p_bonf[todo])
+  }
+
+  p <- rev(cummax(rev(p)))
+
+  p[fmatch(az, u)]
+}
+
+# P(max_j |T_j| >= u) for each value of `u` using mvtnorm::pmvt()
+.pmvt_tail <- function(u, corr, df = Inf) {
+  k <- fnrow(corr)
+
+  vapply(u, function(.u) {
+    pr <- try(1 - mvtnorm::pmvt(lower = rep.int(-.u, k),
+                                upper = rep.int(.u, k),
+                                df = if (is.finite(df)) df else 0,
+                                corr = corr,
                                 maxpts = .mvt_maxpts,
                                 abseps = .mvt_abseps),
               silent = TRUE)
@@ -495,10 +680,47 @@ all_apply <- function(X, FUN, ...) {
       arg::err("there was an error computing simultaneous p-values")
     }
 
-    p[i] <- min(max(pr, p_point[i]), p_bonf[i])
+    pr
+  }, numeric(1L))
+}
+
+# P(max_j |T_j| >= u) for each value of `u` by simulation, with L a factor of
+# the correlation matrix from .corr_factor(): the mean over random directions
+# of the probability given each direction, as in .mvt_crit(). The same
+# directions are used for every value of `u`. Directions are added until the
+# Monte Carlo standard error of every p-value is at most
+# max(.sim_p_se_abs, .sim_p_se_rel * p), so small p-values are estimated with
+# small absolute error and large ones (whose exact value matters little) are
+# not estimated more precisely than needed, or until `.sim_max_draws` have
+# been drawn.
+.sim_tail <- function(u, L, df = Inf) {
+  r <- fncol(L)
+
+  m <- .sim_sphere_max(L, .sim_start_p)
+
+  repeat {
+    n <- length(m)
+
+    stats_u <- vapply(u, function(.u) {
+      g <- .tail_given_dir(.u, m, r, df)
+      c(mean(g), stats::sd(g) / sqrt(n))
+    }, numeric(2L))
+
+    p <- stats_u[1L, ]
+    se <- stats_u[2L, ]
+    target <- pmax(.sim_p_se_abs, .sim_p_se_rel * p)
+
+    if (all(se <= target) || n >= .sim_max_draws) {
+      break
+    }
+
+    # Enough further directions for the p-value farthest from its target,
+    # with a margin
+    n_total <- min(.sim_max_draws, ceiling(1.1 * n * max((se / target)^2)))
+
+    m <- c(m, .sim_sphere_max(L, n_total - n))
   }
 
-  p <- rev(cummax(rev(p)))
-
-  p[fmatch(az, u)]
+  p
 }
+
